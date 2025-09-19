@@ -1,8 +1,8 @@
 {
   "pack": "Workflow Pack v2",
   "version": "2.0.1",
-  "micro_loops": [
-    {
+  "micro_loops": {
+    "discovery": {
       "id": "discovery_loop",
       "description": "Iterate on requirement discovery and validation with the requestor.",
       "steps": [
@@ -11,7 +11,7 @@
         "validate_assumptions_with_requestor"
       ]
     },
-    {
+    "delivery": {
       "id": "delivery_loop",
       "description": "Drive implementation tasks to completion with continuous integration feedback.",
       "steps": [
@@ -20,8 +20,26 @@
         "run_quality_gates",
         "present_demos"
       ]
+    },
+    "reflection": {
+      "id": "reflection_loop",
+      "max_loops": 3,
+      "stop_on_gain_pct": 0.05,
+      "footprints_spec": {
+        "artifact_type": "reflection",
+        "retention": "short_term"
+      }
+    },
+    "debate_consensus": {
+      "id": "debate_consensus_loop",
+      "max_loops": 5,
+      "stop_on_gain_pct": 0.02,
+      "footprints_spec": {
+        "artifact_type": "debate_log",
+        "retention": "long_term"
+      }
     }
-  ],
+  },
   "graphs": [
     {
       "id": "collaboration_flow",
