@@ -1,0 +1,79 @@
+{
+  "pack": "Workflow Pack v2",
+  "version": "2.0.1",
+  "micro_loops": [
+    {
+      "id": "discovery_loop",
+      "description": "Iterate on requirement discovery and validation with the requestor.",
+      "steps": [
+        "capture_request_context",
+        "outline_candidate_solutions",
+        "validate_assumptions_with_requestor"
+      ]
+    },
+    {
+      "id": "delivery_loop",
+      "description": "Drive implementation tasks to completion with continuous integration feedback.",
+      "steps": [
+        "prioritize_backlog_items",
+        "implement_changes",
+        "run_quality_gates",
+        "present_demos"
+      ]
+    }
+  ],
+  "graphs": [
+    {
+      "id": "collaboration_flow",
+      "title": "Collaboration Workflow",
+      "nodes": [
+        "intake",
+        "analysis",
+        "build",
+        "review",
+        "deploy"
+      ],
+      "edges": [
+        ["intake", "analysis"],
+        ["analysis", "build"],
+        ["build", "review"],
+        ["review", "deploy"]
+      ]
+    },
+    {
+      "id": "quality_feedback",
+      "title": "Quality Feedback Loop",
+      "nodes": [
+        "develop",
+        "test",
+        "measure",
+        "learn"
+      ],
+      "edges": [
+        ["develop", "test"],
+        ["test", "measure"],
+        ["measure", "learn"],
+        ["learn", "develop"]
+      ]
+    },
+    {
+      "id": "distributed_tracing",
+      "title": "Distributed Tracing Graph",
+      "nodes": [
+        "ingress",
+        "api_gateway",
+        "orchestrator",
+        "worker",
+        "data_store",
+        "egress"
+      ],
+      "edges": [
+        ["ingress", "api_gateway"],
+        ["api_gateway", "orchestrator"],
+        ["orchestrator", "worker"],
+        ["worker", "data_store"],
+        ["data_store", "egress"]
+      ]
+    }
+  ]
+}
