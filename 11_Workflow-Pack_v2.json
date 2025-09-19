@@ -75,5 +75,56 @@
         ["data_store", "egress"]
       ]
     }
-  ]
+  ],
+  "log_schema": {
+    "task_event": [
+      "task_id",
+      "task_name",
+      "status",
+      "duration_ms",
+      "error_code",
+      "retry_count",
+      "cache_hit_rate",
+      "cache_ttl",
+      "content_hash",
+      "cache_invalidation_reason"
+    ]
+  },
+  "dashboards": {
+    "exec_overview": [
+      "task_throughput",
+      "avg_latency_ms",
+      "success_rate",
+      "cache_hit_rate",
+      "cache_ttl"
+    ],
+    "reliability_sre": [
+      "error_budget_burn",
+      "retry_rate",
+      "incident_count",
+      "cache_invalidation_reason"
+    ]
+  },
+  "alerts": {
+    "cache_ttl_breach": {
+      "description": "Cache TTL is below the configured safety threshold",
+      "condition": "cache_ttl < 5",
+      "severity": "warning"
+    },
+    "cache_hit_rate_drop": {
+      "description": "Cache hit rate has dropped below the expected baseline",
+      "condition": "cache_hit_rate < 0.7",
+      "severity": "critical"
+    },
+    "content_hash_mismatch": {
+      "description": "Content hash mismatch detected between cache entry and source",
+      "condition": "content_hash_mismatch_count > 0",
+      "severity": "high"
+    },
+    "cache_invalidation_spike": {
+      "description": "Cache invalidations are occurring at an unusual rate",
+      "condition": "cache_invalidation_reason_spike = true",
+      "severity": "medium"
+    }
+  }
 }
