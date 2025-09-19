@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling>=1.18"]
+build-backend = "hatchling.build"
+
+[project]
+name = "neo-agent"
+version = "0.1.0"
+description = "Modular agentic AI scaffold for enterprise use-cases"
+authors = [
+  { name = "Project NEO Team" }
+]
+readme = "README.md"
+requires-python = ">=3.11"
+dependencies = [
+  "pydantic>=2.6",
+  "rich>=13.7"
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.2"
+]
+
+[project.scripts]
+neo-agent = "neo_agent.cli:main"
+
+[tool.pytest.ini_options]
+minversion = "8.0"
+addopts = "-ra"
+pythonpath = ["src"]
