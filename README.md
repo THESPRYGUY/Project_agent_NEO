@@ -1,62 +1,50 @@
-# Project_agent_NEO
+# Project NEO Agent
 
-Project NEO is a modular agentic AI scaffold designed for enterprise scenarios. The repository provides an opinionated yet
-flexible foundation for building multi-skill agents that coordinate workflows, interact with business data sources, and
-produce auditable reasoning trails.
+Project NEO Agent provides a lightweight, test-driven scaffold for experimenting with
+agentic workflows. The repository intentionally limits itself to twenty files while
+still covering configuration, planning, execution, and telemetry capabilities.
 
 ## Features
 
-- **Typed configuration** for agents, skills, and tools using Pydantic models.
-- **Conversation memory** utilities that manage rolling chat history with optional reasoning traces.
-- **Skill registry** with a simple abstraction for wiring custom capabilities into agents.
-- **Agent and manager classes** that orchestrate planning, skill execution, and coordination across multiple agents.
-- **Workflow runner** built on Rich for expressive terminal output.
-- **Command line demo** showcasing how to configure and run an enterprise analyst agent.
+- **Deterministic configuration** – dataclass based models with JSON helpers keep
+  runtime settings predictable.
+- **Conversation aware state** – a structured conversation history is maintained for
+  every dispatch, enabling downstream analysis.
+- **Modular skills** – skills are simple callables that can be dynamically discovered
+  from configuration entrypoints.
+- **Planning pipeline** – the runtime produces a basic plan and executes each step
+  through a configurable pipeline.
+- **Observability** – event emission and telemetry utilities capture metrics during
+  execution.
 
-## Getting started
-
-### Installation
+## Usage
 
 ```bash
 pip install -e .[dev]
+neo-agent --config path/to/config.json
 ```
 
-### Run the demonstration agent
+If no configuration path is supplied, the default configuration containing the `echo`
+skill will be used. Dispatches can be driven programmatically via the
+`neo_agent.AgentRuntime` class:
 
-```bash
-neo-agent "How can we improve Q3 pipeline conversion?"
+```python
+from neo_agent import AgentConfiguration, AgentRuntime
+
+runtime = AgentRuntime(AgentConfiguration.default())
+runtime.initialize()
+result = runtime.dispatch({"input": "Ping"})
+print(result["echo"])  # -> "Ping"
 ```
 
-The CLI will load a sample agent, propose an execution plan, run the configured skills, and output a reflection summarizing
-recent context.
+## Testing
 
-### Run the tests
+The repository relies on `pytest` for test execution:
 
 ```bash
 pytest
 ```
 
-## Project structure
-
-```
-src/neo_agent/
-├── agents/          # Base agent and team manager implementations
-├── cli.py           # CLI entry point wiring together a demo configuration
-├── config.py        # Settings models for agents, skills, and tools
-├── memory.py        # Conversation memory primitives
-├── skills.py        # Skill abstractions and registry
-└── workflow.py      # Simple Rich-powered workflow runner
-```
-
-Tests covering the configuration, memory, and agent flows live in `tests/`.
-
-## Extending the scaffold
-
-1. **Define new skills** by subclassing or instantiating `Skill` with custom handlers.
-2. **Register tools** in `SkillSettings` to describe the external systems a skill uses.
-3. **Customize planning** by overriding `BaseAgent.plan` to integrate LLMs or rule-based logic.
-4. **Build multi-agent systems** by creating multiple `AgentSettings` and letting `AgentManager` coordinate them.
-
 ## License
 
-MIT
+Project NEO Agent is released under the MIT License. See `LICENSE` for details.

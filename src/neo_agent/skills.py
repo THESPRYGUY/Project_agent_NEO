@@ -1,59 +1,64 @@
-"""Skill primitives for Project NEO."""
+"""Skill abstractions and builtin implementations."""
+
 from __future__ import annotations
 
-from dataclasses import dataclass, field
-from typing import Callable, Dict, Iterable, List, Protocol
+from dataclasses import dataclass
+from typing import Callable, Dict, Iterable, Mapping
 
-from .config import SkillSettings, ToolConfig
+from .exceptions import SkillExecutionError
+from .logging import get_logger
 
-
-class SkillContext(Protocol):
-    """Minimal interface agents provide to skills."""
-
-    def log(self, message: str) -> None:
-        ...
+LOGGER = get_logger("skills")
 
 
-@dataclass
+@dataclass(slots=True)
 class Skill:
-    """Concrete capability that can be executed by an agent."""
+    """Callable unit of work executed by the runtime."""
 
     name: str
     description: str
-    handler: Callable[[SkillContext, Dict[str, str]], str]
-    settings: SkillSettings | None = None
+    function: Callable[[dict], dict]
 
-    def __call__(self, context: SkillContext, inputs: Dict[str, str]) -> str:
-        return self.handler(context, inputs)
+    def execute(self, payload: dict) -> dict:
+        try:
+            LOGGER.debug("Executing skill %s with payload %s", self.name, payload)
+            return self.function(payload)
+        except Exception as exc:  # pragma: no cover - safety
+            raise SkillExecutionError(f"Skill {self.name} failed") from exc
 
-    @property
-    def tools(self) -> List[ToolConfig]:
-        return list(self.settings.tools) if self.settings else []
 
-
-@dataclass
 class SkillRegistry:
-    """Registry mapping skill names to implementations."""
+    """Registry that exposes skills by name."""
 
-    skills: Dict[str, Skill] = field(default_factory=dict)
+    def __init__(self) -> None:
+        self._skills: Dict[str, Skill] = {}
 
     def register(self, skill: Skill) -> None:
-        if skill.name in self.skills:
-            raise ValueError(f"Skill '{skill.name}' already registered")
-        self.skills[skill.name] = skill
+        self._skills[skill.name] = skill
 
     def get(self, name: str) -> Skill:
         try:
-            return self.skills[name]
+            return self._skills[name]
         except KeyError as exc:  # pragma: no cover - defensive
-            raise KeyError(f"Unknown skill '{name}'") from exc
+            raise SkillExecutionError(f"Unknown skill: {name}") from exc
 
-    def list(self) -> Iterable[Skill]:
-        return self.skills.values()
+    def configure(self, mappings: Mapping[str, Callable[[dict], dict]]) -> None:
+        for name, function in mappings.items():
+            skill = Skill(name=name, description=function.__doc__ or name, function=function)
+            self.register(skill)
 
-    def from_settings(self, settings: Iterable[SkillSettings], factory: Callable[[SkillSettings], Skill]) -> None:
-        for skill_setting in settings:
-            self.register(factory(skill_setting))
+    def all(self) -> Iterable[Skill]:
+        return tuple(self._skills.values())
 
 
-__all__ = ["Skill", "SkillRegistry", "SkillContext"]
+def echo(payload: dict) -> dict:
+    """Return the payload unchanged."""
+
+    return {**payload, "echo": payload.get("input")}
+
+
+def greet(payload: dict) -> dict:
+    """Return a friendly greeting for the provided input."""
+
+    message = str(payload.get("input", ""))
+    return {**payload, "greeting": f"Hello {message}"}
