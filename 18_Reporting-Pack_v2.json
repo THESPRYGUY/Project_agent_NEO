@@ -1,0 +1,36 @@
+{
+  "id": "18_Reporting-Pack_v2",
+  "version": "2.0",
+  "exec_brief": {
+    "cadence": "weekly",
+    "contract": {
+      "fields_min": [
+        "summary",
+        "risk_level",
+        "next_actions",
+        "backup_status",
+        "recovery_status"
+      ]
+    },
+    "delivery": {
+      "format": "pdf",
+      "channels": [
+        "email",
+        "sharepoint"
+      ]
+    }
+  },
+  "dashboards": {
+    "operations": {
+      "metrics": [
+        "throughput",
+        "latency",
+        "error_rate"
+      ]
+    }
+  },
+  "appendices": [
+    "glossary",
+    "methodology"
+  ]
+}
