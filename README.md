@@ -37,6 +37,21 @@ result = runtime.dispatch({"input": "Ping"})
 print(result["echo"])  # -> "Ping"
 ```
 
+### Custom agent intake page
+
+Launch the customizable intake experience using the bundled WSGI server to produce
+tailored agent profiles and spec files:
+
+```bash
+python -m neo_agent.intake_app
+```
+
+Open http://127.0.0.1:5000/ to select the agent domain, role, toolsets, attributes,
+and behavioral sliders. The form also accepts a LinkedIn profile URL; available
+metadata is scraped and merged with the manual selections. Submitting the form
+creates `agent_profile.json` alongside a `generated_specs/` directory containing the
+derived configuration and metadata artifacts used by the generator.
+
 ## Testing
 
 The repository relies on `pytest` for test execution:
