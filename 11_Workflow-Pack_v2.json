@@ -1,0 +1,148 @@
+{
+  "pack": "Workflow Pack v2",
+  "version": "2.0.1",
+  "micro_loops": {
+    "discovery": {
+      "id": "discovery_loop",
+      "description": "Iterate on requirement discovery and validation with the requestor.",
+      "steps": [
+        "capture_request_context",
+        "outline_candidate_solutions",
+        "validate_assumptions_with_requestor"
+      ]
+    },
+    "delivery": {
+      "id": "delivery_loop",
+      "description": "Drive implementation tasks to completion with continuous integration feedback.",
+      "steps": [
+        "prioritize_backlog_items",
+        "implement_changes",
+        "run_quality_gates",
+        "present_demos"
+      ]
+    },
+    "reflection": {
+      "id": "reflection_loop",
+      "max_loops": 3,
+      "stop_on_gain_pct": 0.05,
+      "footprints_spec": {
+        "artifact_type": "reflection",
+        "retention": "short_term"
+      }
+    },
+    "debate_consensus": {
+      "id": "debate_consensus_loop",
+      "max_loops": 5,
+      "stop_on_gain_pct": 0.02,
+      "footprints_spec": {
+        "artifact_type": "debate_log",
+        "retention": "long_term"
+      }
+    }
+  },
+  "graphs": [
+    {
+      "id": "collaboration_flow",
+      "title": "Collaboration Workflow",
+      "nodes": [
+        "intake",
+        "analysis",
+        "build",
+        "review",
+        "deploy"
+      ],
+      "edges": [
+        ["intake", "analysis"],
+        ["analysis", "build"],
+        ["build", "review"],
+        ["review", "deploy"]
+      ]
+    },
+    {
+      "id": "quality_feedback",
+      "title": "Quality Feedback Loop",
+      "nodes": [
+        "develop",
+        "test",
+        "measure",
+        "learn"
+      ],
+      "edges": [
+        ["develop", "test"],
+        ["test", "measure"],
+        ["measure", "learn"],
+        ["learn", "develop"]
+      ]
+    },
+    {
+      "id": "distributed_tracing",
+      "title": "Distributed Tracing Graph",
+      "nodes": [
+        "ingress",
+        "api_gateway",
+        "orchestrator",
+        "worker",
+        "data_store",
+        "egress"
+      ],
+      "edges": [
+        ["ingress", "api_gateway"],
+        ["api_gateway", "orchestrator"],
+        ["orchestrator", "worker"],
+        ["worker", "data_store"],
+        ["data_store", "egress"]
+      ]
+    }
+  ],
+  "log_schema": {
+    "task_event": [
+      "task_id",
+      "task_name",
+      "status",
+      "duration_ms",
+      "error_code",
+      "retry_count",
+      "cache_hit_rate",
+      "cache_ttl",
+      "content_hash",
+      "cache_invalidation_reason"
+    ]
+  },
+  "dashboards": {
+    "exec_overview": [
+      "task_throughput",
+      "avg_latency_ms",
+      "success_rate",
+      "cache_hit_rate",
+      "cache_ttl"
+    ],
+    "reliability_sre": [
+      "error_budget_burn",
+      "retry_rate",
+      "incident_count",
+      "cache_invalidation_reason"
+    ]
+  },
+  "alerts": {
+    "cache_ttl_breach": {
+      "description": "Cache TTL is below the configured safety threshold",
+      "condition": "cache_ttl < 5",
+      "severity": "warning"
+    },
+    "cache_hit_rate_drop": {
+      "description": "Cache hit rate has dropped below the expected baseline",
+      "condition": "cache_hit_rate < 0.7",
+      "severity": "critical"
+    },
+    "content_hash_mismatch": {
+      "description": "Content hash mismatch detected between cache entry and source",
+      "condition": "content_hash_mismatch_count > 0",
+      "severity": "high"
+    },
+    "cache_invalidation_spike": {
+      "description": "Cache invalidations are occurring at an unusual rate",
+      "condition": "cache_invalidation_reason_spike = true",
+      "severity": "medium"
+    }
+  }
+}
