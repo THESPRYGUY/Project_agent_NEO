@@ -117,6 +117,17 @@ def build_adjacency(edges: Sequence[Sequence[str]]) -> Tuple[Dict[str, List[str]
     return adjacency, indegree
 
 
+class WorkflowCycleError(ValueError):
+    """Error raised when a workflow graph contains a cycle."""
+
+    def __init__(self, cycle_nodes: Sequence[str], partial_order: Sequence[str] | None = None):
+        ordered_cycle = list(dict.fromkeys(sorted(cycle_nodes)))
+        self.cycle_nodes = ordered_cycle
+        self.partial_order = list(partial_order or [])
+        message = "Workflow graph contains a cycle involving: " + ", ".join(ordered_cycle)
+        super().__init__(message)
+
+
 def topological_order(nodes: Sequence[str], edges: Sequence[Sequence[str]]) -> List[str]:
     """Compute a simple topological ordering for a workflow graph."""
 
@@ -133,8 +144,9 @@ def topological_order(nodes: Sequence[str], edges: Sequence[Sequence[str]]) -> L
             if indegree[neighbour] == 0:
                 queue.append(neighbour)
 
-    if len(order) != len(nodes):
-        raise ValueError("Workflow graph contains cycles or disconnected nodes")
+    cycle_nodes = [node for node, degree in indegree.items() if degree > 0]
+    if cycle_nodes:
+        raise WorkflowCycleError(cycle_nodes=cycle_nodes, partial_order=order)
     return order
 
 
@@ -144,12 +156,20 @@ def summarize_workflow_graph(graph: JsonDict) -> None:
     edges = graph.get("edges", [])
 
     node_ids = [graph_node_id(node) for node in nodes]
-    execution_order = topological_order(node_ids, edges)
 
     print(f"  Graph: {graph_id}")
     print(f"    Nodes ({len(nodes)}): {', '.join(node_ids)}")
     print(f"    Edges ({len(edges)}): {', '.join(f'{src}->{dst}' for src, dst in edges)}")
-    print(f"    Execution order: {', '.join(execution_order)}")
+
+    try:
+        execution_order = topological_order(node_ids, edges)
+    except WorkflowCycleError as exc:
+        execution_order = []
+        print(f"    Warning: {exc}")
+        if exc.partial_order:
+            print(f"    Partial execution order: {', '.join(exc.partial_order)}")
+    else:
+        print(f"    Execution order: {', '.join(execution_order)}")
 
     for raw_node in nodes:
         node_id = graph_node_id(raw_node)
