@@ -26,3 +26,12 @@ def test_topological_order_matches_node_count() -> None:
     order = pack_loader.topological_order(nodes, edges)
     assert order == ["a", "b", "c"]
 
+
+def test_cli_reports_cycle(project_root: Path, capsys: pytest.CaptureFixture[str]) -> None:
+    exit_code = pack_loader.main([str(project_root)])
+    output = capsys.readouterr().out
+
+    assert exit_code == 0
+    assert "quality_feedback" in output
+    assert "Warning: Workflow graph contains a cycle involving" in output
+
