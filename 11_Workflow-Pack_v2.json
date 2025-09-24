@@ -108,6 +108,38 @@
       "cache_invalidation_reason"
     ]
   },
+  "conditional_nodes": {
+    "planner_knob": {
+      "source": "payload.capabilities",
+      "when": "includes('reasoning_planning')",
+      "route": "collaboration_flow:intake"
+    },
+    "traits_branch": {
+      "source": "payload.traits.strategic",
+      "when": "> 75",
+      "route": "quality_feedback:measure"
+    },
+    "preferences_confirmation": {
+      "source": "payload.preferences.prefs_knobs.confirmation_gate",
+      "when": "== 'none'",
+      "route": "collaboration_flow:analysis"
+    },
+    "handoff_bias": {
+      "source": "payload.preferences.prefs_knobs.handoff_freq",
+      "when": "== 'high'",
+      "route": "quality_feedback:learn"
+    },
+    "ops_prod_gate": {
+      "source": "payload.toolsets.ops.env",
+      "when": "== 'prod'",
+      "route": "quality_feedback:test"
+    },
+    "connector_required": {
+      "source": "payload.toolsets.connectors.length",
+      "when": "> 0",
+      "route": "collaboration_flow:build"
+    }
+  },
   "dashboards": {
     "exec_overview": [
       "task_throughput",

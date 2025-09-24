@@ -1,0 +1,41 @@
+{
+  "version": "1.0",
+  "mbti": {
+    "entj": {
+      "detail_oriented": 55,
+      "collaborative": 65,
+      "proactive": 85,
+      "strategic": 90,
+      "empathetic": 45,
+      "experimental": 60,
+      "efficient": 80
+    },
+    "intj": {
+      "detail_oriented": 70,
+      "collaborative": 45,
+      "proactive": 70,
+      "strategic": 90,
+      "empathetic": 40,
+      "experimental": 65,
+      "efficient": 75
+    },
+    "enfp": {
+      "detail_oriented": 45,
+      "collaborative": 80,
+      "proactive": 75,
+      "strategic": 65,
+      "empathetic": 80,
+      "experimental": 85,
+      "efficient": 55
+    },
+    "istj": {
+      "detail_oriented": 85,
+      "collaborative": 55,
+      "proactive": 55,
+      "strategic": 70,
+      "empathetic": 45,
+      "experimental": 40,
+      "efficient": 85
+    }
+  }
+}

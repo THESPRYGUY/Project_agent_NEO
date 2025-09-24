@@ -1,0 +1,73 @@
+<!--
+  @version 1.0.0
+  @changelog Refactored primary domain selector into cascading panels with NAICS handoff.
+  @license Licensed under the Statistics Canada Open Licence; NAICS 2022 v1.0 reference data.
+-->
+<section class="domain-selector" aria-labelledby="primary-domain-heading">
+  <header>
+    <h2 id="primary-domain-heading">Primary Domain</h2>
+    <p class="domain-selector__helper">
+      Select a top-level focus, refine the subdomain, and capture contextual tags. Sector domains require an aligned
+      NAICS classification before saving.
+    </p>
+  </header>
+
+  <fieldset class="domain-selector__fieldset" aria-describedby="domain-top-helper">
+    <legend class="domain-selector__legend">Top-Level Domain</legend>
+    <div class="domain-selector__control">
+      <label class="domain-selector__label" for="primary-domain-top">Tier</label>
+      <select id="primary-domain-top" name="primary-domain-top" aria-required="true">
+        <option value="" hidden>Select a tier</option>
+      </select>
+      <p id="domain-top-helper" class="domain-selector__helper">
+        Choose the organizational vantage point. Strategic functions unlock policy and governance emphasis; sector
+        domains unlock NAICS alignment.
+      </p>
+    </div>
+  </fieldset>
+
+  <fieldset class="domain-selector__fieldset" aria-describedby="domain-mid-helper">
+    <legend class="domain-selector__legend">Subdomain</legend>
+    <div class="domain-selector__control" role="group" aria-labelledby="domain-mid-label">
+      <span id="domain-mid-label" class="domain-selector__label">Curated focus areas</span>
+      <ul class="domain-selector__listbox" role="listbox" aria-label="Subdomain options" aria-live="polite"></ul>
+      <p id="domain-mid-helper" class="domain-selector__helper">
+        Subdomain options update based on the selected tier. Keyboard navigation: use Tab to enter, arrow keys to cycle,
+        and Space or Enter to confirm.
+      </p>
+    </div>
+  </fieldset>
+
+  <fieldset class="domain-selector__fieldset" aria-describedby="domain-tags-helper">
+    <legend class="domain-selector__legend">Context Tags</legend>
+    <div class="domain-selector__control">
+      <label class="domain-selector__label" for="domain-tags-input">Add tags</label>
+      <input id="domain-tags-input" type="text" name="domain-tags" autocomplete="off" spellcheck="false"
+        placeholder="e.g., ERCOT, hyperscale, privacy-review" aria-describedby="domain-tags-helper">
+      <div class="domain-selector__tags" role="list" aria-live="polite"></div>
+      <p id="domain-tags-helper" class="domain-selector__helper">
+        Tags are stored in kebab-case automatically. Suggested tags appear below; use comma, semicolon, or Enter to add
+        multiple values. Prior "Toolsets" inputs are migrated into tags for continuity.
+      </p>
+    </div>
+    <div class="domain-selector__control">
+      <span class="domain-selector__label">Suggested tags</span>
+      <ul class="domain-selector__listbox" role="list" aria-label="Suggested tags"></ul>
+    </div>
+  </fieldset>
+
+  <section class="domain-selector__fieldset" id="naics-panel-host" hidden aria-live="polite">
+    <h3 class="domain-selector__legend">Industry Classification (NAICS 2022)</h3>
+    <p class="domain-selector__helper">
+      Sector domain selections require a NAICS code. Navigate the cascading tree or search by code/title. Selection is
+      retained offline; no external lookups occur.
+    </p>
+  </section>
+
+  <footer class="domain-selector__actions">
+    <button type="button" class="secondary" data-action="reset-domain">Reset</button>
+    <button type="button" data-action="save-domain" disabled>Save Domain</button>
+  </footer>
+
+  <ul class="domain-selector__errors" role="alert" aria-live="assertive"></ul>
+</section>

@@ -1,0 +1,121 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "PreferencesEnvelope",
+  "type": "object",
+  "required": [
+    "autonomy",
+    "confidence",
+    "collaboration",
+    "comm_style",
+    "collab_mode",
+    "prefs_knobs",
+    "provenance",
+    "version"
+  ],
+  "properties": {
+    "autonomy": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "multipleOf": 5
+    },
+    "confidence": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "multipleOf": 5
+    },
+    "collaboration": {
+      "type": "integer",
+      "minimum": 0,
+      "maximum": 100,
+      "multipleOf": 5
+    },
+    "comm_style": {
+      "type": "string",
+      "enum": [
+        "formal",
+        "conversational",
+        "executive_brief",
+        "technical_deep"
+      ]
+    },
+    "collab_mode": {
+      "type": "string",
+      "enum": [
+        "solo",
+        "cross_functional",
+        "pair_build",
+        "review_first"
+      ]
+    },
+    "prefs_knobs": {
+      "type": "object",
+      "readOnly": true,
+      "required": [
+        "confirmation_gate",
+        "rec_depth",
+        "handoff_freq",
+        "communication",
+        "collaboration"
+      ],
+      "properties": {
+        "confirmation_gate": {
+          "type": "string",
+          "enum": ["none", "light", "strict"]
+        },
+        "rec_depth": {
+          "type": "string",
+          "enum": ["short", "balanced", "deep"]
+        },
+        "handoff_freq": {
+          "type": "string",
+          "enum": ["low", "medium", "high"]
+        },
+        "communication": {
+          "type": "object",
+          "required": [
+            "word_cap",
+            "bulletize_default",
+            "include_call_to_action",
+            "allow_extended_rationale",
+            "include_code_snippets"
+          ],
+          "properties": {
+            "word_cap": {
+              "type": ["integer", "null"],
+              "minimum": 0
+            },
+            "bulletize_default": { "type": "boolean" },
+            "include_call_to_action": { "type": "boolean" },
+            "allow_extended_rationale": { "type": "boolean" },
+            "include_code_snippets": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        },
+        "collaboration": {
+          "type": "object",
+          "required": [
+            "require_pair_confirmation",
+            "require_review_handoff"
+          ],
+          "properties": {
+            "require_pair_confirmation": { "type": "boolean" },
+            "require_review_handoff": { "type": "boolean" }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": false
+    },
+    "provenance": {
+      "type": "string",
+      "enum": ["manual", "preset_applied", "preset_edited"]
+    },
+    "version": {
+      "type": "string",
+      "const": "1.0"
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,165 @@
+/**
+ * @version 1.0.0
+ * @changelog Accessible layout and focus treatments for the primary domain selector.
+ * @license Licensed under the Statistics Canada Open Licence; NAICS 2022 v1.0 reference data.
+ */
+
+.domain-selector {
+  display: grid;
+  gap: 1.25rem;
+  padding: 1.5rem;
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #d5d9e2;
+  box-shadow: 0 8px 24px rgba(20, 38, 74, 0.08);
+  max-width: 920px;
+}
+
+.domain-selector__fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+  display: grid;
+  gap: 0.75rem;
+}
+
+.domain-selector__legend {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #1f2f4c;
+}
+
+.domain-selector__control {
+  display: grid;
+  gap: 0.4rem;
+}
+
+.domain-selector__label {
+  font-weight: 600;
+  color: #1f2f4c;
+}
+
+.domain-selector select,
+.domain-selector input,
+.domain-selector textarea,
+.domain-selector button {
+  font: inherit;
+}
+
+.domain-selector select,
+.domain-selector input[type="text"] {
+  border: 1px solid #c5cad7;
+  border-radius: 8px;
+  padding: 0.5rem 0.75rem;
+  background: #fdfdfd;
+  color: #12203b;
+}
+
+.domain-selector select:focus-visible,
+.domain-selector input:focus-visible,
+.domain-selector button:focus-visible {
+  outline: 3px solid #2669ff;
+  outline-offset: 2px;
+  border-color: #2669ff;
+}
+
+.domain-selector__listbox {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.domain-selector__option {
+  list-style: none;
+  margin: 0;
+}
+
+.domain-selector__option button {
+  border: 1px solid #8ca4ff;
+  background: #eff3ff;
+  color: #1b2d63;
+  border-radius: 999px;
+  padding: 0.35rem 0.75rem;
+  cursor: pointer;
+  transition: background 160ms ease;
+}
+
+.domain-selector__option button[aria-pressed="true"] {
+  background: #233f8c;
+  color: #ffffff;
+  border-color: #233f8c;
+}
+
+.domain-selector__option button:hover {
+  background: #dce6ff;
+}
+
+.domain-selector__helper {
+  font-size: 0.85rem;
+  color: #3d4d70;
+}
+
+.domain-selector__errors {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  color: #a4202d;
+  font-size: 0.9rem;
+}
+
+.domain-selector__errors li::before {
+  content: "⚠";
+  margin-right: 0.4rem;
+}
+
+.domain-selector__tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+.domain-selector__tag {
+  background: #1f2f4c;
+  color: #f0f3ff;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+}
+
+.domain-selector__tag button {
+  background: none;
+  border: none;
+  color: inherit;
+  cursor: pointer;
+  padding: 0;
+  margin-left: 0.4rem;
+}
+
+.domain-selector__actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  margin-top: 0.5rem;
+}
+
+.domain-selector__actions button {
+  border-radius: 10px;
+  border: none;
+  background: #1749ff;
+  color: #ffffff;
+  padding: 0.6rem 1.6rem;
+  cursor: pointer;
+  font-weight: 600;
+  transition: opacity 160ms ease;
+}
+
+.domain-selector__actions button[disabled] {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.domain-selector__actions button.secondary {
+  background: #eef1ff;
+  color: #1f2f4c;
+}

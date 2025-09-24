@@ -1,0 +1,79 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Project NEO Agent Profile",
+  "type": "object",
+  "required": ["persona", "domain", "toolsets", "traits", "preferences"],
+  "properties": {
+    "persona": {
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": { "type": "string", "minLength": 1 },
+        "mbti": { "type": "string", "pattern": "^[ei][ns][tf][jp]$" },
+        "summary": { "type": "string" }
+      },
+      "additionalProperties": true
+    },
+    "domain": {
+      "$ref": "#/definitions/domain"
+    },
+    "industry": {
+      "type": "object",
+      "properties": {
+        "naics": { "$ref": "#/definitions/naics" }
+      },
+      "additionalProperties": true
+    },
+    "toolsets": {
+      "$ref": "toolsets.schema.json"
+    },
+    "traits": {
+      "$ref": "traits.schema.json"
+    },
+    "preferences": {
+      "$ref": "preferences.schema.json"
+    }
+  },
+  "additionalProperties": true,
+  "definitions": {
+    "domain": {
+      "type": "object",
+      "required": ["topLevel", "subdomain", "tags"],
+      "properties": {
+        "topLevel": {
+          "type": "string",
+          "enum": [
+            "Strategic Functions",
+            "Sector Domains",
+            "Technical Domains",
+            "Support Domains"
+          ]
+        },
+        "subdomain": { "type": "string", "minLength": 1 },
+        "tags": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[a-z0-9]+(?:-[a-z0-9]+)*$" },
+          "uniqueItems": true
+        },
+        "naics": { "$ref": "#/definitions/naics" }
+      },
+      "additionalProperties": true
+    },
+    "naics": {
+      "type": "object",
+      "required": ["code", "title", "level", "version", "path"],
+      "properties": {
+        "code": { "type": "string", "pattern": "^[0-9]+$" },
+        "title": { "type": "string" },
+        "level": { "type": "integer", "minimum": 2, "maximum": 6 },
+        "version": { "type": "string", "const": "NAICS 2022 v1.0" },
+        "path": {
+          "type": "array",
+          "items": { "type": "string", "pattern": "^[0-9]+$" },
+          "minItems": 1
+        }
+      },
+      "additionalProperties": false
+    }
+  }
+}

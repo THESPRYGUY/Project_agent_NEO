@@ -1,0 +1,112 @@
+/*
+ * @version 1.0.0
+ * @changelog Introduced weighted traits panel with accessible chip and slider styling.
+ * @license MIT; UI styles authored for the Project NEO intake experience.
+ */
+
+:root {
+  --traits-chip-bg: #f0f4ff;
+  --traits-chip-border: #b9c6ff;
+  --traits-chip-active: #1f3c88;
+  --traits-chip-active-text: #ffffff;
+  --traits-slider-track: #d0dcff;
+  --traits-slider-thumb: #1f3c88;
+  --traits-focus-ring: 2px solid #ff9f1c;
+}
+
+.traits-panel {
+  display: grid;
+  gap: 0.75rem;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+}
+
+.traits-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  background: var(--traits-chip-bg);
+  border: 1px solid var(--traits-chip-border);
+  border-radius: 999px;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.875rem;
+  color: #102a43;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.traits-chip[data-active="true"] {
+  background: var(--traits-chip-active);
+  border-color: var(--traits-chip-active);
+  color: var(--traits-chip-active-text);
+}
+
+.traits-chip:focus-visible {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(31, 60, 136, 0.3);
+  border-color: #102a43;
+}
+
+.traits-chip .traits-pill {
+  margin-left: 0.5rem;
+  background: rgba(16, 42, 67, 0.08);
+  border-radius: 999px;
+  padding: 0.1rem 0.45rem;
+  font-variant-numeric: tabular-nums;
+}
+
+.traits-chip[data-active="true"] .traits-pill {
+  background: rgba(255, 255, 255, 0.25);
+}
+
+.traits-slider-drawer {
+  display: none;
+  padding: 0.75rem;
+  border-radius: 0.75rem;
+  background: #ffffff;
+  border: 1px solid #e1e7ff;
+  box-shadow: inset 0 1px 2px rgba(17, 45, 78, 0.08);
+}
+
+.traits-slider-drawer[data-open="true"] {
+  display: block;
+}
+
+.traits-slider {
+  width: 100%;
+  accent-color: var(--traits-chip-active);
+}
+
+.traits-slider:focus-visible {
+  outline: var(--traits-focus-ring);
+  outline-offset: 4px;
+}
+
+.traits-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.traits-actions button {
+  border-radius: 0.5rem;
+  border: 1px solid #1f3c88;
+  background: #ffffff;
+  color: #1f3c88;
+  padding: 0.45rem 0.75rem;
+  font-size: 0.85rem;
+  cursor: pointer;
+}
+
+.traits-actions button.primary {
+  background: #1f3c88;
+  color: #ffffff;
+}
+
+.traits-actions button:focus-visible {
+  outline: var(--traits-focus-ring);
+  outline-offset: 2px;
+}
+
+.traits-disclaimer {
+  font-size: 0.75rem;
+  color: #475569;
+}

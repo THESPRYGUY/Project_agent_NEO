@@ -1,0 +1,11 @@
+{
+  "pack": "Prompt Pack v2",
+  "version": "2.1.0",
+  "variables": ["capabilities", "connectors", "ops", "governance", "traits", "preferences", "prefs_knobs"],
+  "templates": {
+    "agent_brief": "Capabilities: ${capabilities}\nConnectors: ${connectors}\nOps: ${ops}\nGovernance: ${governance}\nTraits: ${traits}\nPreferences: ${preferences}\nPreference Knobs: ${prefs_knobs}",
+    "planner_context": "Planner knobs tuned by traits ${traits} and preferences ${prefs_knobs}.",
+    "builder_tone": "Communication style ${preferences} with directives ${prefs_knobs}",
+    "governance_callout": "Storage ${governance} ensures retention guardrails while ops ${ops} define execution guardrails."
+  }
+}

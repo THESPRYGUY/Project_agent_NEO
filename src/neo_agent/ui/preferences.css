@@ -1,0 +1,115 @@
+/**
+ * @version 1.0.0
+ * @changelog Styles for the normalized Preferences panel with sliders, dropdowns, and presets.
+ * @license MIT; handcrafted for offline Project NEO intake UI.
+ */
+
+.preferences-module {
+  display: grid;
+  gap: 1rem;
+  background: #ffffff;
+  border-radius: 12px;
+  padding: 1.25rem;
+  border: 1px solid #d7def0;
+}
+
+.preferences-module .pane-title {
+  font-size: 1rem;
+  font-weight: 600;
+  color: #143c73;
+  margin: 0;
+}
+
+.preference-slider {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 0.35rem;
+}
+
+.preference-slider label {
+  font-weight: 600;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  color: #1a2a4a;
+}
+
+.preference-slider output {
+  font-size: 0.85rem;
+  font-weight: 500;
+  background: #eef3ff;
+  border-radius: 999px;
+  padding: 0.15rem 0.6rem;
+  color: #1b3c72;
+}
+
+.preference-slider input[type="range"] {
+  width: 100%;
+  accent-color: #1f5fbf;
+}
+
+.preference-slider .descriptor {
+  font-size: 0.8rem;
+  color: #415175;
+}
+
+.preferences-dropdowns {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.preferences-dropdowns label {
+  display: grid;
+  gap: 0.35rem;
+  color: #162d57;
+  font-weight: 600;
+}
+
+.preferences-dropdowns select {
+  border-radius: 8px;
+  border: 1px solid #c5d1eb;
+  padding: 0.45rem 0.65rem;
+  font-size: 0.95rem;
+  color: #102342;
+  background: #ffffff;
+}
+
+.preferences-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.preferences-actions button {
+  background: #184f9c;
+  color: #ffffff;
+  border: none;
+  border-radius: 8px;
+  padding: 0.45rem 0.9rem;
+  font-size: 0.9rem;
+  cursor: pointer;
+}
+
+.preferences-actions button.secondary {
+  background: #e1e7f8;
+  color: #123867;
+}
+
+.preferences-module .banner {
+  border-left: 4px solid #f0b429;
+  background: #fff6e3;
+  padding: 0.6rem 0.8rem;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  color: #6a4a06;
+}
+
+.preferences-module .helper-text {
+  font-size: 0.8rem;
+  color: #4a5b7a;
+}
+
+.preferences-module :focus-visible {
+  outline: 3px solid #4c8dff;
+  outline-offset: 2px;
+}

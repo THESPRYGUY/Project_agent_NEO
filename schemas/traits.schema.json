@@ -1,0 +1,51 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "https://project-neo.example.com/schemas/traits.schema.json",
+  "title": "TraitsEnvelope",
+  "description": "Weighted trait preferences persisted from the intake experience.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["traits", "provenance", "version"],
+  "properties": {
+    "version": {
+      "type": "string",
+      "enum": ["1.0"]
+    },
+    "traits": {
+      "type": "object",
+      "description": "Normalized trait weights between 0 and 100.",
+      "additionalProperties": false,
+      "required": [
+        "detail_oriented",
+        "collaborative",
+        "proactive",
+        "strategic",
+        "empathetic",
+        "experimental",
+        "efficient"
+      ],
+      "properties": {
+        "detail_oriented": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "collaborative": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "proactive": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "strategic": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "empathetic": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "experimental": { "type": "integer", "minimum": 0, "maximum": 100 },
+        "efficient": { "type": "integer", "minimum": 0, "maximum": 100 }
+      }
+    },
+    "provenance": {
+      "type": "string",
+      "enum": [
+        "manual",
+        "mbti_suggested",
+        "mbti_suggested+edited"
+      ]
+    },
+    "mbti": {
+      "type": "string",
+      "pattern": "^[ei][ns][tf][jp]$",
+      "description": "Lowercase MBTI code that informed the suggestion, when provided."
+    }
+  }
+}

@@ -1,0 +1,834 @@
+{
+  "_meta": {
+    "@version": "NAICS 2022 v1.0",
+    "@changelog": "Initial subset covering all sector codes with representative child nodes.",
+    "@license": "Statistics Canada Open Licence"
+  },
+  "tree": [
+    {
+      "code": "11",
+      "title": "Agriculture, forestry, fishing and hunting",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["11"],
+      "children": [
+        {
+          "code": "111",
+          "title": "Crop production",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["11", "111"],
+          "children": [
+            {
+              "code": "1111",
+              "title": "Oilseed and grain farming",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["11", "111", "1111"],
+              "children": [
+                {
+                  "code": "111120",
+                  "title": "Oilseed (except soybean) farming",
+                  "level": 6,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["11", "111", "1111", "111120"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "21",
+      "title": "Mining, quarrying, and oil and gas extraction",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["21"],
+      "children": [
+        {
+          "code": "211",
+          "title": "Oil and gas extraction",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["21", "211"],
+          "children": [
+            {
+              "code": "2111",
+              "title": "Oil and gas extraction",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["21", "211", "2111"],
+              "children": [
+                {
+                  "code": "211120",
+                  "title": "Crude petroleum extraction",
+                  "level": 6,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["21", "211", "2111", "211120"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "22",
+      "title": "Utilities",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["22"],
+      "children": [
+        {
+          "code": "221",
+          "title": "Utilities",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["22", "221"],
+          "children": [
+            {
+              "code": "2211",
+              "title": "Electric power generation, transmission and distribution",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["22", "221", "2211"],
+              "children": [
+                {
+                  "code": "221122",
+                  "title": "Electric power distribution",
+                  "level": 6,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["22", "221", "2211", "221122"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "23",
+      "title": "Construction",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["23"],
+      "children": [
+        {
+          "code": "236",
+          "title": "Construction of buildings",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["23", "236"],
+          "children": [
+            {
+              "code": "2361",
+              "title": "Residential building construction",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["23", "236", "2361"],
+              "children": [
+                {
+                  "code": "236115",
+                  "title": "New single-family housing construction",
+                  "level": 6,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["23", "236", "2361", "236115"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "31",
+      "title": "Manufacturing (food)",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["31"],
+      "children": [
+        {
+          "code": "311",
+          "title": "Food manufacturing",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["31", "311"],
+          "children": [
+            {
+              "code": "3118",
+              "title": "Bakeries and tortilla manufacturing",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["31", "311", "3118"],
+              "children": [
+                {
+                  "code": "311810",
+                  "title": "Bread and bakery product manufacturing",
+                  "level": 6,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["31", "311", "3118", "311810"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "32",
+      "title": "Manufacturing (wood)",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["32"],
+      "children": [
+        {
+          "code": "321",
+          "title": "Wood product manufacturing",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["32", "321"],
+          "children": [
+            {
+              "code": "3219",
+              "title": "Other wood product manufacturing",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["32", "321", "3219"],
+              "children": [
+                {
+                  "code": "321920",
+                  "title": "Wood container and pallet manufacturing",
+                  "level": 6,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["32", "321", "3219", "321920"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "33",
+      "title": "Manufacturing (machinery)",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["33"],
+      "children": [
+        {
+          "code": "333",
+          "title": "Machinery manufacturing",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["33", "333"],
+          "children": [
+            {
+              "code": "3332",
+              "title": "Industrial machinery manufacturing",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["33", "333", "3332"],
+              "children": [
+                {
+                  "code": "333248",
+                  "title": "All other industrial machinery manufacturing",
+                  "level": 6,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["33", "333", "3332", "333248"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "42",
+      "title": "Wholesale trade",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["42"],
+      "children": [
+        {
+          "code": "423",
+          "title": "Merchant wholesalers, durable goods",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["42", "423"],
+          "children": [
+            {
+              "code": "4234",
+              "title": "Professional and commercial equipment and supplies merchant wholesalers",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["42", "423", "4234"],
+              "children": [
+                {
+                  "code": "423430",
+                  "title": "Computer and software merchant wholesalers",
+                  "level": 6,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["42", "423", "4234", "423430"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "44",
+      "title": "Retail trade (motor vehicle)",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["44"],
+      "children": [
+        {
+          "code": "441",
+          "title": "Motor vehicle and parts dealers",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["44", "441"],
+          "children": [
+            {
+              "code": "4411",
+              "title": "Automobile dealers",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["44", "441", "4411"],
+              "children": [
+                {
+                  "code": "441110",
+                  "title": "New car dealers",
+                  "level": 6,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["44", "441", "4411", "441110"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "45",
+      "title": "Retail trade (non-store)",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["45"],
+      "children": [
+        {
+          "code": "454",
+          "title": "Non-store retailers",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["45", "454"],
+          "children": [
+            {
+              "code": "4541",
+              "title": "Electronic shopping and mail-order houses",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["45", "454", "4541"],
+              "children": [
+                {
+                  "code": "454110",
+                  "title": "Electronic shopping and mail-order houses",
+                  "level": 6,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["45", "454", "4541", "454110"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "48",
+      "title": "Transportation (air)",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["48"],
+      "children": [
+        {
+          "code": "481",
+          "title": "Air transportation",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["48", "481"],
+          "children": [
+            {
+              "code": "4811",
+              "title": "Scheduled air transportation",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["48", "481", "4811"],
+              "children": [
+                {
+                  "code": "481111",
+                  "title": "Scheduled passenger air transportation",
+                  "level": 6,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["48", "481", "4811", "481111"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "49",
+      "title": "Transportation (ground)",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["49"],
+      "children": [
+        {
+          "code": "492",
+          "title": "Couriers and messengers",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["49", "492"],
+          "children": [
+            {
+              "code": "4921",
+              "title": "Couriers",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["49", "492", "4921"],
+              "children": [
+                {
+                  "code": "492110",
+                  "title": "Couriers",
+                  "level": 6,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["49", "492", "4921", "492110"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "51",
+      "title": "Information and cultural industries",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["51"],
+      "children": [
+        {
+          "code": "518",
+          "title": "Data processing, hosting, and related services",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["51", "518"],
+          "children": [
+            {
+              "code": "5182",
+              "title": "Data processing, hosting, and related services",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["51", "518", "5182"],
+              "children": [
+                {
+                  "code": "51821",
+                  "title": "Data processing, hosting, and related services",
+                  "level": 5,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["51", "518", "5182", "51821"],
+                  "children": [
+                    {
+                      "code": "518210",
+                      "title": "Data processing, hosting, and related services",
+                      "level": 6,
+                      "version": "NAICS 2022 v1.0",
+                      "path": ["51", "518", "5182", "51821", "518210"]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "52",
+      "title": "Finance and insurance",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["52"],
+      "children": [
+        {
+          "code": "522",
+          "title": "Credit intermediation and related activities",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["52", "522"],
+          "children": [
+            {
+              "code": "5221",
+              "title": "Depository credit intermediation",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["52", "522", "5221"],
+              "children": [
+                {
+                  "code": "522110",
+                  "title": "Commercial banking",
+                  "level": 6,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["52", "522", "5221", "522110"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "53",
+      "title": "Real estate and rental and leasing",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["53"],
+      "children": [
+        {
+          "code": "531",
+          "title": "Real estate",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["53", "531"],
+          "children": [
+            {
+              "code": "5313",
+              "title": "Activities related to real estate",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["53", "531", "5313"],
+              "children": [
+                {
+                  "code": "531390",
+                  "title": "Other activities related to real estate",
+                  "level": 6,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["53", "531", "5313", "531390"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "54",
+      "title": "Professional, scientific and technical services",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["54"],
+      "children": [
+        {
+          "code": "541",
+          "title": "Professional, scientific and technical services",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["54", "541"],
+          "children": [
+            {
+              "code": "5415",
+              "title": "Computer systems design and related services",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["54", "541", "5415"],
+              "children": [
+                {
+                  "code": "541512",
+                  "title": "Computer systems design services",
+                  "level": 6,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["54", "541", "5415", "541512"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "55",
+      "title": "Management of companies and enterprises",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["55"],
+      "children": [
+        {
+          "code": "551",
+          "title": "Management of companies and enterprises",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["55", "551"],
+          "children": [
+            {
+              "code": "5511",
+              "title": "Management of companies and enterprises",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["55", "551", "5511"],
+              "children": [
+                {
+                  "code": "551114",
+                  "title": "Corporate, subsidiary, and regional managing offices",
+                  "level": 6,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["55", "551", "5511", "551114"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "56",
+      "title": "Administrative and support, waste management and remediation services",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["56"],
+      "children": [
+        {
+          "code": "561",
+          "title": "Administrative and support services",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["56", "561"],
+          "children": [
+            {
+              "code": "5613",
+              "title": "Employment services",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["56", "561", "5613"],
+              "children": [
+                {
+                  "code": "561312",
+                  "title": "Executive search services",
+                  "level": 6,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["56", "561", "5613", "561312"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "61",
+      "title": "Educational services",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["61"],
+      "children": [
+        {
+          "code": "611",
+          "title": "Educational services",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["61", "611"],
+          "children": [
+            {
+              "code": "6113",
+              "title": "Colleges, universities, and professional schools",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["61", "611", "6113"],
+              "children": [
+                {
+                  "code": "611310",
+                  "title": "Colleges, universities, and professional schools",
+                  "level": 6,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["61", "611", "6113", "611310"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "62",
+      "title": "Health care and social assistance",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["62"],
+      "children": [
+        {
+          "code": "621",
+          "title": "Ambulatory health care services",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["62", "621"],
+          "children": [
+            {
+              "code": "6215",
+              "title": "Medical and diagnostic laboratories",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["62", "621", "6215"],
+              "children": [
+                {
+                  "code": "621511",
+                  "title": "Medical laboratories",
+                  "level": 6,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["62", "621", "6215", "621511"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "71",
+      "title": "Arts, entertainment and recreation",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["71"],
+      "children": [
+        {
+          "code": "711",
+          "title": "Performing arts, spectator sports and related industries",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["71", "711"],
+          "children": [
+            {
+              "code": "7113",
+              "title": "Promoters of performing arts and sports",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["71", "711", "7113"],
+              "children": [
+                {
+                  "code": "711320",
+                  "title": "Promoters of performing arts and sports",
+                  "level": 6,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["71", "711", "7113", "711320"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "72",
+      "title": "Accommodation and food services",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["72"],
+      "children": [
+        {
+          "code": "722",
+          "title": "Food services and drinking places",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["72", "722"],
+          "children": [
+            {
+              "code": "7225",
+              "title": "Restaurants and other eating places",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["72", "722", "7225"],
+              "children": [
+                {
+                  "code": "722511",
+                  "title": "Full-service restaurants",
+                  "level": 6,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["72", "722", "7225", "722511"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "81",
+      "title": "Other services (except public administration)",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["81"],
+      "children": [
+        {
+          "code": "811",
+          "title": "Repair and maintenance",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["81", "811"],
+          "children": [
+            {
+              "code": "8111",
+              "title": "Automotive repair and maintenance",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["81", "811", "8111"],
+              "children": [
+                {
+                  "code": "811111",
+                  "title": "General automotive repair",
+                  "level": 6,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["81", "811", "8111", "811111"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "code": "92",
+      "title": "Public administration",
+      "level": 2,
+      "version": "NAICS 2022 v1.0",
+      "path": ["92"],
+      "children": [
+        {
+          "code": "921",
+          "title": "Executive, legislative and other general government support",
+          "level": 3,
+          "version": "NAICS 2022 v1.0",
+          "path": ["92", "921"],
+          "children": [
+            {
+              "code": "9211",
+              "title": "Executive, legislative and other general government support",
+              "level": 4,
+              "version": "NAICS 2022 v1.0",
+              "path": ["92", "921", "9211"],
+              "children": [
+                {
+                  "code": "921110",
+                  "title": "Executive offices",
+                  "level": 6,
+                  "version": "NAICS 2022 v1.0",
+                  "path": ["92", "921", "9211", "921110"]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

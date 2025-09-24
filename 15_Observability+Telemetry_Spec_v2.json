@@ -1,0 +1,147 @@
+{
+  "pack": "Observability + Telemetry Spec v2",
+  "version": "2.1.0",
+  "sinks": {
+    "metrics": {
+      "targets": ["kpi_dashboard", "quality_gates"],
+      "retention": "90d"
+    },
+    "audit": {
+      "targets": ["immutable_log"],
+      "retention": "365d"
+    }
+  },
+  "events": {
+    "intake": [
+      "domain:changed",
+      "domain:validated",
+      "naics:opened",
+      "naics:searched",
+      "naics:selected",
+      "intake:saved"
+    ],
+    "traits": [
+      {
+        "name": "traits:suggested",
+        "payload": ["agent_id", "mbti", "traits"],
+        "sinks": ["metrics", "audit"]
+      },
+      {
+        "name": "traits:accepted",
+        "payload": ["agent_id", "mbti", "mode"],
+        "sinks": ["metrics"]
+      },
+      {
+        "name": "traits:modified",
+        "payload": ["agent_id", "changed_keys", "before", "after", "provenance"],
+        "sinks": ["metrics", "audit"]
+      },
+      {
+        "name": "traits:reset_suggested",
+        "payload": ["agent_id", "mbti"],
+        "sinks": ["metrics"]
+      },
+      {
+        "name": "traits:reset_saved",
+        "payload": ["agent_id", "provenance"],
+        "sinks": ["audit"]
+      },
+      {
+        "name": "traits:saved",
+        "payload": ["agent_id", "traits", "provenance"],
+        "sinks": ["metrics", "audit"]
+      }
+    ],
+    "preferences": [
+      {
+        "name": "prefs:changed",
+        "payload": ["agent_id", "field", "value"],
+        "sinks": ["metrics"]
+      },
+      {
+        "name": "prefs:preset_previewed",
+        "payload": ["agent_id", "source", "mbti", "values"],
+        "sinks": ["metrics"]
+      },
+      {
+        "name": "prefs:preset_applied",
+        "payload": ["agent_id", "mode", "values"],
+        "sinks": ["metrics", "audit"]
+      },
+      {
+        "name": "prefs:reset",
+        "payload": ["agent_id", "target"],
+        "sinks": ["metrics"]
+      },
+      {
+        "name": "prefs:saved",
+        "payload": ["agent_id", "preferences", "knobs"],
+        "sinks": ["metrics", "audit"]
+      },
+      {
+        "name": "prefs:conflict_blocked",
+        "payload": ["agent_id", "autonomy", "confirmation_gate"],
+        "sinks": ["audit"]
+      }
+    ],
+    "toolsets": [
+      {
+        "name": "toolsets:capability_selected",
+        "payload": ["agent_id", "capabilities"],
+        "sinks": ["metrics"]
+      },
+      {
+        "name": "toolsets:connector_scope_requested",
+        "payload": ["agent_id", "name", "scope", "enabled"],
+        "sinks": ["metrics", "audit"]
+      },
+      {
+        "name": "toolsets:connector_instance_added",
+        "payload": ["agent_id", "name", "instance"],
+        "sinks": ["audit"]
+      },
+      {
+        "name": "toolsets:governance_hint_set",
+        "payload": ["agent_id", "storage", "retention", "residency"],
+        "sinks": ["metrics"]
+      },
+      {
+        "name": "toolsets:ops_changed",
+        "payload": ["agent_id", "env", "dry_run", "latency_slo_ms", "cost_budget_usd"],
+        "sinks": ["metrics", "audit"]
+      },
+      {
+        "name": "toolsets:saved",
+        "payload": ["agent_id", "capabilities", "connectors", "ops"],
+        "sinks": ["metrics", "audit"]
+      }
+    ],
+    "repo": [
+      {
+        "name": "repo:validate",
+        "payload": ["status", "issues_count", "duration_ms"],
+        "sinks": ["metrics", "audit"]
+      },
+      {
+        "name": "repo:render",
+        "payload": ["files_created", "files_updated", "bytes", "duration_ms"],
+        "sinks": ["metrics"]
+      },
+      {
+        "name": "repo:package",
+        "payload": ["zip_bytes", "git_init", "duration_ms"],
+        "sinks": ["metrics", "audit"]
+      },
+      {
+        "name": "repo:done",
+        "payload": ["manifest_sha", "inputs_sha256", "duration_ms"],
+        "sinks": ["metrics", "audit"]
+      },
+      {
+        "name": "repo:error",
+        "payload": ["code", "stage", "msg"],
+        "sinks": ["audit"]
+      }
+    ]
+  }
+}

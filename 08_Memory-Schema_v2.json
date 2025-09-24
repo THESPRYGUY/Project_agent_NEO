@@ -39,5 +39,27 @@
     "at_rest": "AES-256",
     "in_transit": "TLS1.3",
     "key_rotation_days": 30
+  },
+  "storage_profiles": {
+    "kv": {
+      "description": "Key-value store optimized for fast retrieval of task context",
+      "default": true,
+      "supports_vector": false
+    },
+    "vector": {
+      "description": "Vector index for semantic recall when toolsets enable data_rag",
+      "default": false,
+      "supports_vector": true
+    },
+    "none": {
+      "description": "Ephemeral execution only; no persistence permitted",
+      "default": false,
+      "supports_vector": false
+    }
+  },
+  "data_residency": {
+    "default": "auto",
+    "supported": ["auto", "ca", "us", "eu"],
+    "notes": "Selections enforce compute locality for stored artifacts."
   }
 }

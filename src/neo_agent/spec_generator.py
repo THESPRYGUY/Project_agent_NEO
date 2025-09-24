@@ -49,23 +49,49 @@ def _metadata_from_profile(profile: Mapping[str, Any]) -> Dict[str, Any]:
 
     agent = profile.get("agent", {})
     preferences = profile.get("preferences", {})
-    sliders = preferences.get("sliders", {})
-
-    attributes = profile.get("attributes", {})
-    selected_attributes = attributes.get("selected", [])
+    sliders = {
+        "autonomy": preferences.get("autonomy"),
+        "confidence": preferences.get("confidence"),
+        "collaboration": preferences.get("collaboration"),
+    }
+    legacy_sliders = preferences.get("sliders") if isinstance(preferences, Mapping) else None
+    if isinstance(legacy_sliders, Mapping):
+        for key in ("autonomy", "confidence", "collaboration"):
+            value = legacy_sliders.get(key)
+            if value is not None:
+                sliders[key] = value
 
     metadata: Dict[str, Any] = {
         "domain": agent.get("domain"),
         "role": agent.get("role"),
         "persona": agent.get("persona"),
         "toolsets": profile.get("toolsets", {}).get("selected", []),
-        "attributes": selected_attributes,
         "custom_notes": profile.get("notes", ""),
         "sliders": sliders,
-        "collaboration_mode": preferences.get("collaboration_mode"),
-        "communication_style": preferences.get("communication_style"),
+        "collaboration_mode": preferences.get("collab_mode")
+        or preferences.get("collaboration_mode"),
+        "communication_style": preferences.get("comm_style")
+        or preferences.get("communication_style"),
         "linkedin": profile.get("linkedin", {}),
     }
+
+    persona_section = profile.get("persona", {})
+    if isinstance(persona_section, Mapping):
+        mbti = persona_section.get("mbti")
+        if mbti:
+            metadata["mbti"] = mbti
+
+    traits_section = profile.get("traits")
+    traits = traits_section.get("traits") if isinstance(traits_section, Mapping) else None
+    if isinstance(traits, Mapping):
+        metadata["traits"] = dict(traits)
+        provenance = traits_section.get("provenance")
+        if provenance:
+            metadata["traits_provenance"] = provenance
+
+    prefs_knobs = preferences.get("prefs_knobs")
+    if isinstance(prefs_knobs, Mapping):
+        metadata["prefs_knobs"] = dict(prefs_knobs)
 
     return metadata
 

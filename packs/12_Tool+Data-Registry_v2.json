@@ -1,0 +1,87 @@
+{
+  "pack": "Tool + Data Registry v2",
+  "version": "2.0.0",
+  "least_privilege": true,
+  "connectors": [
+    {
+      "name": "email",
+      "title": "Enterprise Email",
+      "description": "Send and read internal communications via vaulted mailbox.",
+      "least_privilege": true,
+      "scopes": {
+        "default": ["read/*", "send:internal"],
+        "optional": ["send:external"]
+      },
+      "instances": [
+        {
+          "label": "work",
+          "secret_ref": "vault://email/work",
+          "least_privilege": true
+        }
+      ]
+    },
+    {
+      "name": "calendar",
+      "title": "Calendar",
+      "description": "Read schedules and place temporary holds.",
+      "least_privilege": true,
+      "scopes": {
+        "default": ["read/*", "write:holds"],
+        "optional": ["write:events"]
+      }
+    },
+    {
+      "name": "make",
+      "title": "Make.com",
+      "description": "Trigger automation scenarios from orchestrated flows.",
+      "least_privilege": true,
+      "scopes": {
+        "default": ["run:scenario"],
+        "optional": ["manage:scenario"]
+      }
+    },
+    {
+      "name": "notion",
+      "title": "Notion",
+      "description": "Read databases and update task boards for delivery teams.",
+      "least_privilege": true,
+      "scopes": {
+        "default": ["read:db/*", "write:tasks"],
+        "optional": ["write:pages"]
+      }
+    },
+    {
+      "name": "gdrive",
+      "title": "Google Drive",
+      "description": "Access shared folders and publish reports to stakeholders.",
+      "least_privilege": true,
+      "scopes": {
+        "default": ["read:folders/*", "write:reports"],
+        "optional": ["write:any"]
+      }
+    },
+    {
+      "name": "sharepoint",
+      "title": "SharePoint",
+      "description": "Retrieve policy libraries and push controlled deliverables.",
+      "least_privilege": true,
+      "scopes": {
+        "default": ["read:policies/*", "write:reports"],
+        "optional": ["write:libraries"]
+      }
+    },
+    {
+      "name": "github",
+      "title": "GitHub",
+      "description": "Read and write repositories for CI-integrated automation.",
+      "least_privilege": true,
+      "scopes": {
+        "default": ["repo:read", "repo:write"],
+        "optional": ["repo:admin"]
+      }
+    }
+  ],
+  "approvals": {
+    "change_control": "CAIO approval required when optional scopes or production environments are enabled."
+  }
+}
