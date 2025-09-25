@@ -109,6 +109,7 @@ FORM_TEMPLATE = Template(
       .summary { margin-top: 2rem; }
       .summary pre { background: #0b1b36; color: #e3f6f5; padding: 1rem; border-radius: 8px; }
       .notice { margin-bottom: 1rem; color: #205072; }
+$persona_styles
     </style>
     <script>
       function updateSliderValue(id, value) {
@@ -203,7 +204,11 @@ FORM_TEMPLATE = Template(
       <button type="submit">Generate Agent Profile</button>
     </form>
 
+    $persona_tabs
     $summary
+    <script type="module">
+$persona_script
+    </script>
   </body>
 </html>
 """
@@ -227,17 +232,29 @@ def _summary_block(profile: Mapping[str, Any] | None, profile_path: str, spec_pa
     )
 
 
+
 class IntakeApplication:
     """Minimal WSGI application serving the intake workflow."""
 
     MAX_BODY_BYTES = 1_048_576
 
     def __init__(self, base_dir: Path | None = None) -> None:
+        self.project_root = Path(__file__).resolve().parents[2]
+        self.assets_root = self.project_root / "src"
+        self.ui_dir = self.assets_root / "ui"
+        self.persona_dir = self.assets_root / "persona"
         self.base_dir = self._resolve_base_dir(base_dir)
         self.profile_path = self.base_dir / "agent_profile.json"
         self.spec_dir = self.base_dir / "generated_specs"
         self.spec_dir.mkdir(parents=True, exist_ok=True)
-        LOGGER.debug("Initialised intake application with base_dir=%s", self.base_dir)
+        self.persona_state_path = self.base_dir / "persona_state.json"
+        self.persona_assets = self._load_persona_assets()
+        self.persona_config = self._load_persona_config()
+        LOGGER.debug(
+            "Initialised intake application with base_dir=%s persona_state=%s",
+            self.base_dir,
+            self.persona_state_path,
+        )
 
     @staticmethod
     def _resolve_base_dir(base_dir: Path | None) -> Path:
@@ -271,15 +288,64 @@ class IntakeApplication:
             updated.append(("Content-Length", str(size)))
         return updated
 
+    def _indent_block(self, content: str, spaces: int = 6) -> str:
+        if not content:
+            return ""
+        prefix = " " * spaces
+        return "\n".join(
+            f"{prefix}{line}" if line else "" for line in content.splitlines()
+        )
+
+
+
+    def _safe_read_text(self, path: Path) -> str:
+        if not path.exists():
+            LOGGER.warning("Persona asset missing: %s", path)
+            return ""
+        return path.read_text(encoding="utf-8")
+
+    def _safe_read_json(self, path: Path, default: Any) -> Any:
+        if not path.exists():
+            LOGGER.warning("Persona config missing: %s", path)
+            return default
+        try:
+            return json.loads(path.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            LOGGER.exception("Failed to parse JSON at %s", path)
+            return default
+
+    def _load_persona_assets(self) -> dict[str, str]:
+        html = self._safe_read_text(self.ui_dir / "persona_tabs.html")
+        css = self._indent_block(self._safe_read_text(self.ui_dir / "persona.css"))
+        script = self._indent_block(self._safe_read_text(self.ui_dir / "persona.js"), spaces=4)
+        return {"html": html, "css": css, "js": script}
+
+    def _load_persona_config(self) -> dict[str, Any]:
+        mbti = self._safe_read_json(self.persona_dir / "mbti_types.json", [])
+        priors = self._safe_read_json(
+            self.persona_dir / "priors_by_domain_role.json", {}
+        )
+        return {
+            "mbti_types": mbti,
+            "priors_by_domain_role": priors,
+        }
+
+    # Rendering helpers -------------------------------------------------
     def render_form(
         self,
         *,
         message: str | None = None,
         profile: Mapping[str, Any] | None = None,
     ) -> str:
+        persona_style_block = self.persona_assets.get("css", "")
+        persona_html = self.persona_assets.get("html", "")
+        persona_script = self.persona_assets.get("js", "")
         return FORM_TEMPLATE.substitute(
             notice=_notice(message),
             summary=_summary_block(profile, str(self.profile_path), str(self.spec_dir)),
+            persona_tabs=persona_html,
+            persona_styles=persona_style_block,
+            persona_script=persona_script,
             domain_options=_option_list(DOMAINS),
             role_options=_option_list(ROLES),
             toolset_checkboxes=_checkboxes("toolsets", TOOLSETS),
@@ -323,6 +389,7 @@ class IntakeApplication:
             },
             "notes": _get("notes", ""),
             "linkedin": linkedin,
+            "persona": self._load_persona_state(),
         }
 
         if linkedin:
@@ -378,6 +445,8 @@ class IntakeApplication:
     def _dispatch_api(
         self, path: str, method: str, environ: Mapping[str, Any]
     ) -> WSGIResponse:
+        if path.startswith("/api/persona/"):
+            return self._handle_persona_api(path, method, environ)
         if path in ("/api/health", "/api/healthz"):
             return self._json_response({"status": "ok"})
         if path == "/api/profile/validate":
@@ -404,37 +473,6 @@ class IntakeApplication:
             {"status": "not_found", "message": f"Unknown API path: {path}"},
             status="404 Not Found",
         )
-
-    def _validate_profile_payload(self, payload: Any) -> List[str]:
-        if not isinstance(payload, Mapping):
-            return ["Payload must be a JSON object."]
-        issues: List[str] = []
-        agent = payload.get("agent")
-        if not isinstance(agent, Mapping):
-            issues.append('"agent" must be an object containing intake attributes.')
-        else:
-            if not str(agent.get("name", "")).strip():
-                issues.append('"agent.name" is required.')
-            if "version" in agent and not str(agent.get("version", "")).strip():
-                issues.append('"agent.version" cannot be blank when provided.')
-        toolsets = payload.get("toolsets")
-        if toolsets is not None:
-            if not isinstance(toolsets, Mapping):
-                issues.append('"toolsets" must be an object when provided.')
-            else:
-                selected = toolsets.get("selected")
-                if selected is not None and not isinstance(selected, list):
-                    issues.append('"toolsets.selected" must be a list when provided.')
-        preferences = payload.get("preferences")
-        if preferences is not None:
-            if not isinstance(preferences, Mapping):
-                issues.append('"preferences" must be an object when provided.')
-            else:
-                sliders = preferences.get("sliders")
-                if sliders is not None and not isinstance(sliders, Mapping):
-                    issues.append('"preferences.sliders" must be an object when provided.')
-        return issues
-
     def wsgi_app(self, environ: Mapping[str, Any], start_response):
         start = time.perf_counter()
         method = str(environ.get("REQUEST_METHOD", "GET")).upper()
@@ -508,6 +546,106 @@ class IntakeApplication:
             duration_ms,
         )
         return [response_body]
+
+
+    def _handle_persona_api(
+        self, path: str, method: str, environ: Mapping[str, Any]
+    ) -> WSGIResponse:
+        if path == "/api/persona/config" and method == "GET":
+            return self._json_response(self.persona_config)
+        if path == "/api/persona/state":
+            if method == "GET":
+                return self._json_response(self._load_persona_state())
+            if method == "POST":
+                raw = self._read_body(environ)
+                if not raw:
+                    return self._json_response(
+                        {"status": "invalid", "issues": ["Missing request body"]},
+                        status="400 Bad Request",
+                    )
+                try:
+                    payload = json.loads(raw.decode("utf-8"))
+                except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+                    return self._json_response(
+                        {"status": "invalid", "issues": [f"Invalid JSON payload: {exc}"]},
+                        status="400 Bad Request",
+                    )
+                state = self._save_persona_state(payload)
+                return self._json_response(state)
+            return self._method_not_allowed(["GET", "POST"])
+        return self._json_response(
+            {"status": "not_found", "message": f"Unknown persona path: {path}"},
+            status="404 Not Found",
+        )
+
+    def _save_persona_state(self, payload: Mapping[str, Any]) -> Dict[str, Any]:
+        if not isinstance(payload, Mapping):
+            raise ValueError("Persona payload must be a mapping")
+        operator = payload.get("operator") if isinstance(payload.get("operator"), Mapping) else None
+        agent = payload.get("agent") if isinstance(payload.get("agent"), Mapping) else None
+        alternates = payload.get("alternates")
+        history_limit = 5
+
+        state = self._load_persona_state()
+        history = state.get("history", [])
+        if state.get("operator") and state.get("agent"):
+            history.insert(0, {
+                "operator": state.get("operator"),
+                "agent": state.get("agent"),
+                "stored_at": state.get("updated_at"),
+            })
+            history = history[:history_limit]
+
+        new_state = {
+            "operator": operator,
+            "agent": agent,
+            "alternates": alternates if isinstance(alternates, list) else [],
+            "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+            "history": history,
+        }
+        with self.persona_state_path.open("w", encoding="utf-8") as handle:
+            json.dump(new_state, handle, indent=2)
+        return new_state
+
+    def _load_persona_state(self) -> Dict[str, Any]:
+        if not self.persona_state_path.exists():
+            return {"operator": None, "agent": None, "alternates": [], "history": []}
+        with self.persona_state_path.open("r", encoding="utf-8") as handle:
+            data = json.load(handle)
+        data.setdefault("history", [])
+        data.setdefault("alternates", [])
+        return data
+
+    def _validate_profile_payload(self, payload: Any) -> List[str]:
+        if not isinstance(payload, Mapping):
+            return ["Payload must be a JSON object."]
+        issues: List[str] = []
+        agent = payload.get("agent")
+        if not isinstance(agent, Mapping):
+            issues.append('"agent" must be an object containing intake attributes.')
+        else:
+            if not str(agent.get("name", "")).strip():
+                issues.append('"agent.name" is required.')
+            if "version" in agent and not str(agent.get("version", "")).strip():
+                issues.append('"agent.version" cannot be blank when provided.')
+        toolsets = payload.get("toolsets")
+        if toolsets is not None:
+            if not isinstance(toolsets, Mapping):
+                issues.append('"toolsets" must be an object when provided.')
+            else:
+                selected = toolsets.get("selected")
+                if selected is not None and not isinstance(selected, list):
+                    issues.append('"toolsets.selected" must be a list when provided.')
+        preferences = payload.get("preferences")
+        if preferences is not None:
+            if not isinstance(preferences, Mapping):
+                issues.append('"preferences" must be an object when provided.')
+            else:
+                sliders = preferences.get("sliders")
+                if sliders is not None and not isinstance(sliders, Mapping):
+                    issues.append('"preferences.sliders" must be an object when provided.')
+        return issues
+
 
     def serve(self, host: str | None = None, port: int | None = None) -> None:
         host_value = (host or os.getenv("HOST") or "127.0.0.1").strip() or "127.0.0.1"
