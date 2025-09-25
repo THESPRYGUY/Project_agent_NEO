@@ -63,3 +63,24 @@ pytest
 ## License
 
 Project NEO Agent is released under the MIT License. See `LICENSE` for details.
+
+
+### Run the intake app locally
+
+To launch the intake form from a terminal on Windows, macOS, or Linux:
+
+1. Install dependencies: ``pip install -e .[dev]``
+2. Start the server (PowerShell or VS Code terminal): ``neo-agent serve --host 127.0.0.1 --port 5000``
+3. Open http://127.0.0.1:5000/ in your browser. The server logs the health check and profile output paths.
+
+Alternative entry points are also available if you prefer invoking Python directly:
+
+- ``python -m neo_agent.intake_app``
+- ``python -c "from neo_agent.intake_app import create_app; create_app().serve(host='127.0.0.1', port=5000)"``
+
+Both commands respect the ``HOST`` and ``PORT`` environment variables, allowing you to override the bind address without changing code.
+
+A quick smoke check after startup:
+
+- ``curl http://127.0.0.1:5000/`` should return the intake HTML.
+- ``curl http://127.0.0.1:5000/api/profile/validate -X POST -H "Content-Type: application/json" -d '{}'`` returns JSON containing ``status`` and ``issues`` fields.
