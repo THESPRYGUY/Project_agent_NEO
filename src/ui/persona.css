@@ -1,5 +1,5 @@
 .persona-layout {
-  margin-top: 2rem;
+  margin-top: 1.25rem;
   padding: 1.5rem;
   border-radius: 12px;
   background: #ffffff;
@@ -59,13 +59,27 @@
 }
 
 .persona-mbti {
-  border: 1px solid #d0d8e8;
+  border: 1px solid #1f3c88;
   border-radius: 10px;
   padding: 0.75rem 0.5rem;
-  background: #f7f9ff;
+  background: #ffffff;
   text-align: center;
   cursor: pointer;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  color: #1f3c88;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  transition: transform 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
+}
+
+.persona-mbti strong {
+  display: block;
+  font-size: 1rem;
+}
+
+.persona-mbti span {
+  display: block;
+  font-size: 0.75rem;
+  margin-top: 0.25rem;
 }
 
 .persona-mbti[data-active="true"] {
@@ -76,6 +90,11 @@
 
 .persona-mbti:focus-visible {
   outline: 3px solid #1f3c88;
+}
+
+.persona-mbti:hover {
+  background: #eef2fb;
+  box-shadow: 0 6px 14px rgba(31, 60, 136, 0.12);
 }
 
 .persona-selection {
@@ -144,4 +163,12 @@
 .persona-footer {
   margin-top: 1.5rem;
   color: #42526e;
+}
+
+.persona-inline {
+  margin-top: 1rem;
+}
+
+.persona-inline .persona-layout {
+  margin-top: 0.5rem;
 }

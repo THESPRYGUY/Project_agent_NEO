@@ -12,6 +12,7 @@
   const suggestionScore = root.querySelector('[data-suggestion-score]');
   const suggestionDetails = root.querySelector('[data-suggestion-details]');
   const alternatesContainer = root.querySelector('[data-alternates]');
+  const personaInput = document.querySelector('[data-persona-input]');
 
   const configUrl = '/api/persona/config';
   const stateUrl = '/api/persona/state';
@@ -25,6 +26,12 @@
 
   initialiseTabs();
   fetchConfiguration();
+
+  function updatePersonaInput(value) {
+    if (personaInput) {
+      personaInput.value = value || "";
+    }
+  }
 
   function initialiseTabs() {
     const tabs = root.querySelectorAll('.persona-tab');
@@ -113,7 +120,7 @@
       button.className = 'persona-mbti';
       button.dataset.code = entry.code;
       button.setAttribute('aria-pressed', 'false');
-      button.innerHTML = `<strong>${entry.code}</strong><br><span>${entry.nickname}</span>`;
+      button.innerHTML = `<strong>${entry.code}</strong><span>${entry.nickname}</span>`;
       button.addEventListener('click', () => selectOperator(entry));
       button.addEventListener('keydown', (event) => handleOperatorKeydown(event, entry));
       operatorGrid.appendChild(button);
@@ -257,6 +264,7 @@
       })
       .then((saved) => {
         currentState = Object.assign({}, currentState, saved);
+        updatePersonaInput(saved?.agent?.code ?? '');
         showSummary(`Saved agent persona ${saved.agent?.code ?? ''}. Reload to confirm persistence.`);
       })
       .catch((error) => {
@@ -266,6 +274,7 @@
   }
 
   function restoreState() {
+    updatePersonaInput('');
     if (currentState.operator) {
       const match = config.mbti_types.find((entry) => entry.code === currentState.operator.code);
       if (match) {
@@ -285,6 +294,7 @@
       };
       renderSuggestion(suggestion);
       acceptButton.disabled = false;
+      updatePersonaInput(currentState.agent.code || '');
     }
 
     if (currentState.updated_at) {

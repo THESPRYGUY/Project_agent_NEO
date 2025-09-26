@@ -129,9 +129,10 @@ $persona_styles
         <label>Version
           <input type="text" name="agent_version" value="1.0.0">
         </label>
-        <label>Persona Tagline
-          <input type="text" name="agent_persona" placeholder="Adaptive enterprise analyst">
-        </label>
+        <div class="persona-inline">
+          <input type="hidden" name="agent_persona" value="$persona_hidden_value" data-persona-input>
+          $persona_tabs
+        </div>
         <label>Primary Domain
           <select name="domain" required>
             $domain_options
@@ -204,7 +205,6 @@ $persona_styles
       <button type="submit">Generate Agent Profile</button>
     </form>
 
-    $persona_tabs
     $summary
     <script type="module">
 $persona_script
@@ -340,12 +340,23 @@ class IntakeApplication:
         persona_style_block = self.persona_assets.get("css", "")
         persona_html = self.persona_assets.get("html", "")
         persona_script = self.persona_assets.get("js", "")
+        persona_hidden = ""
+        if profile:
+            persona_section = profile.get("persona") if isinstance(profile, Mapping) else {}
+            if isinstance(persona_section, Mapping):
+                agent_section = persona_section.get("agent", {})
+                if isinstance(agent_section, Mapping):
+                    persona_hidden = str(agent_section.get("code", ""))
+            agent_persona = profile.get("agent", {}).get("persona") if isinstance(profile, Mapping) else ""
+            if not persona_hidden and agent_persona:
+                persona_hidden = str(agent_persona)
         return FORM_TEMPLATE.substitute(
             notice=_notice(message),
             summary=_summary_block(profile, str(self.profile_path), str(self.spec_dir)),
             persona_tabs=persona_html,
             persona_styles=persona_style_block,
             persona_script=persona_script,
+            persona_hidden_value=persona_hidden,
             domain_options=_option_list(DOMAINS),
             role_options=_option_list(ROLES),
             toolset_checkboxes=_checkboxes("toolsets", TOOLSETS),
