@@ -1,0 +1,25 @@
+#mbti-tooltip {
+  position: absolute;
+  max-width: 260px;
+  padding: 0.5rem 0.75rem;
+  background: rgba(17, 29, 78, 0.96);
+  color: #f7f9ff;
+  border-radius: 8px;
+  font-size: 0.85rem;
+  line-height: 1.35;
+  box-shadow: 0 10px 24px rgba(11, 27, 54, 0.35);
+  pointer-events: none;
+  z-index: 60;
+  transition: opacity 0.15s ease;
+  opacity: 1;
+}
+
+#mbti-tooltip[hidden] {
+  display: none;
+}
+
+#mbti-tooltip strong {
+  display: block;
+  margin-bottom: 0.25rem;
+  letter-spacing: 0.02em;
+}

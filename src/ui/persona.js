@@ -14,6 +14,132 @@
   const alternatesContainer = root.querySelector('[data-alternates]');
   const personaInput = document.querySelector('[data-persona-input]');
 
+const tooltipRoot = document.querySelector('[data-mbti-tooltips="enabled"]');
+let tooltipElement = null;
+let tooltipData = new Map();
+let tooltipActiveButton = null;
+
+const TOOLTIP_ID = 'mbti-tooltip';
+
+function ensureTooltipElement() {
+  if (!tooltipRoot) {
+    return null;
+  }
+  if (!tooltipElement) {
+    tooltipElement = document.getElementById(TOOLTIP_ID);
+    if (!tooltipElement) {
+      tooltipElement = document.createElement('div');
+      tooltipElement.id = TOOLTIP_ID;
+      tooltipElement.setAttribute('role', 'tooltip');
+      tooltipElement.setAttribute('aria-live', 'polite');
+      tooltipElement.hidden = true;
+      document.body.appendChild(tooltipElement);
+    }
+  }
+  return tooltipElement;
+}
+
+function truncateDescription(input) {
+  if (!input) {
+    return '';
+  }
+  return input.length > 180 ? input.slice(0, 177) + '\u2026' : input;
+}
+
+function showTooltip(button) {
+  if (!tooltipRoot) {
+    return;
+  }
+  const code = (button.getAttribute('data-mbti-code') || button.dataset.mbtiCode || '').toUpperCase();
+  if (!code) {
+    return;
+  }
+  const meta = tooltipData.get(code);
+  if (!meta) {
+    return;
+  }
+  const tooltip = ensureTooltipElement();
+  if (!tooltip) {
+    return;
+  }
+  const name = meta.nickname || meta.name || '';
+  const description = truncateDescription(meta.summary || meta.description || '');
+  tooltip.innerHTML = '<strong>' + code + '</strong> &#8212; ' + name + '<br>' + description;
+  const rect = button.getBoundingClientRect();
+  tooltip.style.left = Math.round(window.scrollX + rect.left) + 'px';
+  tooltip.style.top = Math.round(window.scrollY + rect.bottom + 8) + 'px';
+  tooltip.hidden = false;
+  if (tooltipActiveButton && tooltipActiveButton !== button) {
+    if (tooltipActiveButton.getAttribute('aria-describedby') === TOOLTIP_ID) {
+      tooltipActiveButton.removeAttribute('aria-describedby');
+    }
+  }
+  button.setAttribute('aria-describedby', TOOLTIP_ID);
+  tooltipActiveButton = button;
+}
+
+function hideTooltip(button) {
+  const tooltip = ensureTooltipElement();
+  if (!tooltip) {
+    return;
+  }
+  tooltip.hidden = true;
+  tooltip.innerHTML = '';
+  const target = button || tooltipActiveButton;
+  if (target && target.getAttribute('aria-describedby') === TOOLTIP_ID) {
+    target.removeAttribute('aria-describedby');
+  }
+  if (!button || button === tooltipActiveButton) {
+    tooltipActiveButton = null;
+  }
+}
+
+function handleTooltipKeydown(event) {
+  if (event.key === 'Escape' || event.key === 'Esc') {
+    hideTooltip(event.currentTarget);
+  }
+}
+
+function bindTooltip(button) {
+  if (!tooltipRoot || button.dataset.tooltipBound === '1') {
+    return;
+  }
+  button.dataset.tooltipBound = '1';
+  button.addEventListener('mouseenter', function () {
+    showTooltip(button);
+  });
+  button.addEventListener('mouseleave', function () {
+    hideTooltip(button);
+  });
+  button.addEventListener('focus', function () {
+    showTooltip(button);
+  });
+  button.addEventListener('blur', function () {
+    hideTooltip(button);
+  });
+  button.addEventListener('keydown', handleTooltipKeydown);
+}
+
+function initialiseTooltips(types) {
+  if (!tooltipRoot) {
+    return;
+  }
+  tooltipData = new Map();
+  types.forEach(function (entry) {
+    if (entry && entry.code) {
+      tooltipData.set(String(entry.code).toUpperCase(), entry);
+    }
+  });
+  const tooltip = ensureTooltipElement();
+  if (!tooltip) {
+    return;
+  }
+  hideTooltip();
+  operatorGrid.querySelectorAll('.persona-mbti').forEach(function (button) {
+    bindTooltip(button);
+  });
+}
+
   const configUrl = '/api/persona/config';
   const stateUrl = '/api/persona/state';
 
@@ -119,6 +245,7 @@
       button.type = 'button';
       button.className = 'persona-mbti';
       button.dataset.code = entry.code;
+      button.setAttribute('data-mbti-code', entry.code);
       button.setAttribute('aria-pressed', 'false');
       button.innerHTML = `<strong>${entry.code}</strong><span>${entry.nickname}</span>`;
       button.addEventListener('click', () => selectOperator(entry));
@@ -128,6 +255,7 @@
 
     suggestButton.addEventListener('click', handleSuggestPersona);
     acceptButton.addEventListener('click', persistPersonaSelection);
+    initialiseTooltips(types);
   }
 
   function handleOperatorKeydown(event, entry) {

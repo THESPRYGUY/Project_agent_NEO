@@ -44,7 +44,7 @@ def test_intake_form_submission(tmp_path: Path) -> None:
     post_data = {
         "agent_name": "Test Agent",
         "agent_version": "1.0.0",
-        "agent_persona": "Insight navigator",
+        "agent_persona": "ENTJ",
         "domain": "Finance",
         "role": "Enterprise Analyst",
         "toolsets": ["Data Analysis", "Reporting"],
@@ -69,7 +69,59 @@ def test_intake_form_submission(tmp_path: Path) -> None:
 
     assert profile["agent"]["name"] == "Test Agent"
     assert "Data Analysis" in profile["toolsets"]["selected"]
+    assert profile["agent"]["persona"] == "ENTJ"
+    assert profile["agent"]["mbti"]["mbti_code"] == "ENTJ"
 
     spec_dir = tmp_path / "generated_specs"
     assert (spec_dir / "agent_config.json").exists()
+
+
+
+def test_mbti_payload_enriched(tmp_path: Path) -> None:
+    app = create_app(base_dir=tmp_path)
+    saved = app._save_persona_state({
+        "operator": {"code": "INFJ"},
+        "agent": {"code": "INTJ"},
+        "alternates": [{"code": "ENTJ"}],
+    })
+    agent_block = saved.get("agent", {})
+    mbti_block = agent_block.get("mbti", {})
+    assert mbti_block.get("mbti_code") == "INTJ"
+    axes = mbti_block.get("axes", {})
+    assert axes.get("EI") == "I"
+    reloaded = app._load_persona_state()
+    assert reloaded.get("persona_details", {}).get("mbti_code") == "INTJ"
+
+
+def test_repo_scaffold_contains_mbti(tmp_path: Path) -> None:
+    app = create_app(base_dir=tmp_path)
+    app._save_persona_state({
+        "operator": {"code": "INFJ"},
+        "agent": {"code": "ENTJ"},
+        "alternates": [],
+    })
+    post_data = {
+        "agent_name": "MBTI Agent",
+        "agent_version": "1.0.0",
+        "agent_persona": "ENTJ",
+        "domain": "Finance",
+        "role": "Enterprise Analyst",
+        "toolsets": ["Data Analysis"],
+        "attributes": ["Strategic"],
+        "autonomy": "70",
+        "confidence": "65",
+        "collaboration": "55",
+        "communication_style": "Formal",
+        "collaboration_mode": "Cross-Functional",
+        "notes": "Persona persistence smoke",
+        "linkedin_url": "",
+    }
+    _invoke(app, "POST", post_data)
+    config_path = tmp_path / "generated_specs" / "agent_config.json"
+    with config_path.open("r", encoding="utf-8") as handle:
+        config = json.load(handle)
+    persona_meta = config.get("metadata", {}).get("persona", {})
+    assert persona_meta.get("mbti_code") == "ENTJ"
+    assert persona_meta.get("axes", {}).get("EI") == "E"
+    assert isinstance(persona_meta.get("suggested_traits", []), list)
 

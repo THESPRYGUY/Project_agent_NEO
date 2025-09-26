@@ -16,6 +16,11 @@ from .linkedin import scrape_linkedin_profile
 from .logging import get_logger
 from .spec_generator import generate_agent_specs
 
+try:
+    from .telemetry import emit_mbti_persona_selected
+except Exception:
+    emit_mbti_persona_selected = None
+
 LOGGER = get_logger("intake")
 
 WSGIResponse = tuple[str, list[tuple[str, str]], bytes]
@@ -67,6 +72,15 @@ ATTRIBUTES = [
 COMMUNICATION_STYLES = ["Formal", "Conversational", "Concise", "Storytelling"]
 COLLABORATION_MODES = ["Solo", "Pair", "Cross-Functional", "Advisory"]
 
+
+
+def _mbti_axes(code: str) -> Dict[str, str]:
+    code = (code or "").upper()
+    labels = ("EI", "SN", "TF", "JP")
+    axes: Dict[str, str] = {}
+    for idx, label in enumerate(labels):
+        axes[label] = code[idx] if len(code) > idx else ""
+    return axes
 
 def _split_csv(value: str | None) -> List[str]:
     if not value:
@@ -129,10 +143,6 @@ $persona_styles
         <label>Version
           <input type="text" name="agent_version" value="1.0.0">
         </label>
-        <div class="persona-inline">
-          <input type="hidden" name="agent_persona" value="$persona_hidden_value" data-persona-input>
-          $persona_tabs
-        </div>
         <label>Primary Domain
           <select name="domain" required>
             $domain_options
@@ -143,6 +153,11 @@ $persona_styles
             $role_options
           </select>
         </label>
+        <!-- MBTI SECTION (moved below domain/role) -->
+        <section id="mbti-section" data-testid="mbti-section" data-mbti-tooltips="enabled" class="persona-inline">
+          <input type="hidden" name="agent_persona" value="$persona_hidden_value" data-persona-input>
+          $persona_tabs
+        </section>
       </fieldset>
 
       <fieldset>
@@ -243,6 +258,7 @@ class IntakeApplication:
         self.assets_root = self.project_root / "src"
         self.ui_dir = self.assets_root / "ui"
         self.persona_dir = self.assets_root / "persona"
+        self.static_dir = self.assets_root / "neo_agent" / "static"
         self.base_dir = self._resolve_base_dir(base_dir)
         self.profile_path = self.base_dir / "agent_profile.json"
         self.spec_dir = self.base_dir / "generated_specs"
@@ -250,6 +266,7 @@ class IntakeApplication:
         self.persona_state_path = self.base_dir / "persona_state.json"
         self.persona_assets = self._load_persona_assets()
         self.persona_config = self._load_persona_config()
+        self.mbti_lookup = self._index_mbti_types(self.persona_config.get("mbti_types", []))
         LOGGER.debug(
             "Initialised intake application with base_dir=%s persona_state=%s",
             self.base_dir,
@@ -316,9 +333,39 @@ class IntakeApplication:
 
     def _load_persona_assets(self) -> dict[str, str]:
         html = self._safe_read_text(self.ui_dir / "persona_tabs.html")
-        css = self._indent_block(self._safe_read_text(self.ui_dir / "persona.css"))
+        base_css = self._safe_read_text(self.ui_dir / "persona.css")
+        tooltip_css = self._safe_read_text(self.static_dir / "mbti_tooltip.css")
+        combined_css = base_css
+        if tooltip_css:
+            combined_css = (combined_css + "\n" + tooltip_css) if combined_css else tooltip_css
+        css = self._indent_block(combined_css)
         script = self._indent_block(self._safe_read_text(self.ui_dir / "persona.js"), spaces=4)
         return {"html": html, "css": css, "js": script}
+    def _index_mbti_types(self, entries: Iterable[Mapping[str, Any]]) -> Dict[str, Mapping[str, Any]]:
+        lookup: Dict[str, Mapping[str, Any]] = {}
+        for entry in entries or []:
+            if not isinstance(entry, Mapping):
+                continue
+            code = str(entry.get("code", "")).upper()
+            if code:
+                lookup[code] = entry
+        return lookup
+
+    def _enrich_persona_metadata(self, code: str | None) -> Dict[str, Any] | None:
+        if not code:
+            return None
+        entry = self.mbti_lookup.get(str(code).upper()) if hasattr(self, "mbti_lookup") else None
+        if not entry:
+            return None
+        axes = _mbti_axes(entry.get("code", code))
+        description = entry.get("summary") or entry.get("description") or ""
+        return {
+            "mbti_code": str(entry.get("code", code)).upper(),
+            "name": entry.get("nickname") or entry.get("name") or "",
+            "description": description,
+            "axes": axes,
+            "suggested_traits": [],
+        }
 
     def _load_persona_config(self) -> dict[str, Any]:
         mbti = self._safe_read_json(self.persona_dir / "mbti_types.json", [])
@@ -340,7 +387,21 @@ class IntakeApplication:
         persona_style_block = self.persona_assets.get("css", "")
         persona_html = self.persona_assets.get("html", "")
         persona_script = self.persona_assets.get("js", "")
+        persona_script += """
+window.addEventListener('DOMContentLoaded', function () {
+  var grid = document.querySelector('[data-operator-grid]');
+  if (!grid) { return; }
+  grid.querySelectorAll('button').forEach(function (button) {
+    var code = button.getAttribute('data-code') || (button.dataset ? button.dataset.code : null);
+    if (code && !button.hasAttribute('data-mbti-code')) {
+      button.setAttribute('data-mbti-code', code);
+    }
+  });
+});
+"""
         persona_hidden = ""
+        # MBTI SECTION (moved below domain/role)
+
         if profile:
             persona_section = profile.get("persona") if isinstance(profile, Mapping) else {}
             if isinstance(persona_section, Mapping):
@@ -402,6 +463,33 @@ class IntakeApplication:
             "linkedin": linkedin,
             "persona": self._load_persona_state(),
         }
+
+        persona_state = profile.get("persona")
+        enriched_persona = None
+        if isinstance(persona_state, Mapping):
+            agent_state = persona_state.get("agent")
+            if isinstance(agent_state, Mapping):
+                mbti_block = agent_state.get("mbti")
+                if isinstance(mbti_block, Mapping):
+                    enriched_persona = mbti_block
+            if not enriched_persona:
+                details_block = persona_state.get("persona_details")
+                if isinstance(details_block, Mapping):
+                    enriched_persona = details_block
+        fallback_persona = profile["agent"].get("persona")
+        if not enriched_persona and fallback_persona:
+            enriched_persona = self._enrich_persona_metadata(fallback_persona)
+        if isinstance(enriched_persona, Mapping):
+            profile["agent"]["mbti"] = dict(enriched_persona)
+            code_value = enriched_persona.get("mbti_code")
+            if code_value:
+                profile["agent"]["persona"] = str(code_value)
+            if emit_mbti_persona_selected and not profile["agent"].get("_mbti_telemetry_emitted"):
+                try:
+                    emit_mbti_persona_selected(enriched_persona)
+                    profile["agent"]["_mbti_telemetry_emitted"] = True
+                except Exception:
+                    LOGGER.debug("Failed to emit MBTI telemetry event", exc_info=True)
 
         if linkedin:
             derived_tools = linkedin.get("skills", [])
@@ -592,28 +680,42 @@ class IntakeApplication:
     def _save_persona_state(self, payload: Mapping[str, Any]) -> Dict[str, Any]:
         if not isinstance(payload, Mapping):
             raise ValueError("Persona payload must be a mapping")
-        operator = payload.get("operator") if isinstance(payload.get("operator"), Mapping) else None
-        agent = payload.get("agent") if isinstance(payload.get("agent"), Mapping) else None
+        operator_payload = payload.get("operator")
+        operator = dict(operator_payload) if isinstance(operator_payload, Mapping) else None
+        agent_payload = payload.get("agent")
+        agent = dict(agent_payload) if isinstance(agent_payload, Mapping) else None
         alternates = payload.get("alternates")
         history_limit = 5
+
+        persona_details = None
+        if isinstance(agent, Mapping):
+            persona_details = self._enrich_persona_metadata(agent.get("code"))
+            if persona_details:
+                agent = dict(agent)
+                agent["mbti"] = persona_details
 
         state = self._load_persona_state()
         history = state.get("history", [])
         if state.get("operator") and state.get("agent"):
-            history.insert(0, {
-                "operator": state.get("operator"),
-                "agent": state.get("agent"),
-                "stored_at": state.get("updated_at"),
-            })
+            history.insert(
+                0,
+                {
+                    "operator": state.get("operator"),
+                    "agent": state.get("agent"),
+                    "stored_at": state.get("updated_at"),
+                },
+            )
             history = history[:history_limit]
 
-        new_state = {
+        new_state: Dict[str, Any] = {
             "operator": operator,
             "agent": agent,
             "alternates": alternates if isinstance(alternates, list) else [],
             "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
             "history": history,
         }
+        if persona_details:
+            new_state["persona_details"] = persona_details
         with self.persona_state_path.open("w", encoding="utf-8") as handle:
             json.dump(new_state, handle, indent=2)
         return new_state
@@ -625,8 +727,22 @@ class IntakeApplication:
             data = json.load(handle)
         data.setdefault("history", [])
         data.setdefault("alternates", [])
+        agent_section = data.get("agent")
+        persona_details = data.get("persona_details") if isinstance(data.get("persona_details"), Mapping) else None
+        enriched = None
+        if isinstance(agent_section, Mapping):
+            mbti_block = agent_section.get("mbti")
+            if isinstance(mbti_block, Mapping):
+                enriched = mbti_block
+            else:
+                enriched = self._enrich_persona_metadata(agent_section.get("code"))
+                if enriched:
+                    agent_section = dict(agent_section)
+                    agent_section["mbti"] = enriched
+                    data["agent"] = agent_section
+        if enriched and not isinstance(persona_details, Mapping):
+            data["persona_details"] = enriched
         return data
-
     def _validate_profile_payload(self, payload: Any) -> List[str]:
         if not isinstance(payload, Mapping):
             return ["Payload must be a JSON object."]
@@ -686,3 +802,5 @@ def create_app(base_dir: Path | None = None) -> IntakeApplication:
 
 if __name__ == "__main__":  # pragma: no cover - manual execution helper
     create_app().serve()
+
+

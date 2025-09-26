@@ -44,6 +44,53 @@ def _iter_skill_definitions(profile: Mapping[str, Any]) -> Iterable[SkillConfigu
         )
 
 
+
+def _extract_persona_metadata(profile: Mapping[str, Any]) -> Dict[str, Any] | None:
+    def _coerce(candidate: Any) -> Dict[str, Any] | None:
+        if not isinstance(candidate, Mapping):
+            return None
+        code = candidate.get("mbti_code") or candidate.get("code")
+        if not code:
+            return None
+        axes_source = candidate.get("axes")
+        axes = dict(axes_source) if isinstance(axes_source, Mapping) else {}
+        traits_source = candidate.get("suggested_traits", [])
+        traits: list[Any] = []
+        if isinstance(traits_source, Iterable) and not isinstance(traits_source, (str, bytes)):
+            for item in traits_source:
+                if isinstance(item, Mapping):
+                    traits.append(dict(item))
+                else:
+                    traits.append({"name": str(item)})
+        return {
+            "mbti_code": str(code).upper(),
+            "name": str(candidate.get("name") or candidate.get("nickname") or ""),
+            "description": str(candidate.get("description") or candidate.get("summary") or ""),
+            "axes": axes,
+            "suggested_traits": traits,
+        }
+
+    persona_section = profile.get("persona")
+    if isinstance(persona_section, Mapping):
+        meta = _coerce(persona_section.get("persona_details"))
+        if meta:
+            return meta
+        agent_section = persona_section.get("agent")
+        if isinstance(agent_section, Mapping):
+            meta = _coerce(agent_section.get("mbti"))
+            if meta:
+                return meta
+
+    agent_section = profile.get("agent")
+    if isinstance(agent_section, Mapping):
+        meta = _coerce(agent_section.get("mbti"))
+        if meta:
+            return meta
+
+    fallback = profile.get("persona_details")
+    return _coerce(fallback)
+
+
 def _metadata_from_profile(profile: Mapping[str, Any]) -> Dict[str, Any]:
     """Build the metadata payload merged into the agent configuration."""
 
@@ -57,7 +104,6 @@ def _metadata_from_profile(profile: Mapping[str, Any]) -> Dict[str, Any]:
     metadata: Dict[str, Any] = {
         "domain": agent.get("domain"),
         "role": agent.get("role"),
-        "persona": agent.get("persona"),
         "toolsets": profile.get("toolsets", {}).get("selected", []),
         "attributes": selected_attributes,
         "custom_notes": profile.get("notes", ""),
@@ -66,6 +112,9 @@ def _metadata_from_profile(profile: Mapping[str, Any]) -> Dict[str, Any]:
         "communication_style": preferences.get("communication_style"),
         "linkedin": profile.get("linkedin", {}),
     }
+
+    persona_metadata = _extract_persona_metadata(profile)
+    metadata["persona"] = persona_metadata if persona_metadata is not None else agent.get("persona")
 
     return metadata
 
