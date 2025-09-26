@@ -1,0 +1,35 @@
+<section class="persona-layout" data-persona-tabs>
+  <header class="persona-header">
+    <h2>Persona Alignment</h2>
+    <p class="persona-subtitle">Match the operator MBTI with an agent persona tuned for the selected domain and role.</p>
+  </header>
+  <div class="persona-tablist" role="tablist" aria-label="Persona focus">
+    <button id="persona-tab-operator" class="persona-tab persona-tab--active" role="tab" aria-selected="true" aria-controls="persona-panel-operator" data-tab-target="operator" tabindex="0">Operator Persona</button>
+    <button id="persona-tab-agent" class="persona-tab" role="tab" aria-selected="false" aria-controls="persona-panel-agent" data-tab-target="agent" tabindex="-1">Agent Persona</button>
+  </div>
+  <div class="persona-panels">
+    <section id="persona-panel-operator" class="persona-panel" role="tabpanel" aria-labelledby="persona-tab-operator">
+      <h3>Operator MBTI</h3>
+      <p>Select the MBTI type that best represents the operator. Use the arrow keys for quick navigation.</p>
+      <div class="persona-grid" data-operator-grid></div>
+      <p class="persona-selection" data-operator-selection aria-live="polite"></p>
+    </section>
+    <section id="persona-panel-agent" class="persona-panel" role="tabpanel" aria-labelledby="persona-tab-agent" hidden>
+      <h3>Agent Persona</h3>
+      <p>Generate a recommended MBTI for the agent and capture supporting rationale.</p>
+      <div class="persona-actions">
+        <button class="persona-action" type="button" data-suggest-persona>Suggest Persona</button>
+        <button class="persona-action persona-action--secondary" type="button" data-accept-persona disabled>Accept Persona</button>
+      </div>
+      <div class="persona-suggestion" data-suggestion-container>
+        <div class="persona-suggestion__score" data-suggestion-score aria-live="polite"></div>
+        <div class="persona-suggestion__details" data-suggestion-details></div>
+      </div>
+      <aside class="persona-alternates" data-alternates hidden>
+        <h4>Alternates</h4>
+        <ul></ul>
+      </aside>
+    </section>
+  </div>
+  <footer class="persona-footer" data-persona-summary aria-live="polite"></footer>
+</section>

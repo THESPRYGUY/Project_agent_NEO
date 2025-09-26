@@ -1,0 +1,212 @@
+{
+  "Finance": {
+    "_default": [
+      "INTJ",
+      "ISTJ",
+      "ENTJ"
+    ],
+    "Enterprise Analyst": [
+      "INTJ",
+      "ENTJ",
+      "ESTJ"
+    ],
+    "Data Scientist": [
+      "INTP",
+      "INTJ",
+      "ENTP"
+    ],
+    "Project Manager": [
+      "ESTJ",
+      "ESFJ",
+      "ISTJ"
+    ]
+  },
+  "Healthcare": {
+    "_default": [
+      "INFJ",
+      "ISFJ",
+      "ENFJ"
+    ],
+    "Knowledge Manager": [
+      "INFJ",
+      "ENFJ",
+      "ISFJ"
+    ],
+    "Customer Support": [
+      "ESFJ",
+      "ENFP",
+      "ISFJ"
+    ],
+    "Project Manager": [
+      "ESFJ",
+      "ENFJ",
+      "ISFJ"
+    ]
+  },
+  "Manufacturing": {
+    "_default": [
+      "ESTJ",
+      "ISTJ",
+      "ISTP"
+    ],
+    "Automation Engineer": [
+      "ISTP",
+      "ESTP",
+      "INTJ"
+    ],
+    "Operations": [
+      "ESTJ",
+      "ISTJ",
+      "ESTP"
+    ],
+    "Project Manager": [
+      "ESTJ",
+      "ENTJ",
+      "ISTJ"
+    ]
+  },
+  "Technology": {
+    "_default": [
+      "ENTP",
+      "INTP",
+      "INTJ"
+    ],
+    "Automation Engineer": [
+      "INTJ",
+      "ENTP",
+      "ISTP"
+    ],
+    "Strategy Consultant": [
+      "ENTJ",
+      "INTJ",
+      "ENFP"
+    ],
+    "Data Scientist": [
+      "INTP",
+      "ENTP",
+      "INTJ"
+    ]
+  },
+  "Retail": {
+    "_default": [
+      "ESFJ",
+      "ENFP",
+      "ESTJ"
+    ],
+    "Customer Support": [
+      "ESFJ",
+      "ENFP",
+      "ISFJ"
+    ],
+    "Operations": [
+      "ESTJ",
+      "ESFP",
+      "ENFP"
+    ],
+    "Project Manager": [
+      "ESFJ",
+      "ESTJ",
+      "ENFJ"
+    ]
+  },
+  "Marketing": {
+    "_default": [
+      "ENFP",
+      "ENFJ",
+      "INFJ"
+    ],
+    "Strategy Consultant": [
+      "ENFP",
+      "ENTP",
+      "INFJ"
+    ],
+    "Knowledge Manager": [
+      "INFJ",
+      "ENFJ",
+      "INFP"
+    ],
+    "Project Manager": [
+      "ENFJ",
+      "ESFP",
+      "ENFP"
+    ]
+  },
+  "Operations": {
+    "_default": [
+      "ESTJ",
+      "ISTJ",
+      "ENTJ"
+    ],
+    "Project Manager": [
+      "ESTJ",
+      "ENTJ",
+      "ESFJ"
+    ],
+    "Automation Engineer": [
+      "ISTP",
+      "INTJ",
+      "ESTJ"
+    ],
+    "Enterprise Analyst": [
+      "ENTJ",
+      "INTJ",
+      "ESTJ"
+    ]
+  },
+  "Customer Support": {
+    "_default": [
+      "ESFJ",
+      "ISFJ",
+      "ENFP"
+    ],
+    "Operations": [
+      "ESFJ",
+      "ENFP",
+      "ESFP"
+    ],
+    "Project Manager": [
+      "ESFJ",
+      "ENFJ",
+      "ISFJ"
+    ]
+  },
+  "Legal": {
+    "_default": [
+      "INTJ",
+      "ISTJ",
+      "INFJ"
+    ],
+    "Enterprise Analyst": [
+      "INTJ",
+      "INFJ",
+      "ENTJ"
+    ],
+    "Project Manager": [
+      "ISTJ",
+      "ENTJ",
+      "INFJ"
+    ]
+  },
+  "Human Resources": {
+    "_default": [
+      "ENFJ",
+      "INFJ",
+      "ISFJ"
+    ],
+    "Knowledge Manager": [
+      "INFJ",
+      "ENFJ",
+      "ISFJ"
+    ],
+    "Customer Support": [
+      "ESFJ",
+      "ENFP",
+      "ISFJ"
+    ],
+    "Project Manager": [
+      "ENFJ",
+      "INFJ",
+      "ESFJ"
+    ]
+  }
+}

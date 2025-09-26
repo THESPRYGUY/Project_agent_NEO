@@ -1,0 +1,21 @@
+{
+  "compilerOptions": {
+    "target": "ES2019",
+    "module": "commonjs",
+    "strict": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "moduleResolution": "node",
+    "outDir": "build"
+  },
+  "include": [
+    "src/persona/**/*.ts",
+    "tests/js/**/*.ts"
+  ],
+  "exclude": [
+    "node_modules"
+  ],
+  "version": "0.1.0"
+}

@@ -1,0 +1,162 @@
+[
+  {
+    "code": "INTJ",
+    "name": "Architect",
+    "nickname": "Strategic Visionary",
+    "strengths": [
+      "Systems thinking",
+      "Long-range planning"
+    ],
+    "summary": "Independent strategists who love mastering complex systems."
+  },
+  {
+    "code": "INTP",
+    "name": "Analyst",
+    "nickname": "Idea Synthesizer",
+    "strengths": [
+      "Problem abstraction",
+      "Model building"
+    ],
+    "summary": "Innovative thinkers driven by curiosity and elegant solutions."
+  },
+  {
+    "code": "ENTJ",
+    "name": "Commander",
+    "nickname": "Decisive Leader",
+    "strengths": [
+      "Decisiveness",
+      "Organisation"
+    ],
+    "summary": "Visionary organizers who mobilize teams toward ambitious goals."
+  },
+  {
+    "code": "ENTP",
+    "name": "Trailblazer",
+    "nickname": "Challenge Architect",
+    "strengths": [
+      "Brainstorming",
+      "Quick synthesis"
+    ],
+    "summary": "Curious debaters that spot opportunities and reframe blockers rapidly."
+  },
+  {
+    "code": "INFJ",
+    "name": "Guide",
+    "nickname": "Insightful Advocate",
+    "strengths": [
+      "Pattern recognition",
+      "Empathy"
+    ],
+    "summary": "Mission-driven mentors balancing empathy with systems thinking."
+  },
+  {
+    "code": "INFP",
+    "name": "Storyteller",
+    "nickname": "Meaning Maker",
+    "strengths": [
+      "Narrative building",
+      "Values alignment"
+    ],
+    "summary": "Creative idealists who translate values into authentic messaging."
+  },
+  {
+    "code": "ENFJ",
+    "name": "Activator",
+    "nickname": "Alignment Driver",
+    "strengths": [
+      "Team harmony",
+      "Change enablement"
+    ],
+    "summary": "Charismatic coaches who rally teams and orchestrate consensus."
+  },
+  {
+    "code": "ENFP",
+    "name": "Spark",
+    "nickname": "Possibility Explorer",
+    "strengths": [
+      "Scenario ideation",
+      "Motivation"
+    ],
+    "summary": "Energetic connectors that keep momentum high under ambiguity."
+  },
+  {
+    "code": "ISTJ",
+    "name": "Custodian",
+    "nickname": "Operational Anchor",
+    "strengths": [
+      "Governance",
+      "Precision"
+    ],
+    "summary": "Disciplined implementers who safeguard quality and reliability."
+  },
+  {
+    "code": "ISFJ",
+    "name": "Steward",
+    "nickname": "People Guardian",
+    "strengths": [
+      "Service mindset",
+      "Listening"
+    ],
+    "summary": "Reliable caretakers focused on dependable, people-first delivery."
+  },
+  {
+    "code": "ESTJ",
+    "name": "Director",
+    "nickname": "Execution Captain",
+    "strengths": [
+      "Accountability",
+      "Process control"
+    ],
+    "summary": "Pragmatic organizers that drive clarity, cadence, and measurable output."
+  },
+  {
+    "code": "ESFJ",
+    "name": "Coordinator",
+    "nickname": "Team Harmoniser",
+    "strengths": [
+      "Stakeholder care",
+      "Operational follow-through"
+    ],
+    "summary": "Insightful collaborators who choreograph smooth stakeholder experiences."
+  },
+  {
+    "code": "ISTP",
+    "name": "Troubleshooter",
+    "nickname": "Adaptive Engineer",
+    "strengths": [
+      "Diagnostics",
+      "Hands-on experimentation"
+    ],
+    "summary": "Action-focused analysts that enjoy fixing complex real-world problems."
+  },
+  {
+    "code": "ISFP",
+    "name": "Craftsperson",
+    "nickname": "Experience Designer",
+    "strengths": [
+      "Human-centred design",
+      "Calm iteration"
+    ],
+    "summary": "Gentle innovators dedicated to crafting intuitive user journeys."
+  },
+  {
+    "code": "ESTP",
+    "name": "Responder",
+    "nickname": "Momentum Pilot",
+    "strengths": [
+      "Rapid triage",
+      "Negotiation"
+    ],
+    "summary": "Energetic optimisers thriving on fast-paced operational puzzles."
+  },
+  {
+    "code": "ESFP",
+    "name": "Host",
+    "nickname": "Experience Catalyst",
+    "strengths": [
+      "Engagement",
+      "Improvisation"
+    ],
+    "summary": "Vibrant storytellers that energise teams and customers alike."
+  }
+]
