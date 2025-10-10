@@ -1,0 +1,12 @@
+{
+  "id": "09_Telemetry-Pack_v2",
+  "version": "2.0",
+  "events": [
+    { "name": "naics_select" },
+    { "name": "mbti_persona_selected" }
+  ],
+  "buffers": {
+    "max_events": 256,
+    "eviction": "oldest"
+  }
+}

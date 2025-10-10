@@ -1,0 +1,17 @@
+{
+  "id": "15_Quality-Gates_v2",
+  "version": "2.0",
+  "kpis": {
+    "PRI": { "description": "Plan Reliability Index", "target": 0.95 },
+    "HAL": { "description": "Hallucination Rate", "max": 0.02 },
+    "AUD": { "description": "Auditability Score", "min": 0.90 }
+  },
+  "gates": [
+    { "name": "plan_reliability", "metric": "PRI", "operator": ">=", "threshold": 0.95 },
+    { "name": "hallucination_limit", "metric": "HAL", "operator": "<=", "threshold": 0.02 },
+    { "name": "auditability_min", "metric": "AUD", "operator": ">=", "threshold": 0.90 }
+  ],
+  "links": {
+    "workflows": "11_Workflow-Pack_v2.json#pipelines.naics_validation"
+  }
+}

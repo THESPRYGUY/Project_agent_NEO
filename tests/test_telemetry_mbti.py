@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import Any
+import concurrent.futures
 
 from neo_agent import intake_app, telemetry
 
@@ -36,3 +37,33 @@ def test_mbti_selection_emits_persona_event(monkeypatch, tmp_path: Path) -> None
     axes = payload.get("axes", {})
     assert axes.get("EI") == "E"
     assert profile["agent"]["mbti"]["mbti_code"] == "ENTJ"
+
+
+def test_telemetry_thread_safety_and_eviction() -> None:
+    """Emit many persona selection events concurrently and assert ring buffer stats.
+
+    Ensures locking prevents race conditions and eviction metrics reflect overflow.
+    """
+    telemetry.clear_buffer()
+
+    def emit(i: int) -> None:
+        telemetry.emit_mbti_persona_selected({"mbti_code": f"INTP-{i}"})
+
+    # Emit 400 events with a pool greater than 1 to exercise locking.
+    with concurrent.futures.ThreadPoolExecutor(max_workers=16) as ex:
+        list(ex.map(emit, range(400)))
+
+    events = telemetry.get_buffered_events()
+    stats = telemetry.get_event_stats()
+
+    # Buffer capped
+    assert len(events) == 256
+    assert stats["size"] == 256
+    # Evicted count correct
+    assert stats["evicted"] == 400 - 256
+
+    persona_codes = [e["payload"].get("mbti_code") for e in events if e.get("name") == "persona:selected"]
+    # Oldest should be evicted
+    assert "INTP-0" not in persona_codes
+    # Latest should be present
+    assert "INTP-399" in persona_codes

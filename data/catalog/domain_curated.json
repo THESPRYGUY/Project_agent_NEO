@@ -1,0 +1,25 @@
+{
+  "Strategic Functions": [
+    "AI Strategy & Governance",
+    "Prompt Architecture & Evaluation",
+    "Workflow Orchestration",
+    "Observability & Telemetry"
+  ],
+  "Sector Domains": [
+    "Energy & Infrastructure",
+    "Economic Intelligence",
+    "Environmental Intelligence",
+    "Multi-Sector SME Overlay"
+  ],
+  "Technical Domains": [
+    "Agentic RAG & Knowledge Graphs",
+    "Tool & Connector Integrations",
+    "Memory & Data Governance",
+    "Safety & Privacy Compliance"
+  ],
+  "Support Domains": [
+    "Onboarding & Training",
+    "Reporting & Publishing",
+    "Lifecycle & Change Mgmt"
+  ]
+}

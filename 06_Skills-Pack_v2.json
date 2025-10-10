@@ -1,0 +1,11 @@
+{
+  "id": "06_Skills-Pack_v2",
+  "version": "2.0",
+  "skills": [
+    "search",
+    "summarize",
+    "classify",
+    "plan",
+    "execute"
+  ]
+}

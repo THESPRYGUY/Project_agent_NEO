@@ -1,0 +1,12 @@
+{
+  "id": "13_Tools-Pack_v2",
+  "version": "2.0",
+  "connectors": [
+    "http",
+    "files",
+    "databases"
+  ],
+  "links": {
+    "observability": "16_Observability-Pack_v2.json"
+  }
+}

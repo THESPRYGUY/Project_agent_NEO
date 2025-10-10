@@ -1,0 +1,72 @@
+#domain-selector {
+  display: grid;
+  gap: 0.75rem;
+  padding: 1rem;
+  border: 1px solid #d1d9e6;
+  border-radius: 8px;
+  background: #f9fbff;
+  max-width: 420px;
+}
+
+#domain-selector select,
+#domain-selector input[type="text"] {
+  width: 100%;
+  padding: 0.5rem 0.65rem;
+  border-radius: 6px;
+  border: 1px solid #b5c4dd;
+  font-size: 0.95rem;
+}
+
+[data-naics-block] {
+  border-top: 1px dashed #c3cede;
+  padding-top: 0.5rem;
+  margin-top: 0.25rem;
+}
+
+.ds-naics-hint {
+  font-size: 0.7rem;
+  color: #2f4466;
+  margin-top: 0.25rem;
+  min-height: 1em;
+}
+
+#domain-selector select:focus,
+#domain-selector input[type="text"]:focus {
+  outline: 2px solid #264a9b;
+  outline-offset: 1px;
+}
+
+.ds-helper {
+  color: #4c5a72;
+  font-size: 0.85rem;
+  margin: 0;
+}
+
+[data-tags] {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ds-tag {
+  display: inline-flex;
+  align-items: center;
+  background: #264a9b;
+  color: #fff;
+  padding: 0.25rem 0.5rem;
+  border-radius: 999px;
+  font-size: 0.8rem;
+}
+
+.ds-tag button {
+  margin-left: 0.4rem;
+  border: none;
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  font-size: 0.75rem;
+}
+
+.ds-tag button:focus {
+  outline: 1px dashed #fff;
+}

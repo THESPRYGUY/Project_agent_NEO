@@ -54,6 +54,14 @@ def _build_parser() -> argparse.ArgumentParser:
     )
     serve_parser.set_defaults(handler=_serve_command)
 
+    naics_reload = subparsers.add_parser(
+        "naics-reload", help="Reload NAICS reference data (warms prefix index)"
+    )
+    naics_reload.add_argument(
+        "--base-dir", type=Path, default=None, help="Base directory for intake app (tests/run)"
+    )
+    naics_reload.set_defaults(handler=_naics_reload_command)
+
     return parser
 
 
@@ -70,6 +78,32 @@ def _serve_command(arguments: argparse.Namespace) -> int:
 
     app = create_app()
     app.serve(host=arguments.host, port=arguments.port)
+    return 0
+
+
+def _naics_reload_command(arguments: argparse.Namespace) -> int:
+    """Reload NAICS reference by instantiating an IntakeApplication and clearing its cache.
+
+    This is a lightweight helper primarily for operational workflows; it validates that the
+    reference file can be parsed and the prefix index built. Success prints stats to stdout.
+    """
+    from .intake_app import create_app
+    app = create_app(base_dir=arguments.base_dir)
+    # Ensure initial load (optional) to show delta
+    initial = app._load_naics_reference()
+    before = len(initial)
+    count = app.reload_naics()
+    after_cache = app._load_naics_reference()
+    prefix_index = getattr(app, "_naics_prefix_index", {})
+    prefix_keys = len(prefix_index) if isinstance(prefix_index, dict) else 0
+    if count == 0:
+        print("NAICS reload failed; cache unchanged (entries=%d)" % before)
+        return 1
+    print(
+        "NAICS reload successful: entries=%d (was %d) prefix_keys=%d" % (
+            len(after_cache), before, prefix_keys
+        )
+    )
     return 0
 
 

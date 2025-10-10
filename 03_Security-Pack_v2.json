@@ -1,0 +1,11 @@
+{
+  "id": "03_Security-Pack_v2",
+  "version": "2.0",
+  "threat_model": "STRIDE-lite",
+  "controls": [
+    "authn",
+    "authz",
+    "data_encryption",
+    "audit_logging"
+  ]
+}

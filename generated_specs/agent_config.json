@@ -1,0 +1,28 @@
+{
+  "name": "Grid_NEO",
+  "version": "1.0.0",
+  "skills": [
+    {
+      "name": "echo",
+      "description": "Fallback echo skill",
+      "entrypoint": "neo_agent.skills:echo",
+      "parameters": {}
+    }
+  ],
+  "metadata": {
+    "domain": "Technology",
+    "role": "Strategy Consultant",
+    "toolsets": [],
+    "attributes": [],
+    "custom_notes": "",
+    "sliders": {
+      "autonomy": 50,
+      "confidence": 50,
+      "collaboration": 50
+    },
+    "collaboration_mode": "Solo",
+    "communication_style": "Formal",
+    "linkedin": {},
+    "persona": ""
+  }
+}

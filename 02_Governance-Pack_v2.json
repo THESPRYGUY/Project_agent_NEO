@@ -1,0 +1,13 @@
+{
+  "id": "02_Governance-Pack_v2",
+  "version": "2.0",
+  "controls": [
+    "policy_mapping",
+    "risk_register",
+    "change_approval"
+  ],
+  "links": {
+    "risk": "14_Risk-Pack_v2.json",
+    "quality": "15_Quality-Gates_v2.json"
+  }
+}

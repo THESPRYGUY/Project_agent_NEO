@@ -1,0 +1,12 @@
+{
+  "id": "05_Intake-Pack_v2",
+  "version": "2.0",
+  "endpoints": [
+    "/",
+    "/api/naics/*",
+    "/api/profile/validate"
+  ],
+  "links": {
+    "workflow": "11_Workflow-Pack_v2.json#collaboration_flow"
+  }
+}

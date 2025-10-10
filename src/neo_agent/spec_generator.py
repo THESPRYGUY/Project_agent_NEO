@@ -44,7 +44,6 @@ def _iter_skill_definitions(profile: Mapping[str, Any]) -> Iterable[SkillConfigu
         )
 
 
-
 def _extract_persona_metadata(profile: Mapping[str, Any]) -> Dict[str, Any] | None:
     def _coerce(candidate: Any) -> Dict[str, Any] | None:
         if not isinstance(candidate, Mapping):
@@ -113,11 +112,21 @@ def _metadata_from_profile(profile: Mapping[str, Any]) -> Dict[str, Any]:
         "linkedin": profile.get("linkedin", {}),
     }
 
+    domain_selector = agent.get("domain_selector") if isinstance(agent, Mapping) else None
+    if isinstance(domain_selector, Mapping):
+        domain_selector_payload = dict(domain_selector)
+        tags = domain_selector_payload.get("tags")
+        if isinstance(tags, list):
+            domain_selector_payload["tags"] = list(tags)
+        naics = domain_selector_payload.get("naics")
+        if isinstance(naics, Mapping):
+            domain_selector_payload["naics"] = dict(naics)
+        metadata["domain_selector"] = domain_selector_payload
+
     persona_metadata = _extract_persona_metadata(profile)
     metadata["persona"] = persona_metadata if persona_metadata is not None else agent.get("persona")
 
     return metadata
-
 
 def build_agent_configuration(profile: Mapping[str, Any]) -> AgentConfiguration:
     """Construct an :class:`AgentConfiguration` from an intake ``profile`` payload."""

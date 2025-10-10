@@ -1,0 +1,11 @@
+{
+  "id": "16_Observability-Pack_v2",
+  "version": "2.0",
+  "metrics": [
+    "throughput",
+    "latency",
+    "error_rate",
+    "cache_hit_rate"
+  ],
+  "alerts_ref": "11_Workflow-Pack_v2.json#alerts"
+}

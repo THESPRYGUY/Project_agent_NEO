@@ -1,0 +1,9 @@
+We want to revert to a six-level NAICS cascade (2,3,4,5,6-digit) and ensure the new dataset (data/naics/naics_2022.json) populates every level correctly.
+
+Changes needed:
+1. In src/ui/naics_selector.html restore the cascade markup to render labels/selects for Level 2, Level 3, Level 4, Level 5, Level 6 (similar to the previous six-level UX). Remove the three-select block.
+2. In src/ui/domain_bundle.js revert from the current 3-select wiring back to a 5-select cascade (levels 2-6). Each select should request /api/naics/children/<code> with the appropriate target level (3,4,5,6). When a level has no deeper codes, disable lower selects gracefully. Confirm button should enable when a level 4,5, or 6 code is staged.
+3. Update CSS if needed to layout five stacked selects.
+4. Update mocks/tests so naics_cascade.spec.ts exercises the 2?3?4?5?6 flow using the new ?level targets.
+
+Let me know when you are done.

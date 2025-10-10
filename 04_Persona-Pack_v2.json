@@ -1,0 +1,11 @@
+{
+  "id": "04_Persona-Pack_v2",
+  "version": "2.0",
+  "sources": [
+    "src/persona/mbti_types.json",
+    "src/persona/priors_by_domain_role.json"
+  ],
+  "links": {
+    "intake": "05_Intake-Pack_v2.json"
+  }
+}

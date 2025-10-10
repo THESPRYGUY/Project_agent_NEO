@@ -1,0 +1,8 @@
+{
+  "id": "10_Domain-Pack_v2",
+  "version": "2.0",
+  "catalog": "data/catalog/domain_curated.json",
+  "links": {
+    "naics": "src/neo_agent/static/naics_reference.json"
+  }
+}

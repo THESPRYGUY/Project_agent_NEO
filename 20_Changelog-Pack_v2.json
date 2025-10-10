@@ -1,0 +1,8 @@
+{
+  "id": "20_Changelog-Pack_v2",
+  "version": "2.0",
+  "files": [
+    "CHANGELOG.md",
+    "release_notes/NAICS_Update_v2.md"
+  ]
+}

@@ -1,0 +1,15 @@
+{
+  "id": "19_Release-Pack_v2",
+  "version": "2.0",
+  "channels": [
+    "staging",
+    "production"
+  ],
+  "artifacts": [
+    "generated_specs/agent_config.json"
+  ],
+  "checks": [
+    "tests_green",
+    "quality_gates_passed"
+  ]
+}

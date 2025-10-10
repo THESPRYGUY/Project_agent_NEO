@@ -1,0 +1,27 @@
+<div id="domain-selector" data-domain-selector hidden>
+  <label>
+    Top-Level Domain
+    <select data-top-level>
+      <option value="" disabled selected>Select a domain group</option>
+    </select>
+  </label>
+  <label>
+    Subdomain
+    <select data-subdomain disabled>
+      <option value="" disabled selected>Select a subdomain</option>
+    </select>
+  </label>
+  <label>
+    Tags
+    <input type="text" data-tag-input placeholder="Add tags and press Enter">
+  </label>
+  <div data-naics-block hidden>
+    <label>
+      NAICS Code
+      <input type="text" data-naics-code maxlength="6" placeholder="e.g. 541611">
+    </label>
+    <div class="ds-naics-hint" data-naics-hint aria-live="polite" role="status"></div>
+  </div>
+  <div data-tags aria-live="polite"></div>
+  <p class="ds-helper">Choose a domain to narrow strategy guidance. Tags help refine focus areas.</p>
+</div>

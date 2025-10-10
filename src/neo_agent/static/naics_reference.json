@@ -1,0 +1,11 @@
+[
+  {"code": "54", "title": "Professional, Scientific, and Technical Services", "level": 2, "version": "2022", "path": ["54"]},
+  {"code": "5415", "title": "Computer Systems Design and Related Services", "level": 4, "version": "2022", "path": ["54", "5415"]},
+  {"code": "5416", "title": "Management, Scientific, and Technical Consulting Services", "level": 4, "version": "2022", "path": ["54", "5416"]},
+  {"code": "541611", "title": "Administrative Management and General Management Consulting Services", "level": 6, "version": "2022", "path": ["54", "5416", "541611"]},
+  {"code": "541512", "title": "Computer Systems Design Services", "level": 6, "version": "2022", "path": ["54", "5415", "541512"]},
+  {"code": "2211", "title": "Electric Power Generation, Transmission and Distribution", "level": 4, "version": "2022", "path": ["22", "2211"]},
+  {"code": "221118", "title": "Other Electric Power Generation", "level": 6, "version": "2022", "path": ["22", "2211", "221118"]},
+  {"code": "926110", "title": "Administration of General Economic Programs", "level": 6, "version": "2022", "path": ["92", "9261", "926110"]},
+  {"code": "523920", "title": "Portfolio Management", "level": 6, "version": "2022", "path": ["52", "5239", "523920"]}
+]

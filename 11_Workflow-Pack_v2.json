@@ -94,6 +94,21 @@
       ]
     }
   ],
+  "pipelines": {
+    "naics_validation": {
+      "version": "2.0.0",
+      "steps": [
+        "dataset_integrity_check",
+        "cascade_render_smoke",
+        "lineage_emission_check"
+      ],
+      "telemetry": {
+        "events": [
+          {"name": "naics_select", "fields": ["code","level","latency_ms"]}
+        ]
+      }
+    }
+  },
   "log_schema": {
     "task_event": [
       "task_id",

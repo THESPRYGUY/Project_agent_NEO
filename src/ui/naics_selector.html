@@ -1,0 +1,35 @@
+<div class="naics-selector" data-naics-selector>
+  <label>Search NAICS
+    <input type="text" data-naics-search placeholder="Search code or title" aria-label="Search NAICS code or title" />
+  </label>
+  <div class="naics-search-results" data-naics-results aria-live="polite"></div>
+  <div class="naics-select-group" data-naics-cascade>
+    <label>Level 2 (2-digit)
+      <select data-naics-level2 disabled>
+        <option value="">Select 2-digit sector</option>
+      </select>
+    </label>
+    <label>Level 3 (3-digit)
+      <select data-naics-level3 disabled>
+        <option value="">Select 3-digit subsector</option>
+      </select>
+    </label>
+    <label>Level 4 (4-digit)
+      <select data-naics-level4 disabled>
+        <option value="">Select 4-digit industry group</option>
+      </select>
+    </label>
+    <label>Level 5 (5-digit)
+      <select data-naics-level5 disabled>
+        <option value="">Select 5-digit industry</option>
+      </select>
+    </label>
+    <label>Level 6 (6-digit)
+      <select data-naics-level6 disabled>
+        <option value="">Select 6-digit detailed industry</option>
+      </select>
+    </label>
+  </div>
+  <div class="naics-breadcrumb" data-naics-breadcrumb role="status" aria-live="polite"></div>
+  <button type="button" data-naics-confirm disabled>Confirm NAICS</button>
+</div>

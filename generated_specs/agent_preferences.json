@@ -1,0 +1,16 @@
+{
+  "domain": "Technology",
+  "role": "Strategy Consultant",
+  "toolsets": [],
+  "attributes": [],
+  "custom_notes": "",
+  "sliders": {
+    "autonomy": 50,
+    "confidence": 50,
+    "collaboration": 50
+  },
+  "collaboration_mode": "Solo",
+  "communication_style": "Formal",
+  "linkedin": {},
+  "persona": ""
+}

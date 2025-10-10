@@ -1,0 +1,14 @@
+{
+  "id": "01_Vision-Pack_v2",
+  "version": "2.0",
+  "north_star": "Deliver safe, high-quality agentic workflows with clear governance and measurable outcomes.",
+  "principles": [
+    "Test-driven evolution",
+    "Observable by default",
+    "Secure and privacy-preserving"
+  ],
+  "links": {
+    "governance": "02_Governance-Pack_v2.json",
+    "planning": "07_Planning-Pack_v2.json"
+  }
+}

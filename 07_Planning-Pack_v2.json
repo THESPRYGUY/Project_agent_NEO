@@ -1,0 +1,12 @@
+{
+  "id": "07_Planning-Pack_v2",
+  "version": "2.0",
+  "strategies": [
+    "micro_loops",
+    "reflection",
+    "debate_consensus"
+  ],
+  "links": {
+    "workflow": "11_Workflow-Pack_v2.json#quality_feedback"
+  }
+}

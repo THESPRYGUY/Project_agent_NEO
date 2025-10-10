@@ -1,0 +1,10 @@
+{
+  "id": "14_Risk-Pack_v2",
+  "version": "2.0",
+  "register": [
+    { "risk": "data_leakage", "mitigation": "masking" }
+  ],
+  "links": {
+    "quality_gates": "15_Quality-Gates_v2.json"
+  }
+}

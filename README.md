@@ -64,6 +64,35 @@ pytest
 
 Project NEO Agent is released under the MIT License. See `LICENSE` for details.
 
+## Domain Selector & NAICS (Schema Overview)
+
+The intake form supports an optional structured `domain_selector` object attached to
+`profile.agent.domain_selector` with the shape:
+
+```
+{
+  "topLevel": "Sector Domains" | "Strategic Functions" | ...,
+  "subdomain": "Energy & Infrastructure" | "Workflow Orchestration" | ...,
+  "tags": ["normalized-tag", "another"],
+  "naics": {                     // only when topLevel == "Sector Domains" (validated server-side)
+    "code": "541611",
+    "title": "Administrative Management and General Management Consulting Services",
+    "level": 6,
+    "version": "2022",
+    "path": ["54", "5416", "541611"]
+  }
+}
+```
+
+Rules enforced server-side:
+* `topLevel` must be in the curated set; `subdomain` must belong to the matching list.
+* `tags` are order-preserving, duplicate-pruned, and stringified.
+* For `Sector Domains`, a NAICS `code` is required; the server enriches (and overwrites) title, level, version, path from the reference file.
+* If validation fails, the selector is omitted and errors are rendered in the form.
+
+An accompanying JSON Schema lives at `schemas/agent_profile.schema.json` and is used
+optionally (when `jsonschema` is installed) for non-blocking validation feedback.
+
 
 ### Run the intake app locally
 
