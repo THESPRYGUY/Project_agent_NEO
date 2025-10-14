@@ -6,32 +6,28 @@ import html
 import json
 import os
 import time
-import threading
 from pathlib import Path
 from string import Template
-from typing import Any, Dict, Iterable, List, Mapping
+from typing import Any, Dict, Iterable, List, Mapping, Optional
 from urllib.parse import parse_qs
 
 from wsgiref.simple_server import make_server
 
 from .linkedin import scrape_linkedin_profile
 from .logging import get_logger
+from .repo_generator import AgentRepoGenerationError, generate_agent_repo
 from .spec_generator import generate_agent_specs
 
-try:
+try:  # pragma: no cover - telemetry is optional in some environments
     from .telemetry import (
-        emit_mbti_persona_selected,
-        emit_domain_selector_changed,
-        emit_domain_selector_error,
-        emit_domain_selector_validated,
         emit_event,
+        emit_mbti_persona_selected,
+        emit_repo_generated_event,
     )
-except Exception:  # pragma: no cover - defensive import fallback
-    emit_mbti_persona_selected = None
-    emit_domain_selector_changed = None
-    emit_domain_selector_error = None
-    emit_domain_selector_validated = None
+except Exception:  # pragma: no cover - fall back gracefully when telemetry unavailable
     emit_event = None
+    emit_mbti_persona_selected = None
+    emit_repo_generated_event = None
 
 LOGGER = get_logger("intake")
 
@@ -84,6 +80,32 @@ ATTRIBUTES = [
 COMMUNICATION_STYLES = ["Formal", "Conversational", "Concise", "Storytelling"]
 COLLABORATION_MODES = ["Solo", "Pair", "Cross-Functional", "Advisory"]
 
+CURATED_DOMAIN_FALLBACK: Dict[str, List[str]] = {
+    "Sector Domains": [
+        "Advanced Manufacturing",
+        "Financial Services & Fintech",
+        "Healthcare Providers",
+        "Technology & SaaS Platforms",
+        "Public Sector & Education",
+    ],
+    "Strategic Functions": [
+        "AI Strategy & Governance",
+        "Workflow Orchestration",
+        "Observability & Telemetry",
+    ],
+    "Operational Functions": [
+        "Revenue Operations",
+        "Supply Chain Optimization",
+        "Customer Experience",
+        "Field Operations",
+    ],
+    "Innovation Tracks": [
+        "R&D / Product Innovation",
+        "Agent Safety & Compliance",
+        "Knowledge Automation",
+    ],
+}
+
 
 
 def _mbti_axes(code: str) -> Dict[str, str]:
@@ -100,157 +122,205 @@ def _split_csv(value: str | None) -> List[str]:
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
-def _option_list(options: Iterable[str]) -> str:
-    return "\n".join(f'<option value="{option}">{option}</option>' for option in options)
-
-
-def _checkboxes(name: str, options: Iterable[str]) -> str:
-    chunks = []
+def _option_list(
+    options: Iterable[str], *, selected: Optional[str] = None
+) -> str:
+    selected_value = str(selected) if selected is not None else None
+    rendered: list[str] = []
     for option in options:
+        value = str(option)
+        attrs = " selected" if selected_value is not None and value == selected_value else ""
+        rendered.append(
+            f'<option value="{html.escape(value, quote=True)}"{attrs}>'
+            f"{html.escape(value)}"
+            "</option>"
+        )
+    return "\n".join(rendered)
+
+
+def _checkboxes(
+    name: str,
+    options: Iterable[str],
+    *,
+    selected: Optional[Iterable[str] | str] = None,
+) -> str:
+    if selected is None:
+        selected_set: set[str] = set()
+    elif isinstance(selected, str):
+        selected_set = {selected}
+    else:
+        selected_set = {str(item) for item in selected}
+    chunks: list[str] = []
+    for option in options:
+        value = str(option)
+        checked = " checked" if value in selected_set else ""
         chunks.append(
-            f'<label><input type="checkbox" name="{name}" value="{option}"> {option}</label>'
+            f'<label><input type="checkbox" name="{html.escape(name, quote=True)}" '
+            f'value="{html.escape(value, quote=True)}"{checked}> '
+            f"{html.escape(value)}</label>"
         )
     return "\n".join(chunks)
 
 
 FORM_TEMPLATE = Template(
-    """
+        """
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8">
-    <title>Project NEO Agent Intake</title>
-    <style>
-      body { font-family: Arial, sans-serif; margin: 2rem; background-color: #f5f7fb; }
-      h1 { color: #1f3c88; }
-      form { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
-      fieldset { border: 1px solid #dbe2ef; margin-bottom: 1.5rem; padding: 1rem; border-radius: 8px; }
-      legend { font-weight: bold; color: #112d4e; }
-      label { display: block; margin-top: 0.5rem; }
-      select, input[type=text], input[type=url], textarea { width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid #ccc; }
-      .options { display: flex; flex-wrap: wrap; gap: 0.5rem; }
-      .options label { display: flex; align-items: center; gap: 0.3rem; background: #eef2fb; padding: 0.4rem 0.6rem; border-radius: 6px; cursor: pointer; }
-      .slider-value { font-weight: bold; margin-left: 0.5rem; }
-      button { background: #1f3c88; color: white; padding: 0.8rem 1.4rem; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; }
-      .summary { margin-top: 2rem; }
-      .summary pre { background: #0b1b36; color: #e3f6f5; padding: 1rem; border-radius: 8px; }
-      .notice { margin-bottom: 1rem; color: #205072; }
+    <head>
+        <meta charset="utf-8">
+        <title>Project NEO Agent Intake</title>
+        <style>
+            body { font-family: Arial, sans-serif; margin: 2rem; background-color: #f5f7fb; }
+            h1 { color: #1f3c88; }
+            form { background: white; padding: 2rem; border-radius: 12px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+            fieldset { border: 1px solid #dbe2ef; margin-bottom: 1.5rem; padding: 1rem; border-radius: 8px; }
+            legend { font-weight: bold; color: #112d4e; }
+            label { display: block; margin-top: 0.5rem; }
+            select, input[type=text], input[type=url], textarea { width: 100%; padding: 0.5rem; border-radius: 6px; border: 1px solid #ccc; }
+            .options { display: flex; flex-wrap: wrap; gap: 0.5rem; }
+            .options label { display: flex; align-items: center; gap: 0.3rem; background: #eef2fb; padding: 0.4rem 0.6rem; border-radius: 6px; cursor: pointer; }
+            .slider-value { font-weight: bold; margin-left: 0.5rem; }
+            button { background: #1f3c88; color: white; padding: 0.8rem 1.4rem; border: none; border-radius: 8px; cursor: pointer; font-size: 1rem; }
+            .summary { margin-top: 2rem; }
+            .summary pre { background: #0b1b36; color: #e3f6f5; padding: 1rem; border-radius: 8px; }
+            .notice { margin-bottom: 1rem; color: #205072; }
+            .generate-agent { display: flex; justify-content: flex-end; margin-top: 1rem; }
 $persona_styles
-$domain_selector_styles
-    </style>
-    <script>
-      function updateSliderValue(id, value) {
-        document.getElementById(id).innerText = value;
-      }
-    </script>
-  </head>
-  <body>
-    <h1>Project NEO Agent Intake</h1>
-    $notice
-    <form method="post" action="/">
-      <fieldset>
-        <legend>Agent Profile</legend>
-                <!-- NAICS + Function Selection -->
-                <div id="domain-bundle" data-domain-bundle>
-                    $naics_selector_html
-                    $function_select_html
-                    <input type="hidden" name="naics_code">
-                    <input type="hidden" name="naics_title">
-                    <input type="hidden" name="naics_level">
-                        <input type="hidden" name="naics_lineage_json">
-                    <input type="hidden" name="function_category">
-                    <input type="hidden" name="function_specialties_json">
+$extra_styles
+        </style>
+        <script>
+            function updateSliderValue(id, value) {
+                document.getElementById(id).innerText = value;
+            }
+        </script>
+    </head>
+    <body>
+        <h1>Project NEO Agent Intake</h1>
+        $notice
+        <form method="post" action="/">
+            <fieldset>
+                <legend>Agent Profile</legend>
+                <label>Agent Name
+                    <input type="text" name="agent_name" placeholder="e.g., Atlas Analyst" value="$agent_name" required>
+                </label>
+                <label>Version
+                    <input type="text" name="agent_version" value="$agent_version">
+                </label>
+                <label>Primary Domain
+                    <select name="domain" required>
+                        $domain_options
+                    </select>
+                </label>
+                <label>Primary Role
+                    <select name="role" required>
+                        $role_options
+                    </select>
+                </label>
+                <section id="mbti-section" data-testid="mbti-section" data-mbti-tooltips="enabled" class="persona-inline">
+                    <input type="hidden" name="agent_persona" value="$persona_hidden_value" data-persona-input>
+                    $persona_tabs
+                </section>
+            </fieldset>
+
+            <fieldset>
+                <legend>Domain & Classification</legend>
+                <input type="hidden" name="domain_selector" value="$domain_selector_state" data-hidden-domain-selector>
+                <input type="hidden" name="naics_code" value="$naics_code">
+                <input type="hidden" name="naics_title" value="$naics_title">
+                <input type="hidden" name="naics_level" value="$naics_level">
+                <input type="hidden" name="naics_lineage_json" value="$naics_lineage">
+                $domain_selector_html
+                $naics_selector_html
+            </fieldset>
+
+            <fieldset>
+                <legend>Business Function & Role</legend>
+                <input type="hidden" name="function_category" value="$function_category">
+                <input type="hidden" name="function_specialties_json" value="$function_specialties">
+                $function_select_html
+                $function_role_html
+                <div class="generate-agent">
+                    <button type="button" data-generate-agent disabled>Generate Agent Repo</button>
                 </div>
-        <label>Agent Name
-          <input type="text" name="agent_name" placeholder="e.g., Atlas Analyst" required>
-        </label>
-        <label>Version
-          <input type="text" name="agent_version" value="1.0.0">
-        </label>
-        <label>Primary Domain
-          <select name="domain" required>
-            $domain_options
-          </select>
-        </label>
-        <label>Primary Role
-          <select name="role" required>
-            $role_options
-          </select>
-        </label>
-        <!-- MBTI SECTION (moved below domain/role) -->
-        <section id="mbti-section" data-testid="mbti-section" data-mbti-tooltips="enabled" class="persona-inline">
-          <input type="hidden" name="agent_persona" value="$persona_hidden_value" data-persona-input>
-          $persona_tabs
-        </section>
-      </fieldset>
+            </fieldset>
 
-      <fieldset>
-        <legend>Toolsets</legend>
-        <div class="options">
-          $toolset_checkboxes
-        </div>
-        <label>Custom Toolsets (comma separated)
-          <input type="text" name="custom_toolsets" placeholder="e.g., Knowledge Graphing, Scenario Planning">
-        </label>
-      </fieldset>
+            <fieldset>
+                <legend>Toolsets</legend>
+                <div class="options">
+                    $toolset_checkboxes
+                </div>
+                <label>Custom Toolsets (comma separated)
+                    <input type="text" name="custom_toolsets" placeholder="e.g., Knowledge Graphing, Scenario Planning" value="$custom_toolsets">
+                </label>
+            </fieldset>
 
-      <fieldset>
-        <legend>Attributes & Traits</legend>
-        <div class="options">
-          $attribute_checkboxes
-        </div>
-        <label>Custom Attributes (comma separated)
-          <input type="text" name="custom_attributes" placeholder="e.g., Customer obsessed, Pattern matcher">
-        </label>
-      </fieldset>
+            <fieldset>
+                <legend>Attributes & Traits</legend>
+                <div class="options">
+                    $attribute_checkboxes
+                </div>
+                <label>Custom Attributes (comma separated)
+                    <input type="text" name="custom_attributes" placeholder="e.g., Customer obsessed, Pattern matcher" value="$custom_attributes">
+                </label>
+            </fieldset>
 
-      <fieldset>
-        <legend>Preferences</legend>
-        <label>Autonomy Level <span class="slider-value" id="autonomy_value">50</span>
-          <input type="range" min="0" max="100" value="50" name="autonomy" oninput="updateSliderValue('autonomy_value', this.value)">
-        </label>
-        <label>Confidence Level <span class="slider-value" id="confidence_value">50</span>
-          <input type="range" min="0" max="100" value="50" name="confidence" oninput="updateSliderValue('confidence_value', this.value)">
-        </label>
-        <label>Collaboration Level <span class="slider-value" id="collaboration_value">50</span>
-          <input type="range" min="0" max="100" value="50" name="collaboration" oninput="updateSliderValue('collaboration_value', this.value)">
-        </label>
-        <label>Communication Style
-          <select name="communication_style">
-            $communication_options
-          </select>
-        </label>
-        <label>Collaboration Mode
-          <select name="collaboration_mode">
-            $collaboration_options
-          </select>
-        </label>
-      </fieldset>
+            <fieldset>
+                <legend>Preferences</legend>
+                <label>Autonomy Level <span class="slider-value" id="autonomy_value">$autonomy_value</span>
+                    <input type="range" min="0" max="100" value="$autonomy_value" name="autonomy" oninput="updateSliderValue('autonomy_value', this.value)">
+                </label>
+                <label>Confidence Level <span class="slider-value" id="confidence_value">$confidence_value</span>
+                    <input type="range" min="0" max="100" value="$confidence_value" name="confidence" oninput="updateSliderValue('confidence_value', this.value)">
+                </label>
+                <label>Collaboration Level <span class="slider-value" id="collaboration_value">$collaboration_value</span>
+                    <input type="range" min="0" max="100" value="$collaboration_value" name="collaboration" oninput="updateSliderValue('collaboration_value', this.value)">
+                </label>
+                <label>Communication Style
+                    <select name="communication_style">
+                        $communication_options
+                    </select>
+                </label>
+                <label>Collaboration Mode
+                    <select name="collaboration_mode">
+                        $collaboration_options
+                    </select>
+                </label>
+            </fieldset>
 
-      <fieldset>
-        <legend>LinkedIn</legend>
-        <label>Profile URL
-          <input type="url" name="linkedin_url" placeholder="https://www.linkedin.com/in/example">
-        </label>
-      </fieldset>
+            <fieldset>
+                <legend>LinkedIn</legend>
+                <label>Profile URL
+                    <input type="url" name="linkedin_url" placeholder="https://www.linkedin.com/in/example" value="$linkedin_url">
+                </label>
+            </fieldset>
 
-      <fieldset>
-        <legend>Custom Notes</legend>
-        <label>Engagement Notes
-          <textarea name="notes" rows="4" placeholder="Outline constraints, knowledge packs, or workflow context."></textarea>
-        </label>
-      </fieldset>
+            <fieldset>
+                <legend>Custom Notes</legend>
+                <label>Engagement Notes
+                    <textarea name="notes" rows="4" placeholder="Outline constraints, knowledge packs, or workflow context.">$notes</textarea>
+                </label>
+            </fieldset>
 
-      <button type="submit">Generate Agent Profile</button>
-    </form>
+            <button type="submit">Generate Agent Profile</button>
+        </form>
 
-    $summary
-    <script type="module">
+        $summary
+        <script type="module">
 $persona_script
-$domain_selector_script
-$domain_selector_init
-    </script>
-  </body>
+        </script>
+        <script>
+$function_role_bootstrap
+        </script>
+        <script>
+$domain_bundle_script
+        </script>
+        <script>
+$function_role_script
+        </script>
+        <script>
+$generate_agent_script
+        </script>
+    </body>
 </html>
 """
 )
@@ -276,11 +346,6 @@ def _summary_block(profile: Mapping[str, Any] | None, profile_path: str, spec_pa
 
 class IntakeApplication:
     """Minimal WSGI application serving the intake workflow."""
-    # Step 4 Non-goals (documented):
-    # - No advanced NAICS fuzzy search beyond simple prefix/substring match.
-    # - No pagination or caching layer for NAICS API (reference small & cached in-process).
-    # - No schema version updates yet; domain_selector shape unchanged.
-    # - No analytics batching/export; telemetry buffered only in-memory.
 
     MAX_BODY_BYTES = 1_048_576
 
@@ -290,23 +355,42 @@ class IntakeApplication:
         self.ui_dir = self.assets_root / "ui"
         self.persona_dir = self.assets_root / "persona"
         self.static_dir = self.assets_root / "neo_agent" / "static"
+        self.data_root = self.project_root / "data"
+        self.naics_path = self.data_root / "naics" / "naics_2022.json"
+        self.naics_sample_path = self.data_root / "naics" / "naics_2022.sample.json"
+        self.functions_catalog_path = self.data_root / "functions" / "functions_catalog.json"
+        self.business_functions_path = self.data_root / "functions" / "business_functions.json"
+        self.role_catalog_path = self.data_root / "roles" / "role_catalog.json"
+        self.routing_defaults_path = self.data_root / "routing" / "function_role_map.json"
         self.base_dir = self._resolve_base_dir(base_dir)
         self.profile_path = self.base_dir / "agent_profile.json"
         self.spec_dir = self.base_dir / "generated_specs"
         self.spec_dir.mkdir(parents=True, exist_ok=True)
+        self.repo_output_dir = self.base_dir / "generated_repos"
+        self.repo_output_dir.mkdir(parents=True, exist_ok=True)
         self.persona_state_path = self.base_dir / "persona_state.json"
         self.persona_assets = self._load_persona_assets()
         self.persona_config = self._load_persona_config()
         self.mbti_lookup = self._index_mbti_types(self.persona_config.get("mbti_types", []))
-        self.domain_selector_assets = self._load_domain_selector_assets()
-        # Step 3 / 4: Domain selector validation / NAICS
-        self._naics_cache: dict[str, dict] | None = None  # lazy load on first lookup
-        self._naics_prefix_index: dict[str, list[str]] | None = None
-        # Lock protects atomic swap of NAICS caches during reloads
-        self._naics_lock = threading.RLock()
-        # Fuzzy search small LRU cache: key=query -> list[entries]
-        self._naics_search_cache: list[tuple[str, list[dict]]] = []  # simple FIFO/LRU list
-        self._naics_search_cache_capacity = 64
+        # NAICS caches (filled on-demand)
+        self._naics_cache = None
+        self._naics_by_code = None
+        self._function_role_data = self._load_function_role_data()
+        self._domain_selector_html = self._safe_read_text(self.ui_dir / "domain_selector.html")
+        self._domain_selector_css = self._safe_read_text(self.ui_dir / "domain_selector.css")
+        self._domain_selector_js = self._safe_read_text(self.ui_dir / "domain_selector.js")
+        self._domain_bundle_css = self._safe_read_text(self.ui_dir / "domain_bundle.css")
+        self._domain_bundle_js = self._safe_read_text(self.ui_dir / "domain_bundle.js")
+        self._domain_selector_assets = self._load_domain_selector_assets()
+        self._function_select_html = self._safe_read_text(self.ui_dir / "function_select.html")
+        self._function_role_html = self._safe_read_text(self.ui_dir / "function_role_picker.html")
+        self._function_role_css = self._safe_read_text(self.ui_dir / "function_role.css")
+        self._function_role_js = self._safe_read_text(self.ui_dir / "function_role.js")
+        self._generate_agent_js = self._safe_read_text(self.ui_dir / "generate_agent.js")
+        self._naics_selector_html = self._safe_read_text(self.ui_dir / "naics_selector.html")
+        LOGGER.debug("Loaded function/role assets: functions=%d roles=%d",
+                     len(self._function_role_data.get("functions", [])),
+                     len(self._function_role_data.get("roles", [])))
         LOGGER.debug(
             "Initialised intake application with base_dir=%s persona_state=%s",
             self.base_dir,
@@ -356,10 +440,26 @@ class IntakeApplication:
 
 
     def _safe_read_text(self, path: Path) -> str:
+        """Read a text asset safely, tolerating mixed encodings.
+
+        Prefer UTF‑8. If the file contains stray bytes (e.g., smart quotes
+        pasted from Word), fall back to decoding with replacement so the app
+        does not crash during initialisation.
+        """
         if not path.exists():
             LOGGER.warning("Persona asset missing: %s", path)
             return ""
-        return path.read_text(encoding="utf-8")
+        try:
+            return path.read_text(encoding="utf-8")
+        except UnicodeDecodeError:
+            try:
+                raw = path.read_bytes()
+                text = raw.decode("utf-8", errors="replace")
+                LOGGER.warning("Non-UTF-8 characters in %s; replaced invalid bytes", path)
+                return text
+            except Exception:
+                LOGGER.exception("Failed to read text at %s", path)
+                return ""
 
     def _safe_read_json(self, path: Path, default: Any) -> Any:
         if not path.exists():
@@ -370,7 +470,6 @@ class IntakeApplication:
         except json.JSONDecodeError:
             LOGGER.exception("Failed to parse JSON at %s", path)
             return default
-
     def _load_persona_assets(self) -> dict[str, str]:
         html = self._safe_read_text(self.ui_dir / "persona_tabs.html")
         base_css = self._safe_read_text(self.ui_dir / "persona.css")
@@ -381,16 +480,6 @@ class IntakeApplication:
         css = self._indent_block(combined_css)
         script = self._indent_block(self._safe_read_text(self.ui_dir / "persona.js"), spaces=4)
         return {"html": html, "css": css, "js": script}
-    def _load_domain_selector_assets(self) -> dict[str, str]:
-        html_block = self._safe_read_text(self.ui_dir / "domain_selector.html")
-        css_block = self._safe_read_text(self.ui_dir / "domain_selector.css")
-        script_block = self._safe_read_text(self.ui_dir / "domain_selector.js")
-        return {
-            "html": self._indent_block(html_block, spaces=8),
-            "css": self._indent_block(css_block),
-            "js": self._indent_block(script_block, spaces=4),
-        }
-
     def _index_mbti_types(self, entries: Iterable[Mapping[str, Any]]) -> Dict[str, Mapping[str, Any]]:
         lookup: Dict[str, Mapping[str, Any]] = {}
         for entry in entries or []:
@@ -427,14 +516,71 @@ class IntakeApplication:
             "priors_by_domain_role": priors,
         }
 
+    def _load_function_role_data(self) -> dict[str, Any]:
+        functions = self._safe_read_json(self.business_functions_path, [])
+        if not isinstance(functions, list):
+            functions = []
+        roles = self._safe_read_json(self.role_catalog_path, [])
+        if not isinstance(roles, list):
+            roles = []
+        routing_defaults = self._safe_read_json(self.routing_defaults_path, {})
+        if not isinstance(routing_defaults, Mapping):
+            routing_defaults = {}
+        function_catalog = self._safe_read_json(self.functions_catalog_path, {})
+        if not isinstance(function_catalog, Mapping):
+            function_catalog = {}
+        return {
+            "functions": functions,
+            "roles": roles,
+            "functionDefaults": routing_defaults,
+            "catalog": function_catalog,
+        }
+
+    def _load_domain_selector_assets(self) -> dict[str, Any]:
+        curated_path = self.data_root / "catalog" / "domains_curated.json"
+        curated_raw = self._safe_read_json(curated_path, CURATED_DOMAIN_FALLBACK)
+        curated: dict[str, list[str]] = {}
+        if isinstance(curated_raw, Mapping):
+            for key, value in curated_raw.items():
+                if isinstance(value, list):
+                    curated[str(key)] = [str(item) for item in value]
+        if not curated:
+            curated = {key: list(values) for key, values in CURATED_DOMAIN_FALLBACK.items()}
+        if "Sector Domains" not in curated:
+            curated["Sector Domains"] = list(CURATED_DOMAIN_FALLBACK.get("Sector Domains", []))
+        return {
+            "html": self._domain_selector_html,
+            "css": self._domain_selector_css,
+            "bundle_css": self._domain_bundle_css,
+            "js": self._domain_selector_js,
+            "bundle_js": self._domain_bundle_js,
+            "curated": curated,
+        }
+
     # Rendering helpers -------------------------------------------------
     def render_form(
         self,
         *,
         message: str | None = None,
         profile: Mapping[str, Any] | None = None,
-        domain_selector_errors: list[str] | None = None,
     ) -> str:
+        if not isinstance(profile, Mapping):
+            profile = {}
+        agent_section_candidate = profile.get("agent") if isinstance(profile, Mapping) else None
+        agent_section = agent_section_candidate if isinstance(agent_section_candidate, Mapping) else {}
+        toolset_section_candidate = profile.get("toolsets") if isinstance(profile, Mapping) else None
+        toolset_section = (
+            toolset_section_candidate if isinstance(toolset_section_candidate, Mapping) else {}
+        )
+        attribute_section_candidate = profile.get("attributes") if isinstance(profile, Mapping) else None
+        attribute_section = (
+            attribute_section_candidate if isinstance(attribute_section_candidate, Mapping) else {}
+        )
+        preferences_section_candidate = profile.get("preferences") if isinstance(profile, Mapping) else None
+        preferences_section = (
+            preferences_section_candidate if isinstance(preferences_section_candidate, Mapping) else {}
+        )
+
         persona_style_block = self.persona_assets.get("css", "")
         persona_html = self.persona_assets.get("html", "")
         persona_script = self.persona_assets.get("js", "")
@@ -450,79 +596,220 @@ window.addEventListener('DOMContentLoaded', function () {
   });
 });
 """
+        sliders_candidate = preferences_section.get("sliders") if isinstance(preferences_section, Mapping) else None
+        if not isinstance(profile, Mapping):
+            profile = {}
+
+        slider_section = sliders_candidate if isinstance(sliders_candidate, Mapping) else {}
+
+        def _str(value: Any, default: str = "") -> str:
+            return str(value) if value is not None else default
+
         persona_hidden = ""
-        # MBTI SECTION (moved below domain/role)
+        if isinstance(profile, Mapping):
+            persona_block = profile.get("persona")
+            if isinstance(persona_block, Mapping):
+                agent_persona_block = persona_block.get("agent")
+                if isinstance(agent_persona_block, Mapping):
+                    persona_hidden = _str(agent_persona_block.get("code", ""))
+            if not persona_hidden:
+                persona_hidden = _str(agent_section.get("persona", ""))
 
-        if profile:
-            persona_section = profile.get("persona") if isinstance(profile, Mapping) else {}
-            if isinstance(persona_section, Mapping):
-                agent_section = persona_section.get("agent", {})
-                if isinstance(agent_section, Mapping):
-                    persona_hidden = str(agent_section.get("code", ""))
-            agent_persona = profile.get("agent", {}).get("persona") if isinstance(profile, Mapping) else ""
-            if not persona_hidden and agent_persona:
-                persona_hidden = str(agent_persona)
+        selected_toolsets = toolset_section.get("selected", []) if isinstance(toolset_section, Mapping) else []
+        selected_attributes = attribute_section.get("selected", []) if isinstance(attribute_section, Mapping) else []
+        custom_toolsets_value = ", ".join(toolset_section.get("custom", [])) if isinstance(toolset_section, Mapping) else ""
+        custom_attributes_value = ", ".join(attribute_section.get("custom", [])) if isinstance(attribute_section, Mapping) else ""
 
-        # Load NAICS & function selection partials
-        naics_selector_html = self._safe_read_text(self.ui_dir / "naics_selector.html")
-        function_select_html = self._safe_read_text(self.ui_dir / "function_select.html")
+        autonomy_value = int(slider_section.get("autonomy", 50) or 50)
+        confidence_value = int(slider_section.get("confidence", 50) or 50)
+        collaboration_value = int(slider_section.get("collaboration", 50) or 50)
 
-        domain_selector_styles = ""
-        domain_selector_script = ""
-        domain_selector_init = ""
-        domain_selector_value = ""
-        try:
-            domain_selector_styles = self._indent_block(
-                self._safe_read_text(self.ui_dir / "domain_bundle.css")
-            )
-        except FileNotFoundError:
-            LOGGER.debug("domain_bundle.css not found", exc_info=True)
-        except Exception:  # pragma: no cover - defensive read
-            LOGGER.debug("Failed to load domain_bundle.css", exc_info=True)
+        communication_style = preferences_section.get("communication_style") if isinstance(preferences_section, Mapping) else None
+        collaboration_mode = preferences_section.get("collaboration_mode") if isinstance(preferences_section, Mapping) else None
 
-        try:
-            domain_selector_script = self._indent_block(
-                self._safe_read_text(self.ui_dir / "domain_bundle.js"), spaces=4
-            )
-        except FileNotFoundError:
-            LOGGER.debug("domain_bundle.js not found", exc_info=True)
-        except Exception:  # pragma: no cover - defensive read
-            LOGGER.debug("Failed to load domain_bundle.js", exc_info=True)
-        # Render domain selector / persona form. Surface domain selector errors if present.
-        error_block = ""
-        if domain_selector_errors:
-            items = "".join(f"<li>{html.escape(err)}</li>" for err in domain_selector_errors)
-            error_block = f'<div class="notice error" id="domain-selector-errors" tabindex="-1"><ul>{items}</ul></div>'
+        linkedin_section = profile.get("linkedin", {}) if isinstance(profile, Mapping) else {}
+        linkedin_url = ""
+        if isinstance(linkedin_section, Mapping):
+            linkedin_url = _str(linkedin_section.get("url") or linkedin_section.get("profile") or "")
 
-        return FORM_TEMPLATE.substitute(
-            notice=_notice(message) + error_block,
-            summary=_summary_block(profile, str(self.profile_path), str(self.spec_dir)),
-            persona_tabs=persona_html,
-            persona_styles=persona_style_block,
-            persona_script=persona_script,
-            persona_hidden_value=persona_hidden,
-            domain_selector_styles=domain_selector_styles,
-            domain_selector_html="",
-            domain_selector_script=domain_selector_script,
-            domain_selector_init=domain_selector_init,
-            domain_selector_value=domain_selector_value,
-            naics_selector_html=naics_selector_html,
-            function_select_html=function_select_html,
-            domain_options=_option_list(DOMAINS),
-            role_options=_option_list(ROLES),
-            toolset_checkboxes=_checkboxes("toolsets", TOOLSETS),
-            attribute_checkboxes=_checkboxes("attributes", ATTRIBUTES),
-            communication_options=_option_list(COMMUNICATION_STYLES),
-            collaboration_options=_option_list(COLLABORATION_MODES),
+        domain_selector_state = ""
+        if isinstance(agent_section, Mapping) and isinstance(agent_section.get("domain_selector"), Mapping):
+            domain_selector_state = json.dumps(agent_section["domain_selector"], ensure_ascii=False)
+        elif isinstance(profile, Mapping) and isinstance(profile.get("domain_selector"), Mapping):
+            domain_selector_state = json.dumps(profile["domain_selector"], ensure_ascii=False)
+
+        naics_section: Mapping[str, Any] | None = None
+        if isinstance(profile, Mapping):
+            candidate = profile.get("naics")
+            if isinstance(candidate, Mapping):
+                naics_section = candidate
+            else:
+                classification = profile.get("classification")
+                if isinstance(classification, Mapping):
+                    nested = classification.get("naics")
+                    if isinstance(nested, Mapping):
+                        naics_section = nested
+
+        naics_code = naics_section.get("code", "") if naics_section else ""
+        naics_title = naics_section.get("title", "") if naics_section else ""
+        naics_level = naics_section.get("level", "") if naics_section else ""
+        naics_lineage = ""
+        if naics_section and isinstance(naics_section.get("lineage"), list):
+            naics_lineage = json.dumps(naics_section["lineage"], ensure_ascii=False)
+
+        business_function = _str(profile.get("business_function") or agent_section.get("business_function") or "")
+        role_payload = profile.get("role") if isinstance(profile, Mapping) else None
+        if not isinstance(role_payload, Mapping):
+            role_payload = agent_section.get("role") if isinstance(agent_section, Mapping) else {}
+        if isinstance(role_payload, str):
+            role_payload = {"title": role_payload, "code": role_payload}
+        role_payload = role_payload if isinstance(role_payload, Mapping) else {}
+
+        routing_defaults = profile.get("routing_defaults") if isinstance(profile, Mapping) else None
+        if not isinstance(routing_defaults, Mapping):
+            routing_defaults = profile.get("routing_hints") if isinstance(profile, Mapping) else None
+        routing_defaults = routing_defaults if isinstance(routing_defaults, Mapping) else {}
+
+        function_category = _str(profile.get("function_category") or agent_section.get("function_category") or "")
+        function_specialties = profile.get("function_specialties")
+        if not isinstance(function_specialties, list):
+            function_specialties = []
+        function_specialties_json = json.dumps(function_specialties, ensure_ascii=False) if function_specialties else ""
+
+        function_role_state = {
+            "business_function": business_function,
+            "role_code": _str(role_payload.get("code", "")),
+            "role_title": _str(role_payload.get("title", "")),
+            "role_seniority": _str(role_payload.get("seniority", "")),
+            "routing_defaults_json": json.dumps(routing_defaults, ensure_ascii=False) if routing_defaults else "",
+        }
+
+        function_role_bootstrap = self._indent_block(
+            "\n".join(
+                [
+                    "window.__FUNCTION_ROLE_DATA__ = " + json.dumps(self._function_role_data, ensure_ascii=False) + ";",
+                    "window.__FUNCTION_ROLE_STATE__ = " + json.dumps(function_role_state, ensure_ascii=False) + ";",
+                ]
+            ),
+            spaces=4,
         )
 
-    def _build_profile(self, data: Mapping[str, List[str]], linkedin: Mapping[str, Any]) -> Dict[str, Any]:
+        extra_styles = self._indent_block(
+            "\n".join(
+                part
+                for part in (
+                    self._domain_selector_assets.get("css"),
+                    self._domain_selector_assets.get("bundle_css"),
+                    self._function_role_css,
+                )
+                if part
+            ),
+        )
+
+        domain_selector_html = self._indent_block(self._domain_selector_assets.get("html", ""), spaces=8)
+        naics_selector_html = self._indent_block(self._naics_selector_html, spaces=8)
+        function_select_html = self._indent_block(self._function_select_html, spaces=8)
+        function_role_html = self._indent_block(self._function_role_html, spaces=8)
+
+        domain_bundle_script = self._indent_block(
+            "\n".join(
+                part
+                for part in (
+                    self._domain_selector_assets.get("js"),
+                    self._domain_selector_assets.get("bundle_js"),
+                )
+                if part
+            ),
+            spaces=4,
+        )
+        # Finalise options and HTML substitution for the intake form
+        agent_name = _str(agent_section.get("name", ""))
+        agent_version = _str(agent_section.get("version", "1.0.0")) or "1.0.0"
+        notes_value = _str(profile.get("notes") if isinstance(profile, Mapping) else "")
+
+        communication_options = _option_list(COMMUNICATION_STYLES, selected=communication_style)
+        collaboration_options = _option_list(COLLABORATION_MODES, selected=collaboration_mode)
+        domain_options = _option_list(DOMAINS, selected=agent_section.get("domain"))
+        role_options = _option_list(ROLES, selected=agent_section.get("role"))
+
+        toolset_checkboxes = _checkboxes("toolsets", TOOLSETS, selected=selected_toolsets)
+        attribute_checkboxes = _checkboxes("attributes", ATTRIBUTES, selected=selected_attributes)
+
+        generate_agent_script = self._indent_block(self._generate_agent_js, spaces=8)
+        function_role_script = self._indent_block(self._function_role_js, spaces=8)
+
+        summary_html = _summary_block(None, str(self.profile_path), str(self.spec_dir))
+
+        html_out = FORM_TEMPLATE.substitute(
+            persona_styles=self._indent_block(persona_style_block),
+            extra_styles=extra_styles,
+            notice=_notice(message),
+            domain_options=domain_options,
+            role_options=role_options,
+            persona_tabs=persona_html,
+            persona_hidden_value=html.escape(persona_hidden, quote=True),
+            domain_selector_state=html.escape(domain_selector_state, quote=True),
+            naics_code=html.escape(naics_code, quote=True),
+            naics_title=html.escape(naics_title, quote=True),
+            naics_level=html.escape(naics_level, quote=True),
+            naics_lineage=html.escape(naics_lineage, quote=True),
+            domain_selector_html=domain_selector_html,
+            naics_selector_html=naics_selector_html,
+            function_category=html.escape(function_category, quote=True),
+            function_specialties=function_specialties_json,
+            function_select_html=function_select_html,
+            function_role_html=function_role_html,
+            toolset_checkboxes=toolset_checkboxes,
+            attribute_checkboxes=attribute_checkboxes,
+            custom_toolsets=html.escape(custom_toolsets_value, quote=True),
+            custom_attributes=html.escape(custom_attributes_value, quote=True),
+            autonomy_value=autonomy_value,
+            confidence_value=confidence_value,
+            collaboration_value=collaboration_value,
+            communication_options=communication_options,
+            collaboration_options=collaboration_options,
+            linkedin_url=html.escape(linkedin_url, quote=True),
+            notes=html.escape(notes_value),
+            summary=summary_html,
+            persona_script=self._indent_block(persona_script, spaces=8),
+            function_role_bootstrap=function_role_bootstrap,
+            domain_bundle_script=domain_bundle_script,
+            function_role_script=function_role_script,
+            generate_agent_script=generate_agent_script,
+            agent_name=html.escape(agent_name, quote=True),
+            agent_version=html.escape(agent_version, quote=True),
+        )
+        return html_out
+
+    def _build_profile(
+        self,
+        data: Mapping[str, Any],
+        linkedin: Mapping[str, Any] | None = None,
+    ) -> Dict[str, Any]:
         def _get(name: str, default: str = "") -> str:
-            values = data.get(name, [])
-            return values[0] if values else default
+            values = data.get(name, []) if isinstance(data, Mapping) else []
+            if isinstance(values, list):
+                return values[0] if values else default
+            try:
+                return str(values)
+            except Exception:
+                return default
 
         def _getlist(name: str) -> List[str]:
-            return list(data.get(name, []))
+            values = data.get(name, []) if isinstance(data, Mapping) else []
+            return [str(v) for v in values] if isinstance(values, list) else []
+
+        def _parse_json(name: str) -> Any:
+            raw = _get(name)
+            if not raw:
+                return None
+            try:
+                return json.loads(raw)
+            except (json.JSONDecodeError, TypeError):
+                LOGGER.debug("Failed to parse JSON payload for field %s", name, exc_info=True)
+                return None
+
+        linkedin = linkedin or {}
 
         profile: Dict[str, Any] = {
             "agent": {
@@ -554,74 +841,6 @@ window.addEventListener('DOMContentLoaded', function () {
             "persona": self._load_persona_state(),
         }
 
-        # NAICS + Function hidden fields (new classification system)
-        naics_code = _get("naics_code")
-        if naics_code:
-            try:
-                naics_level = int(_get("naics_level") or 0)
-            except ValueError:
-                naics_level = 0
-            naics_title = _get("naics_title")
-            lineage_raw = _get("naics_lineage_json")
-            lineage: list[dict[str, Any]] = []
-            if lineage_raw:
-                try:
-                    parsed = json.loads(lineage_raw)
-                    if isinstance(parsed, list):
-                        for item in parsed:
-                            if isinstance(item, Mapping) and item.get("code"):
-                                lineage.append({
-                                    "code": str(item.get("code")),
-                                    "title": str(item.get("title", "")),
-                                    "level": item.get("level")
-                                })
-                except Exception:
-                    LOGGER.debug("Failed to parse naics_lineage_json", exc_info=True)
-            profile.setdefault("classification", {})["naics"] = {
-                "code": naics_code,
-                "title": naics_title,
-                "level": naics_level,
-                "lineage": lineage,
-            }
-            if emit_event:
-                try:
-                    emit_event("naics:selected", {"code": naics_code, "level": naics_level})
-                except Exception:  # pragma: no cover
-                    LOGGER.debug("Failed to emit naics:selected event", exc_info=True)
-
-        function_category = _get("function_category")
-        specialties_json = _get("function_specialties_json")
-        specialties: list[str] = []
-        if specialties_json:
-            try:
-                loaded = json.loads(specialties_json)
-                if isinstance(loaded, list):
-                    for s in loaded:
-                        if isinstance(s, str) and s.strip():
-                            if s.strip() not in specialties:
-                                specialties.append(s.strip())
-            except Exception:
-                LOGGER.debug("Failed to parse function_specialties_json", exc_info=True)
-        if function_category:
-            profile.setdefault("classification", {})["function"] = {
-                "category": function_category,
-                "specialties": specialties,
-            }
-            if emit_event:
-                try:
-                    emit_event("function:selected", {"category": function_category, "specialties": len(specialties)})
-                except Exception:  # pragma: no cover
-                    LOGGER.debug("Failed to emit function:selected event", exc_info=True)
-
-        domain_selector_raw = _get("domain_selector", "")
-        # local error collection to avoid cross-request leakage
-        ds_errors: list[str] = []
-        domain_selector = self._parse_domain_selector(domain_selector_raw, ds_errors)
-        if domain_selector and not ds_errors:
-            profile["agent"]["domain_selector"] = domain_selector
-        # attach collected errors so caller (POST handler) can render them
-        profile.setdefault("_validation", {})["domain_selector_errors"] = ds_errors
-
         persona_state = profile.get("persona")
         enriched_persona = None
         if isinstance(persona_state, Mapping):
@@ -650,545 +869,371 @@ window.addEventListener('DOMContentLoaded', function () {
                     LOGGER.debug("Failed to emit MBTI telemetry event", exc_info=True)
 
         if linkedin:
-            derived_tools = linkedin.get("skills", [])
+            derived_tools = linkedin.get("skills", []) if isinstance(linkedin.get("skills"), list) else []
             for tool in derived_tools:
-                candidate = tool.title()
+                candidate = str(tool).title()
                 if candidate not in profile["toolsets"]["selected"]:
                     profile["toolsets"]["selected"].append(candidate)
 
-            derived_roles = linkedin.get("roles", [])
+            derived_roles = linkedin.get("roles", []) if isinstance(linkedin.get("roles"), list) else []
             if derived_roles and not profile["agent"].get("role"):
-                profile["agent"]["role"] = derived_roles[0].title()
+                profile["agent"]["role"] = str(derived_roles[0]).title()
 
-        # Optional schema validation (Step 5) - does not block profile generation
-        try:
-            self._maybe_validate_schema(profile)
-        except Exception:
-            LOGGER.debug("Schema validation failed (non-blocking)", exc_info=True)
+        domain_selector_payload = _parse_json("domain_selector")
+        if isinstance(domain_selector_payload, Mapping):
+            profile["agent"]["domain_selector"] = dict(domain_selector_payload)
+            profile["domain_selector"] = dict(domain_selector_payload)
+
+        naics_code = _get("naics_code").strip()
+        naics_title = _get("naics_title").strip()
+        naics_level_raw = _get("naics_level").strip()
+        naics_lineage_payload = _parse_json("naics_lineage_json")
+        if naics_code:
+            try:
+                level_value = int(naics_level_raw) if naics_level_raw else None
+            except ValueError:
+                level_value = None
+            lineage: list[Any] = []
+            if isinstance(naics_lineage_payload, list):
+                for node in naics_lineage_payload:
+                    if isinstance(node, Mapping):
+                        lineage.append({
+                            "code": str(node.get("code", "")),
+                            "title": str(node.get("title", "")),
+                            "level": node.get("level"),
+                        })
+                    elif isinstance(node, str):
+                        lineage.append({"code": node})
+            naics_payload = {
+                "code": naics_code,
+                "title": naics_title,
+                "level": level_value,
+                "lineage": lineage,
+            }
+            profile["naics"] = naics_payload
+            classification = profile.setdefault("classification", {})
+            if isinstance(classification, Mapping):
+                classification = dict(classification)
+            profile["classification"] = classification
+            profile["classification"]["naics"] = naics_payload
+
+        business_function = _get("business_function").strip()
+        if business_function:
+            profile["business_function"] = business_function
+            profile["agent"]["business_function"] = business_function
+
+        role_code = _get("role_code").strip()
+        role_title = _get("role_title").strip()
+        role_seniority = _get("role_seniority").strip()
+        if role_code or role_title or role_seniority:
+            role_payload = {
+                "code": role_code,
+                "title": role_title or role_code,
+                "seniority": role_seniority,
+                "function": business_function or profile["agent"].get("role"),
+            }
+            profile["role"] = role_payload
+
+        routing_defaults_payload = _parse_json("routing_defaults_json")
+        if isinstance(routing_defaults_payload, Mapping):
+            profile["routing_defaults"] = dict(routing_defaults_payload)
+
+        function_category = _get("function_category").strip()
+        if function_category:
+            profile["function_category"] = function_category
+            profile["agent"]["function_category"] = function_category
+        specialties_payload = _parse_json("function_specialties_json")
+        if isinstance(specialties_payload, list):
+            parsed_specialties = [str(item) for item in specialties_payload if item]
+            profile["function_specialties"] = parsed_specialties
+
         return profile
 
-    def _maybe_validate_schema(self, profile: Mapping[str, Any]) -> None:
-        """Validate profile against JSON schema if jsonschema is installed.
+    # NAICS helpers ----------------------------------------------------
+    def _load_naics_reference(self) -> list[dict[str, Any]]:
+        if self._naics_cache is None:
+            path = self.naics_path if self.naics_path.exists() else self.naics_sample_path
+            default_payload = [
+                {
+                    "code": "54",
+                    "title": "Professional, Scientific, and Technical Services",
+                    "level": 2,
+                    "parents": [],
+                },
+                {
+                    "code": "541",
+                    "title": "Professional, Scientific, and Technical Services (541)",
+                    "level": 3,
+                    "parents": [{"code": "54", "title": "Professional, Scientific, and Technical Services", "level": 2}],
+                },
+            ]
+            data = self._safe_read_json(path, default_payload)
+            entries: list[dict[str, Any]] = []
+            index: dict[str, dict[str, Any]] = {}
+            items: Iterable[Any]
+            if isinstance(data, Mapping):
+                items = [dict({"code": key, **value}) for key, value in data.items() if isinstance(value, Mapping)]
+            elif isinstance(data, list):
+                items = data
+            else:
+                items = default_payload
 
-        Non-blocking: logs debug on failure. Intended for development feedback.
-        """
-        schema_path = self.project_root / "schemas" / "agent_profile.schema.json"
-        if not schema_path.exists():  # nothing to do
-            return
-        try:  # dynamic import to keep dependency optional
-            import jsonschema  # type: ignore
-        except Exception:
-            return
-        try:
-            schema_obj = json.loads(schema_path.read_text(encoding="utf-8"))
-        except Exception:
-            LOGGER.debug("Failed to load schema file %s", schema_path, exc_info=True)
-            return
-        validator = jsonschema.Draft202012Validator(schema_obj) if hasattr(jsonschema, 'Draft202012Validator') else jsonschema.Draft7Validator(schema_obj)  # type: ignore
-        errors = sorted(validator.iter_errors(profile), key=lambda e: e.path)  # type: ignore
-        if errors:
-            msgs = [f"{'/'.join(str(p) for p in err.path)}: {err.message}" for err in errors]
-            LOGGER.debug("Profile schema validation issues: %s", msgs)
-
-    def _build_naics_structures(self) -> tuple[dict[str, dict], dict[str, list[str]]]:
-        """Load NAICS JSON and build cache + prefix index (without mutating state).
-
-        Returns a tuple of (cache, prefix_index). Any exception bubbles to caller for
-        rollback logic handled by reload invoker.
-        """
-        sources = self._naics_reference_sources()
-        cache: dict[str, dict] = {}
-        raw_parents: dict[str, Any] = {}
-        raw_paths: dict[str, Any] = {}
-        for ref_path in sources:
-            try:
-                entries = json.loads(ref_path.read_text(encoding="utf-8"))
-            except json.JSONDecodeError as exc:  # pragma: no cover - parse error path
-                LOGGER.debug("Failed to parse NAICS reference %s: %s", ref_path, exc)
-                continue
-            for entry in entries or []:
-                if not isinstance(entry, Mapping):
+            for raw in items:
+                if not isinstance(raw, Mapping):
                     continue
-                code = str(entry.get("code", "")).strip()
-                if not code or code in cache:
+                code = str(raw.get("code", "")).strip()
+                if not code:
                     continue
-                cache[code] = dict(entry)
-                raw_parents[code] = entry.get("parents")
-                raw_paths[code] = entry.get("path")
-
-        def _normalise_parents(code: str) -> list[dict]:
-            parents_raw = raw_parents.get(code)
-            parents: list[dict] = []
-            if isinstance(parents_raw, list):
-                for parent in parents_raw:
-                    if isinstance(parent, Mapping):
-                        p_code = str(parent.get("code", "")).strip()
-                        if not p_code:
-                            continue
-                        parents.append(
-                            {
-                                "code": p_code,
-                                "title": str(parent.get("title", "")),
-                                "level": int(parent.get("level", 0) or 0),
-                            }
-                        )
-            elif parents_raw:
-                LOGGER.debug("Unexpected parents payload for NAICS code %s: %r", code, parents_raw)
-            if parents:
-                return parents
-            # Fallback: infer parents from path if available
-            path_raw = raw_paths.get(code)
-            if isinstance(path_raw, list) and len(path_raw) >= 2:
-                inferred: list[dict] = []
-                for ancestor_code in path_raw[:-1]:
-                    ancestor_code = str(ancestor_code).strip()
-                    if not ancestor_code:
-                        continue
-                    ancestor = cache.get(ancestor_code)
-                    if ancestor:
-                        inferred.append(
-                            {
-                                "code": ancestor.get("code"),
-                                "title": ancestor.get("title"),
-                                "level": int(ancestor.get("level", 0) or 0),
-                            }
-                        )
-                return inferred
-            return []
-
-        def _normalise_path(code: str, parents: list[dict]) -> list[str]:
-            path_raw = raw_paths.get(code)
-            if isinstance(path_raw, list) and path_raw:
-                return [str(item).strip() for item in path_raw if str(item).strip()]
-            lineage = [p.get("code") for p in parents if p.get("code")]
-            lineage.append(code)
-            return lineage
-
-        for code, entry in cache.items():
-            parents = _normalise_parents(code)
-            entry["parents"] = parents
-            entry["path"] = _normalise_path(code, parents)
-            # Ensure level normalised/integer
-            try:
-                entry["level"] = int(entry.get("level") or len(entry["path"]))
-            except Exception:
-                entry["level"] = len(entry["path"])
-            version = entry.get("version")
-            entry["version"] = str(version) if version else "2022"
-
-        # Pass 2: Ensure parent chains exist for deeper levels (e.g., 4- and 6-digit)
-        # by synthesising missing intermediate parents from code prefixes if needed.
-        for code, entry in cache.items():
-            code_str = str(entry.get("code") or code)
-            try:
-                lvl = int(entry.get("level") or 0)
-            except Exception:
-                lvl = 0
-            if lvl <= 2:
-                continue
-            desired_levels = [L for L in (2, 3, 4, 5) if L < lvl]
-            existing_list = entry.get("parents") or []
-            existing_codes = [p.get("code") for p in existing_list if isinstance(p, Mapping)]
-            chain: list[dict] = []
-            for L in desired_levels:
-                pref = code_str[:L]
-                if pref in existing_codes:
-                    # reuse existing parent payload
-                    for p in existing_list:
-                        if isinstance(p, Mapping) and p.get("code") == pref:
-                            chain.append({
-                                "code": p.get("code"),
-                                "title": str(p.get("title", "")),
-                                "level": int(p.get("level", L) or L),
-                            })
-                            break
+                entry = dict(raw)
+                level_raw = entry.get("level")
+                try:
+                    level_value = int(level_raw) if level_raw is not None else len(code)
+                except (TypeError, ValueError):
+                    level_value = len(code)
+                entry["level"] = level_value
+                parents = entry.get("parents")
+                if isinstance(parents, list):
+                    entry["parents"] = [
+                        dict(parent) for parent in parents if isinstance(parent, Mapping)
+                    ]
                 else:
-                    ref_parent = cache.get(pref)
-                    chain.append({
-                        "code": pref,
-                        "title": str(ref_parent.get("title")) if ref_parent else "",
-                        "level": L,
-                    })
-            # de-dup ordered
-            seen: set[str] = set()
-            deduped: list[dict] = []
-            for p in chain:
-                c = str(p.get("code") or "")
-                if c and c not in seen:
-                    seen.add(c)
-                    deduped.append(p)
-            entry["parents"] = deduped
-            entry["path"] = [p["code"] for p in deduped] + [code_str]
-        prefix_index: dict[str, list[str]] = {}
-        for code in cache.keys():
-            for i in range(2, min(len(code), 6) + 1):
-                prefix = code[:i]
-                bucket = prefix_index.setdefault(prefix, [])
-                if code not in bucket:
-                    bucket.append(code)
-        for bucket in prefix_index.values():
-            bucket.sort()
-        return cache, prefix_index
+                    entry["parents"] = []
+                entry["title"] = str(entry.get("title", ""))
+                entries.append(entry)
+                index[code] = entry
+            if not entries:
+                entries = [dict(item) for item in default_payload]
+                for entry in entries:
+                    code = entry.get("code")
+                    if code:
+                        index[str(code)] = entry
+            self._naics_cache = entries
+            self._naics_by_code = index
+        return list(self._naics_cache or [])
 
-    def _naics_children_at_level(self, parent_code: str, target_level: int) -> list[dict]:
-        """Return descendants of parent_code exactly at target_level using path membership."""
-        ref = self._load_naics_reference()
-        parent_code = str(parent_code or "").strip()
-        try:
-            target_level = int(target_level)
-        except Exception:
-            return []
-        if target_level < 2 or target_level > 6:
-            return []
-        items: list[dict] = []
-        for entry in ref.values():
-            try:
-                lvl = int(entry.get("level") or 0)
-            except Exception:
-                continue
-            if lvl != target_level:
-                continue
-            if str(entry.get("code") or "") == parent_code:
-                continue
-            path_list = entry.get("path") or []
-            if isinstance(path_list, list) and parent_code in path_list:
-                items.append({
-                    "code": entry.get("code"),
-                    "title": entry.get("title"),
-                    "level": lvl,
-                })
-        items.sort(key=lambda e: e["code"])  # deterministic ordering
-        return items
-
-    def _load_naics_reference(self) -> dict[str, dict]:
-        # Fast path: already loaded
-        if self._naics_cache is not None:
-            return self._naics_cache
-        # Acquire lock for initial build to avoid duplicate work under concurrency
-        with self._naics_lock:
-            if self._naics_cache is not None:  # double-checked
-                return self._naics_cache
-            cache, prefix_index = self._build_naics_structures()
-            self._naics_cache = cache
-            self._naics_prefix_index = prefix_index
-            LOGGER.debug("Loaded %d NAICS reference entries (initial build)", len(cache))
-            if emit_event:
-                try:
-                    emit_event(
-                        "naics:loaded",
-                        {"entries": len(cache), "prefix_keys": len(prefix_index)},
-                    )
-                except Exception:  # pragma: no cover
-                    LOGGER.debug("Failed to emit naics:loaded event", exc_info=True)
-            return cache
-
-    def reload_naics(self) -> int:
-        """Atomically rebuild NAICS cache + prefix index.
-
-        Builds new structures off-lock and swaps them in under lock ensuring readers never
-        observe a partially-built index. Returns number of entries on success (0 on failure).
-        Emits telemetry events if available.
-        """
-        start = time.perf_counter()
-        if emit_event:
-            try:
-                emit_event("naics_reload:start", {})
-            except Exception:  # pragma: no cover
-                LOGGER.debug("Failed to emit naics_reload:start", exc_info=True)
-        try:
-            new_cache, new_index = self._build_naics_structures()
-        except Exception as exc:  # build failure, do not swap
-            LOGGER.exception("NAICS reload build failed")
-            if emit_event:
-                try:
-                    emit_event(
-                        "naics_reload:failure",
-                        {"error": str(exc)},
-                    )
-                except Exception:  # pragma: no cover
-                    LOGGER.debug("Failed to emit naics_reload:failure", exc_info=True)
-            return 0
-        # Successful build; swap under lock
-        with self._naics_lock:
-            self._naics_cache = new_cache
-            self._naics_prefix_index = new_index
-        duration = (time.perf_counter() - start) * 1000.0
-        LOGGER.info(
-            "NAICS reload successful entries=%d prefix_keys=%d duration=%.1fms",
-            len(new_cache),
-            len(new_index),
-            duration,
-        )
-        if emit_event:
-            try:
-                emit_event(
-                    "naics_reload:success",
-                    {
-                        "entries": len(new_cache),
-                        "prefix_keys": len(new_index),
-                        "duration_ms": round(duration, 2),
-                    },
-                )
-            except Exception:  # pragma: no cover
-                LOGGER.debug("Failed to emit naics_reload:success", exc_info=True)
-        return len(new_cache)
-
-    def _naics_lookup(self, code: str) -> dict | None:
-        if not code:
+    def _naics_entry(self, code: str) -> dict[str, Any] | None:
+        self._load_naics_reference()
+        if not self._naics_by_code:
             return None
-        ref = self._load_naics_reference()
-        return ref.get(str(code).strip())
+        return self._naics_by_code.get(str(code))
 
-    def _naics_prefix_search(self, prefix: str, limit: int = 25) -> list[dict]:  # pragma: no cover - will be covered via API test
-        """Return entries whose code starts with the prefix using the prefix index if available.
+    @staticmethod
+    def _naics_summary(entry: Mapping[str, Any]) -> dict[str, Any]:
+        return {
+            "code": str(entry.get("code", "")),
+            "title": str(entry.get("title", "")),
+            "level": entry.get("level"),
+        }
 
-        Falls back to linear scan if index missing (e.g., build failure). Limit enforced to avoid huge payloads.
-        """
-        prefix = (prefix or "").strip()
-        if not prefix:
+    def _naics_children(self, code: str, target_level: int | None = None) -> list[dict[str, Any]]:
+        children: list[dict[str, Any]] = []
+        entries = self._load_naics_reference()
+        for entry in entries:
+            parents = entry.get("parents")
+            if not isinstance(parents, list):
+                continue
+            matches_parent = any(
+                isinstance(parent, Mapping) and str(parent.get("code")) == str(code)
+                for parent in parents
+            )
+            if not matches_parent:
+                continue
+            if target_level is not None and entry.get("level") != target_level:
+                continue
+            children.append(self._naics_summary(entry))
+        children.sort(key=lambda item: item.get("code", ""))
+        return children
+
+    def _naics_search(self, query: str, limit: int = 25) -> list[dict[str, Any]]:
+        query = (query or "").strip()
+        if not query:
             return []
-        self._load_naics_reference()  # ensure cache & index built
-        results: list[dict] = []
-        try:
-            index = getattr(self, "_naics_prefix_index", None)
-            if isinstance(index, dict) and prefix in index:
-                codes = index[prefix][:limit]
-                ref = self._naics_cache or {}
-                for c in codes:
-                    entry = ref.get(c)
-                    if entry:
-                        results.append(entry)
-                return results
-        except Exception:  # pragma: no cover
-            LOGGER.debug("Prefix index lookup failed, falling back", exc_info=True)
-        # Fallback linear scan
-        ref = self._naics_cache or {}
-        for c, entry in ref.items():
-            if c.startswith(prefix):
-                results.append(entry)
-                if len(results) >= limit:
-                    break
+        entries = self._load_naics_reference()
+        q_lower = query.lower()
+        numeric = q_lower.isdigit()
+        tokens = [token for token in q_lower.split() if token]
+        results: list[dict[str, Any]] = []
+        seen: set[str] = set()
+        for entry in entries:
+            code = str(entry.get("code", ""))
+            if not code or code in seen:
+                continue
+            haystack = f"{code} {entry.get('title', '')}".lower()
+            if numeric:
+                if not code.startswith(q_lower):
+                    continue
+            else:
+                if not all(token in haystack for token in tokens):
+                    continue
+            results.append(self._naics_summary(entry))
+            seen.add(code)
+            if len(results) >= limit:
+                break
         return results
 
-    _CURATED_TOP_LEVELS: Dict[str, List[str]] | None = None
+    def reload_naics(self) -> int:
+        self._naics_cache = None
+        self._naics_by_code = None
+        return len(self._load_naics_reference())
 
-    def _load_curated_domains(self) -> Dict[str, List[str]]:
-        if self._CURATED_TOP_LEVELS is not None:
-            return self._CURATED_TOP_LEVELS
-        # Look in data/catalog/domain_curated.json relative to base_dir
-        catalog_path = self.base_dir / "data" / "catalog" / "domain_curated.json"
-        if not catalog_path.exists():
-            LOGGER.warning("Curated domain catalog missing at %s; using embedded defaults", catalog_path)
-            # Embedded fallback mirrors previous hard-coded list to keep behaviour stable in tests
-            self._CURATED_TOP_LEVELS = {
-                "Strategic Functions": [
-                    "AI Strategy & Governance",
-                    "Prompt Architecture & Evaluation",
-                    "Workflow Orchestration",
-                    "Observability & Telemetry",
-                ],
-                "Sector Domains": [
-                    "Energy & Infrastructure",
-                    "Economic Intelligence",
-                    "Environmental Intelligence",
-                    "Multi-Sector SME Overlay",
-                ],
-                "Technical Domains": [
-                    "Agentic RAG & Knowledge Graphs",
-                    "Tool & Connector Integrations",
-                    "Memory & Data Governance",
-                    "Safety & Privacy Compliance",
-                ],
-                "Support Domains": [
-                    "Onboarding & Training",
-                    "Reporting & Publishing",
-                    "Lifecycle & Change Mgmt",
-                ],
-            }
-            return self._CURATED_TOP_LEVELS
+    def _naics_lineage(self, entry: Mapping[str, Any]) -> list[dict[str, Any]]:
+        lineage: list[dict[str, Any]] = []
+        parents = entry.get("parents")
+        if isinstance(parents, list):
+            for parent in parents:
+                if isinstance(parent, Mapping):
+                    lineage.append(self._naics_summary(parent))
+                elif parent:
+                    candidate = self._naics_entry(str(parent))
+                    if candidate:
+                        lineage.append(self._naics_summary(candidate))
+        lineage.append(self._naics_summary(entry))
+        return lineage
+
+    def _handle_naics_api(self, path: str, method: str, environ: Mapping[str, Any]) -> WSGIResponse:
+        if method != "GET":
+            return self._method_not_allowed(["GET"])
+
+        # Normalise path (tolerate trailing slash)
         try:
-            data = json.loads(catalog_path.read_text(encoding="utf-8"))
+            norm_path = str(path or "").split("?")[0].rstrip("/") or "/"
         except Exception:
-            LOGGER.exception("Failed to parse curated domain catalog %s", catalog_path)
-            data = {}
-        curated: Dict[str, List[str]] = {}
-        if isinstance(data, Mapping):
-            for k, v in data.items():
-                if isinstance(k, str) and isinstance(v, list):
-                    curated[k] = [str(item) for item in v if isinstance(item, (str, bytes))]
-        self._CURATED_TOP_LEVELS = curated
-        return curated
+            norm_path = path
 
-    def _validate_domain_selector(self, payload: Mapping[str, Any], errors: list[str]) -> dict | None:
-        """Validate and enrich domain selector; append errors to self._domain_selector_errors.
+        if norm_path == "/api/naics/roots":
+            items = [
+                self._naics_summary(entry)
+                for entry in self._load_naics_reference()
+                if entry.get("level") == 2 and not entry.get("parents")
+            ]
+            items.sort(key=lambda item: item.get("code", ""))
+            return self._json_response({"status": "ok", "items": items, "count": len(items)})
 
-        Responsibilities per Step 3 specification.
-        """
-        if not isinstance(payload, Mapping):  # defensive
-            return None
-        top_level = str(payload.get("topLevel") or "").strip()
-        subdomain = str(payload.get("subdomain") or "").strip()
-        if not top_level or not subdomain:
-            return None
-        curated = self._load_curated_domains().get(top_level)
-        if curated is None:
-            errors.append(f"Invalid topLevel {top_level}")
-            if emit_domain_selector_error:
-                try:
-                    emit_domain_selector_error(
-                        f"Invalid topLevel {top_level}",
-                        {"topLevel": top_level, "subdomain": subdomain},
-                    )
-                except Exception:
-                    LOGGER.debug("Failed to emit domain selector error event", exc_info=True)
-        if curated is not None and subdomain not in curated:
-            errors.append(f"Invalid subdomain {subdomain} for topLevel {top_level}")
-            if emit_domain_selector_error:
-                try:
-                    emit_domain_selector_error(
-                        f"Invalid subdomain {subdomain} for topLevel {top_level}",
-                        {"topLevel": top_level, "subdomain": subdomain},
-                    )
-                except Exception:
-                    LOGGER.debug("Failed to emit domain selector error event", exc_info=True)
-        # Normalise tags (stringify, unique order-preserving)
-        unique_tags: list[str] = []
-        seen: set[str] = set()
-        raw_tags = payload.get("tags", [])
-        if isinstance(raw_tags, Iterable) and not isinstance(raw_tags, (str, bytes)):
-            for tag in raw_tags:
-                if tag is None:
-                    continue
-                if isinstance(tag, (dict, list, set)):  # ignore complex structures
-                    continue
-                tag_str = str(tag).strip().lower()
-                if not tag_str:
-                    continue
-                # Normalize: remove disallowed chars, collapse whitespace/hyphens
-                import re
-                cleaned = re.sub(r"[^a-z0-9\s-]", "", tag_str)
-                cleaned = re.sub(r"\s+", "-", cleaned)
-                cleaned = re.sub(r"-+", "-", cleaned).strip("-")
-                if not cleaned:
-                    continue
-                if cleaned not in seen:
-                    seen.add(cleaned)
-                    unique_tags.append(cleaned)
-                # Enforce cap to mitigate abuse / excessive CPU
-                if len(unique_tags) >= 50:
-                    if emit_event:
-                        try:
-                            emit_event(
-                                "domain_selector:tags_capped",
-                                {"limit": 50, "topLevel": top_level, "subdomain": subdomain},
-                            )
-                        except Exception:  # pragma: no cover
-                            LOGGER.debug("Failed to emit tags_capped event", exc_info=True)
-                    break
-        result: dict[str, Any] = {
-            "topLevel": top_level,
-            "subdomain": subdomain,
-            "tags": unique_tags,
-        }
-        # NAICS handling
-        naics_value = payload.get("naics")
-        if top_level == "Sector Domains" and not errors:
-            naics_code = None
-            if isinstance(naics_value, Mapping):
-                naics_code = str(naics_value.get("code") or "").strip()
-            if not naics_code:
-                errors.append("NAICS required for Sector Domains")
-                if emit_domain_selector_error:
-                    try:
-                        emit_domain_selector_error(
-                            "NAICS required for Sector Domains",
-                            {"topLevel": top_level, "subdomain": subdomain},
-                        )
-                    except Exception:
-                        LOGGER.debug("Failed to emit domain selector error event", exc_info=True)
-                return None
-            entry = self._naics_lookup(naics_code)
+        if norm_path.startswith("/api/naics/code/"):
+            code = norm_path.split("/api/naics/code/")[-1]
+            entry = self._naics_entry(code)
             if not entry:
-                errors.append(f"Invalid NAICS code {naics_code}")
-                if emit_domain_selector_error:
+                return self._json_response(
+                    {"status": "not_found", "code": code},
+                    status="404 Not Found",
+                )
+            payload = dict(entry)
+            payload["lineage"] = self._naics_lineage(entry)
+            return self._json_response({"status": "ok", "entry": payload})
+
+        if norm_path.startswith("/api/naics/children/"):
+            parent = norm_path.split("/api/naics/children/")[-1]
+            query_string = environ.get("QUERY_STRING") or ""
+            try:
+                params = parse_qs(query_string, keep_blank_values=False)
+            except Exception:
+                params = {}
+            level_param = None
+            if isinstance(params, Mapping):
+                level_values = params.get("level") or []
+                if level_values:
                     try:
-                        emit_domain_selector_error(
-                            f"Invalid NAICS code {naics_code}",
-                            {"topLevel": top_level, "subdomain": subdomain},
-                        )
-                    except Exception:
-                        LOGGER.debug("Failed to emit domain selector error event", exc_info=True)
-                return None
-            # If the client attempted to send additional NAICS fields (title/level/path/version)
-            # we enforce integrity: any mismatch with reference causes rejection of the selector.
-            if isinstance(naics_value, Mapping):
-                mismatch = False
-                # Compare selected fields when provided by client
-                for field in ("title", "level", "version", "path"):
-                    if field in naics_value:
-                        ref_val = entry.get(field)
-                        provided = naics_value.get(field)
-                        # Normalize path lists for comparison
-                        if field == "path" and isinstance(provided, list) and isinstance(ref_val, list):
-                            if provided != ref_val:
-                                mismatch = True
-                                break
-                        elif provided != ref_val:
-                            mismatch = True
-                            break
-                if mismatch:
-                    errors.append("NAICS fields mismatch reference; rejecting selector")
-                    if emit_domain_selector_error:
-                        try:
-                            emit_domain_selector_error(
-                                "NAICS fields mismatch reference",
-                                {"topLevel": top_level, "subdomain": subdomain, "code": naics_code},
-                            )
-                        except Exception:
-                            LOGGER.debug("Failed to emit domain selector error event", exc_info=True)
-                    return None
-            # Enrich: strictly overwrite fields
-            result["naics"] = {
-                "code": entry.get("code"),
-                "title": entry.get("title"),
-                "level": entry.get("level"),
-                "version": entry.get("version"),
-                "path": entry.get("path"),
-            }
-        else:
-            # strip any provided NAICS
-            pass
-        if not errors and emit_domain_selector_validated:
-            try:
-                emit_domain_selector_validated(result)
-            except Exception:
-                LOGGER.debug("Failed to emit domain selector validated event", exc_info=True)
-        return result
+                        level_param = int(str(level_values[0]))
+                    except (TypeError, ValueError):
+                        level_param = None
+            if level_param is None and parent and parent.isdigit():
+                level_param = min(len(parent) + 1, 6)
+            children = self._naics_children(parent, level_param)
+            return self._json_response(
+                {
+                    "status": "ok",
+                    "items": children,
+                    "parent": parent,
+                    "count": len(children),
+                    "level": level_param,
+                }
+            )
 
-    def _parse_domain_selector(self, raw: str | None, errors: list[str]) -> Dict[str, Any] | None:
+        if norm_path == "/api/naics/search":
+            query_string = environ.get("QUERY_STRING") or ""
+            try:
+                params = parse_qs(query_string, keep_blank_values=False)
+            except Exception:
+                params = {}
+            query = ""
+            if isinstance(params, Mapping):
+                values = params.get("q") or []
+                if values:
+                    query = str(values[0])
+            start = time.perf_counter()
+            items = self._naics_search(query, limit=50)
+            duration_ms = (time.perf_counter() - start) * 1000
+            return self._json_response(
+                {
+                    "status": "ok",
+                    "items": items,
+                    "count": len(items),
+                    "query": query,
+                    "duration_ms": round(duration_ms, 2),
+                }
+            )
+
+        return self._json_response(
+            {"status": "not_found", "message": f"Unknown NAICS path: {norm_path}"},
+            status="404 Not Found",
+        )
+
+    def _handle_agent_generate(
+        self, method: str, environ: Mapping[str, Any]
+    ) -> WSGIResponse:
+        if method != "POST":
+            return self._method_not_allowed(["POST"])
+        raw = self._read_body(environ)
         if not raw:
-            return None
+            return self._json_response(
+                {"status": "invalid", "issues": ["Missing request body"]},
+                status="400 Bad Request",
+            )
         try:
-            payload = json.loads(raw)
-        except (TypeError, ValueError, json.JSONDecodeError):
-            LOGGER.debug("Unable to decode domain selector payload", exc_info=True)
-            errors.append("Malformed domain_selector JSON; ignored")
-            return None
-        # Guard: if essential fields missing, treat as stale and ignore to prevent
-        # previously valid JSON from being resubmitted after client cleared UI.
-        if isinstance(payload, Mapping):
-            top_level = str(payload.get("topLevel") or "").strip()
-            subdomain = str(payload.get("subdomain") or "").strip()
-            if not top_level or not subdomain:
-                # Explicitly ignore and do not emit change telemetry to avoid noise.
-                return None
-        if isinstance(payload, Mapping) and emit_domain_selector_changed:
-            try:
-                emit_domain_selector_changed(payload)
-            except Exception:
-                LOGGER.debug("Failed to emit domain selector changed event", exc_info=True)
-        return self._validate_domain_selector(payload, errors) if isinstance(payload, Mapping) else None
+            payload = json.loads(raw.decode("utf-8"))
+        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
+            LOGGER.debug("Invalid JSON payload for agent generate", exc_info=True)
+            return self._json_response(
+                {"status": "invalid", "issues": [f"Invalid JSON payload: {exc}"]},
+                status="400 Bad Request",
+            )
 
+        if not isinstance(payload, Mapping):
+            return self._json_response(
+                {"status": "invalid", "issues": ["Request payload must be a JSON object"]},
+                status="400 Bad Request",
+            )
+
+        profile = payload.get("profile")
+        options = payload.get("options") if isinstance(payload, Mapping) else None
+        if not isinstance(profile, Mapping):
+            return self._json_response(
+                {"status": "invalid", "issues": ["Missing or invalid profile payload"]},
+                status="400 Bad Request",
+            )
+
+        try:
+            result = generate_agent_repo(profile, self.repo_output_dir, options)
+        except AgentRepoGenerationError as exc:
+            LOGGER.warning("Agent repo generation failed: %s", exc)
+            return self._json_response(
+                {"status": "invalid", "issues": [str(exc)]},
+                status="400 Bad Request",
+            )
+        except Exception:
+            LOGGER.exception("Unhandled error during agent repo generation")
+            return self._json_response(
+                {"status": "error", "issues": ["Unexpected error generating repo"]},
+                status="500 Internal Server Error",
+            )
+
+        if emit_repo_generated_event:
+            try:
+                emit_repo_generated_event(result)
+            except Exception:
+                LOGGER.debug("Failed to emit repo generated telemetry", exc_info=True)
+
+        return self._json_response({"status": "ok", "result": result})
 
     def _read_body(self, environ: Mapping[str, Any]) -> bytes:
         stream = environ.get("wsgi.input")
@@ -1230,21 +1275,21 @@ window.addEventListener('DOMContentLoaded', function () {
     def _dispatch_api(
         self, path: str, method: str, environ: Mapping[str, Any]
     ) -> WSGIResponse:
+        path = str(path or "").strip()
+        norm = path.split("?", 1)[0].rstrip("/")
+        try:
+            LOGGER.info("api:dispatch raw=%r norm=%r", path, norm)
+        except Exception:
+            pass
+        if norm == "/api/naics/roots" or norm == "/api/naics/search" or norm.startswith("/api/naics/"):
+            return self._handle_naics_api(path, method, environ)
+        if path == "/api/domains/curated" and method == "GET":
+            curated = self._domain_selector_assets.get("curated", {})
+            return self._json_response({"status": "ok", "curated": curated})
         if path.startswith("/api/persona/"):
             return self._handle_persona_api(path, method, environ)
-        if path.startswith("/api/naics/"):
-            return self._handle_naics_api(path, method, environ)
-        if path == "/api/domains/curated":
-            if method != "GET":
-                return self._method_not_allowed(["GET"])
-            curated = self._load_curated_domains()
-            # lightweight hash for cache-busting
-            try:
-                import hashlib
-                digest = hashlib.sha1(json.dumps(curated, sort_keys=True).encode("utf-8")).hexdigest()[:12]
-            except Exception:
-                digest = "unknown"
-            return self._json_response({"status": "ok", "curated": curated, "etag": digest})
+        if path == "/api/agent/generate":
+            return self._handle_agent_generate(method, environ)
         if path in ("/api/health", "/api/healthz"):
             return self._json_response({"status": "ok"})
         if path == "/api/profile/validate":
@@ -1288,9 +1333,6 @@ window.addEventListener('DOMContentLoaded', function () {
                 response_body = b"OK"
                 response_headers = [("Content-Type", "text/plain; charset=utf-8")]
             elif path == "/" and method == "POST":
-                # Clear previous request errors
-                if hasattr(self, "_domain_selector_errors"):
-                    self._domain_selector_errors.clear()
                 form_bytes = self._read_body(environ)
                 data = parse_qs(form_bytes.decode("utf-8"))
                 linkedin_url = data.get("linkedin_url", [""])[0].strip()
@@ -1445,22 +1487,6 @@ window.addEventListener('DOMContentLoaded', function () {
         if enriched and not isinstance(persona_details, Mapping):
             data["persona_details"] = enriched
         return data
-
-    def _naics_reference_sources(self) -> list[Path]:
-        """Return existing NAICS dataset paths ordered by preference."""
-        candidates = [
-            self.project_root / "data" / "naics" / "naics_2022.json",
-            self.project_root / "data" / "naics" / "naics_2022.sample.json",
-            self.static_dir / "naics_reference.json",
-        ]
-        sources = [candidate for candidate in candidates if candidate.exists()]
-        if not sources:
-            raise FileNotFoundError(
-                "NAICS reference data not found. Checked: {}".format(
-                    ", ".join(str(path) for path in candidates)
-                )
-            )
-        return sources
     def _validate_profile_payload(self, payload: Any) -> List[str]:
         if not isinstance(payload, Mapping):
             return ["Payload must be a JSON object."]
@@ -1491,198 +1517,6 @@ window.addEventListener('DOMContentLoaded', function () {
                     issues.append('"preferences.sliders" must be an object when provided.')
         return issues
 
-    # --- NAICS API (Step 4) -------------------------------------------------
-    def _handle_naics_api(self, path: str, method: str, environ: Mapping[str, Any]) -> WSGIResponse:
-        if method != "GET":
-            return self._method_not_allowed(["GET"])
-        prefix = "/api/naics/code/"
-        roots_path = "/api/naics/roots"
-        children_prefix = "/api/naics/children/"
-        search_prefix = "/api/naics/search"
-        # Roots (level-2 entries)
-        if path == roots_path:
-            ref = self._load_naics_reference()
-            roots: list[dict] = []
-            for entry in ref.values():
-                try:
-                    level = int(entry.get("level") or 0)
-                except Exception:
-                    continue
-                parents = entry.get("parents") or []
-                if level == 2 and not parents:
-                    roots.append({"code": entry.get("code"), "title": entry.get("title"), "level": level})
-            roots.sort(key=lambda e: e["code"])  # deterministic ordering
-            return self._json_response({"status": "ok", "items": roots, "count": len(roots)})
-        # Children for given parent code
-        if path.startswith(children_prefix):
-            parent_code = path[len(children_prefix):]
-            # Optional level targeting (e.g., 4 or 6)
-            qs = environ.get("QUERY_STRING") or ""
-            try:
-                params = parse_qs(qs, keep_blank_values=False)
-            except Exception:
-                params = {}
-            target_level = None
-            if isinstance(params, dict):
-                vals = params.get("level") or []
-                if vals:
-                    try:
-                        lv = int(vals[0])
-                        if lv in (4, 6):
-                            target_level = lv
-                    except Exception:
-                        target_level = None
-            if target_level is not None:
-                items = self._naics_children_at_level(parent_code, target_level)
-                return self._json_response({"status": "ok", "items": items, "parent": parent_code, "count": len(items)})
-            ref = self._load_naics_reference()
-            children_items: list[dict] = []
-            for entry in ref.values():
-                code_value = str(entry.get("code") or "")
-                try:
-                    level = int(entry.get("level") or 0)
-                except Exception:
-                    level = 0
-                if level <= 2:
-                    continue
-                parents_list = entry.get("parents") or []
-                if not isinstance(parents_list, list) or not parents_list:
-                    continue
-                immediate_parent = parents_list[-1] if parents_list else None
-                if immediate_parent and immediate_parent.get("code") == parent_code:
-                    children_items.append({"code": code_value, "title": entry.get("title"), "level": level})
-            children_items.sort(key=lambda e: e["code"])  # deterministic ordering
-            return self._json_response({"status": "ok", "items": children_items, "parent": parent_code, "count": len(children_items)})
-        if path.startswith(prefix):
-            code = path[len(prefix):]
-            start_lookup = time.perf_counter()
-            entry = self._naics_lookup(code)
-            duration_ms = (time.perf_counter() - start_lookup) * 1000.0
-            if not entry:
-                if emit_event:
-                    try:
-                        emit_event("naics:code_miss", {"code": code, "duration_ms": round(duration_ms, 2)})
-                    except Exception:  # pragma: no cover
-                        LOGGER.debug("Failed to emit naics:code_miss", exc_info=True)
-                return self._json_response({"status": "not_found", "code": code}, status="404 Not Found")
-            if emit_event:
-                try:
-                    emit_event(
-                        "naics:code_hit",
-                        {"code": entry.get("code"), "level": entry.get("level"), "duration_ms": round(duration_ms, 2)},
-                    )
-                except Exception:  # pragma: no cover
-                    LOGGER.debug("Failed to emit naics:code_hit", exc_info=True)
-            return self._json_response({"status": "ok", "entry": entry})
-        if path.startswith(search_prefix):
-            from urllib.parse import parse_qs
-            qs = environ.get("QUERY_STRING") or ""
-            parsed = parse_qs(qs, keep_blank_values=False)
-            query_list = parsed.get("q", [])
-            query = query_list[0] if query_list else ""
-            ref = self._load_naics_reference()
-            items: list[dict] = []
-            q_norm = query.strip().lower()
-            start_search = time.perf_counter()
-            if q_norm:
-                # Fast path: purely digit prefix queries leverage prefix index
-                if q_norm.isdigit() and 2 <= len(q_norm) <= 6:
-                    try:
-                        pref_results = self._naics_prefix_search(q_norm, limit=50)
-                        for e in pref_results:
-                            items.append({
-                                "code": e.get("code"),
-                                "title": e.get("title"),
-                                "level": e.get("level"),
-                            })
-                    except Exception:  # pragma: no cover
-                        LOGGER.debug("Prefix search failure", exc_info=True)
-                # Fallback / title substring if no prefix hits or non-digit query
-                if not items:
-                    # Attempt cache lookup first (non-numeric queries)
-                    cached = None
-                    for k, v in self._naics_search_cache:
-                        if k == q_norm:
-                            cached = v
-                            break
-                    if cached is not None:
-                        items.extend(cached)
-                    else:
-                        scored: list[tuple[float, dict]] = []
-                        tokens = [t for t in q_norm.split() if t]
-
-                        def _lev(a: str, b: str) -> int:
-                            if a == b:
-                                return 0
-                            if not a:
-                                return len(b)
-                            if not b:
-                                return len(a)
-                            # simple DP; strings short (titles tokens) so fine
-                            dp = list(range(len(b) + 1))
-                            for i, ca in enumerate(a, 1):
-                                prev = dp[0]
-                                dp[0] = i
-                                for j, cb in enumerate(b, 1):
-                                    cur = dp[j]
-                                    if ca == cb:
-                                        dp[j] = prev
-                                    else:
-                                        dp[j] = 1 + min(prev, dp[j], dp[j - 1])
-                                    prev = cur
-                            return dp[-1]
-
-                        for entry in ref.values():
-                            title = str(entry.get("title") or "").lower()
-                            code_value = str(entry.get("code") or "")
-                            if code_value.startswith(q_norm) or q_norm in title:
-                                score = 0.0  # best direct match
-                            else:
-                                # token-based fuzzy: compute min lev distance among tokens
-                                title_tokens = [t for t in title.replace('/', ' ').split() if t]
-                                if not tokens:
-                                    continue
-                                # aggregated distance normalized by token lengths
-                                dist = 0.0
-                                for qt in tokens:
-                                    best = min((_lev(qt, tt) for tt in title_tokens), default=len(qt))
-                                    dist += best / max(len(qt), 1)
-                                score = dist / len(tokens)
-                                if score > 0.75:  # prune weak fuzzy matches
-                                    continue
-                            scored.append((score, {
-                                "code": entry.get("code"),
-                                "title": entry.get("title"),
-                                "level": entry.get("level"),
-                            }))
-                        scored.sort(key=lambda x: (x[0], x[1]["code"]))
-                        for s, rec in scored[:50]:
-                            items.append(rec)
-                        # update cache (simple LRU by append & trim)
-                        self._naics_search_cache.append((q_norm, items.copy()))
-                        if len(self._naics_search_cache) > self._naics_search_cache_capacity:
-                            self._naics_search_cache = self._naics_search_cache[-self._naics_search_cache_capacity:]
-            duration_ms = (time.perf_counter() - start_search) * 1000.0
-            if emit_event:
-                try:
-                    emit_event(
-                        "naics:search",
-                        {
-                            "query": query,
-                            "count": len(items),
-                            "duration_ms": round(duration_ms, 2),
-                            "digit_prefix": bool(q_norm.isdigit()),
-                            "cache_hit": any(k == q_norm for k,_ in self._naics_search_cache[-1:]) if q_norm else False,
-                        },
-                    )
-                except Exception:  # pragma: no cover
-                    LOGGER.debug("Failed to emit naics:search event", exc_info=True)
-            return self._json_response({"status": "ok", "items": items, "query": query, "count": len(items)})
-        return self._json_response(
-            {"status": "not_found", "message": f"Unknown NAICS path: {path}"},
-            status="404 Not Found",
-        )
-
 
     def serve(self, host: str | None = None, port: int | None = None) -> None:
         host_value = (host or os.getenv("HOST") or "127.0.0.1").strip() or "127.0.0.1"
@@ -1712,3 +1546,5 @@ def create_app(base_dir: Path | None = None) -> IntakeApplication:
 
 if __name__ == "__main__":  # pragma: no cover - manual execution helper
     create_app().serve()
+
+
