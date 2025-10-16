@@ -214,16 +214,7 @@ $extra_styles
                 </section>
             </fieldset>
 
-            <fieldset>
-                <legend>Domain & Classification</legend>
-                <input type="hidden" name="domain_selector" value="$domain_selector_state" data-hidden-domain-selector>
-                <input type="hidden" name="naics_code" value="$naics_code">
-                <input type="hidden" name="naics_title" value="$naics_title">
-                <input type="hidden" name="naics_level" value="$naics_level">
-                <input type="hidden" name="naics_lineage_json" value="$naics_lineage">
-                $domain_selector_html
-                $naics_selector_html
-            </fieldset>
+            <fieldset>\n                <legend>Domain & Classification</legend>\n                <input type="hidden" name="domain_selector" value="$domain_selector_state" data-hidden-domain-selector>\n                $domain_selector_html\n            </fieldset>
 
             <fieldset>
                 <legend>Business Function & Role</legend>
@@ -434,7 +425,7 @@ class IntakeApplication:
     def _safe_read_text(self, path: Path) -> str:
         """Read a text asset safely, tolerating mixed encodings.
 
-        Prefer UTFΓÇæ8. If the file contains stray bytes (e.g., smart quotes
+        Prefer UTFÎ“Ã‡Ã¦8. If the file contains stray bytes (e.g., smart quotes
         pasted from Word), fall back to decoding with replacement so the app
         does not crash during initialisation.
         """
