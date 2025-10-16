@@ -952,7 +952,18 @@ window.addEventListener('DOMContentLoaded', function () {
     # NAICS helpers ----------------------------------------------------
     def _load_naics_reference(self) -> list[dict[str, Any]]:
         if self._naics_cache is None:
-            path = self.naics_path if self.naics_path.exists() else self.naics_sample_path
+            use_sample = not self.naics_path.exists()
+            path = self.naics_path if not use_sample else self.naics_sample_path
+            if use_sample and not getattr(self, "_warned_naics_sample", False):
+                try:
+                    LOGGER.warning(
+                        "Using NAICS sample dataset: %s (missing %s)",
+                        path,
+                        self.naics_path,
+                    )
+                except Exception:
+                    pass
+                self._warned_naics_sample = True
             default_payload = [
                 {
                     "code": "54",
