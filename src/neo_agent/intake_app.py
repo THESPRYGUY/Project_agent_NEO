@@ -670,6 +670,31 @@ window.addEventListener('DOMContentLoaded', function () {
             routing_defaults = profile.get("routing_hints") if isinstance(profile, Mapping) else None
         routing_defaults = routing_defaults if isinstance(routing_defaults, Mapping) else {}
 
+        # Merge routing defaults with precedence: baseline < function < role
+        try:
+            fr_data = self._function_role_data if isinstance(self._function_role_data, Mapping) else {}
+            fr_map = fr_data.get("functionDefaults") if isinstance(fr_data.get("functionDefaults"), Mapping) else {}
+            baseline_defaults = fr_map.get("baseline") or fr_map.get("_baseline") or {}
+            baseline_defaults = baseline_defaults if isinstance(baseline_defaults, Mapping) else {}
+            func_defaults = fr_map.get(business_function) if business_function else None
+            func_defaults = func_defaults if isinstance(func_defaults, Mapping) else {}
+            roles_catalog = fr_data.get("roles") if isinstance(fr_data.get("roles"), list) else []
+            role_code_value = _str(role_payload.get("code", ""))
+            role_defaults = {}
+            if role_code_value:
+                for r in roles_catalog:
+                    if isinstance(r, Mapping) and _str(r.get("code", "")) == role_code_value:
+                        cand = r.get("defaults")
+                        if isinstance(cand, Mapping):
+                            role_defaults = cand
+                        break
+            effective_defaults: dict[str, Any] = {}
+            for source in (baseline_defaults, func_defaults, role_defaults):
+                if isinstance(source, Mapping):
+                    effective_defaults.update(source)
+        except Exception:
+            effective_defaults = {}
+
         function_category = _str(profile.get("function_category") or agent_section.get("function_category") or "")
         function_specialties = profile.get("function_specialties")
         if not isinstance(function_specialties, list):
@@ -681,7 +706,11 @@ window.addEventListener('DOMContentLoaded', function () {
             "role_code": _str(role_payload.get("code", "")),
             "role_title": _str(role_payload.get("title", "")),
             "role_seniority": _str(role_payload.get("seniority", "")),
-            "routing_defaults_json": json.dumps(routing_defaults, ensure_ascii=False) if routing_defaults else "",
+            "routing_defaults_json": (
+                json.dumps(routing_defaults, ensure_ascii=False)
+                if routing_defaults
+                else (json.dumps(effective_defaults, ensure_ascii=False) if effective_defaults else "")
+            ),
         }
 
         function_role_bootstrap = self._indent_block(
