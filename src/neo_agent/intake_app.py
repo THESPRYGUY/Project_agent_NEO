@@ -6,7 +6,7 @@ import html
 import json
 import os
 import time
-from pathlib import Path
+from pathlib import Path\nimport csv
 from string import Template
 from typing import Any, Dict, Iterable, List, Mapping, Optional
 from urllib.parse import parse_qs
@@ -425,7 +425,7 @@ class IntakeApplication:
     def _safe_read_text(self, path: Path) -> str:
         """Read a text asset safely, tolerating mixed encodings.
 
-        Prefer UTFÎ“Ã‡Ã¦8. If the file contains stray bytes (e.g., smart quotes
+        Prefer UTFÃŽâ€œÃƒâ€¡ÃƒÂ¦8. If the file contains stray bytes (e.g., smart quotes
         pasted from Word), fall back to decoding with replacement so the app
         does not crash during initialisation.
         """
