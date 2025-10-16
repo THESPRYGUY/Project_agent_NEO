@@ -1,4 +1,4 @@
-"""HTTP server for the Project NEO agent intake experience."""
+﻿"""HTTP server for the Project NEO agent intake experience."""
 
 from __future__ import annotations
 
@@ -442,7 +442,7 @@ class IntakeApplication:
     def _safe_read_text(self, path: Path) -> str:
         """Read a text asset safely, tolerating mixed encodings.
 
-        Prefer UTF‑8. If the file contains stray bytes (e.g., smart quotes
+        Prefer UTFâ€‘8. If the file contains stray bytes (e.g., smart quotes
         pasted from Word), fall back to decoding with replacement so the app
         does not crash during initialisation.
         """
@@ -1289,7 +1289,6 @@ window.addEventListener('DOMContentLoaded', function () {
         path = str(path or "").strip()
         norm = path.split("?", 1)[0].rstrip("/")
         try:
-            LOGGER.info("api:dispatch raw=%r norm=%r", path, norm)
         except Exception:
             pass
         if norm == "/api/naics/roots" or norm == "/api/naics/search" or norm.startswith("/api/naics/"):
