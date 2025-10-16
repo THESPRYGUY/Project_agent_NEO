@@ -1,4 +1,4 @@
-﻿"""HTTP server for the Project NEO agent intake experience."""
+"""HTTP server for the Project NEO agent intake experience."""
 
 from __future__ import annotations
 
@@ -205,17 +205,9 @@ $extra_styles
                 </label>
                 <label>Version
                     <input type="text" name="agent_version" value="$agent_version">
-                </label>
-                <label>Primary Domain
-                    <select name="domain" required>
-                        $domain_options
-                    </select>
-                </label>
-                <label>Primary Role
-                    <select name="role" required>
-                        $role_options
-                    </select>
-                </label>
+                </label>\n                <!-- NAICS Picker (moved into Agent Profile) -->\n                <input type="hidden" name="naics_code" value="$naics_code">\n                <input type="hidden" name="naics_title" value="$naics_title">\n                <input type="hidden" name="naics_level" value="$naics_level">\n                <input type="hidden" name="naics_lineage_json" value="$naics_lineage">\n                $naics_selector_html
+                <!-- Primary Domain removed: replaced by NAICS picker -->
+                <!-- Primary Role removed: replaced by Business Function & Role -->
                 <section id="mbti-section" data-testid="mbti-section" data-mbti-tooltips="enabled" class="persona-inline">
                     <input type="hidden" name="agent_persona" value="$persona_hidden_value" data-persona-input>
                     $persona_tabs
