@@ -1,4 +1,4 @@
-"""HTTP server for the Project NEO agent intake experience."""
+﻿"""HTTP server for the Project NEO agent intake experience."""
 
 from __future__ import annotations
 
@@ -426,7 +426,7 @@ class IntakeApplication:
     def _safe_read_text(self, path: Path) -> str:
         """Read a text asset safely, tolerating mixed encodings.
 
-        Prefer UTFÃƒÅ½Ã¢â‚¬Å“ÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã‚Â¦8. If the file contains stray bytes (e.g., smart quotes
+        Prefer UTFÃƒÆ’Ã…Â½ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¦8. If the file contains stray bytes (e.g., smart quotes
         pasted from Word), fall back to decoding with replacement so the app
         does not crash during initialisation.
         """
@@ -978,7 +978,7 @@ window.addEventListener('DOMContentLoaded', function () {
         return profile
 
     # NAICS helpers ----------------------------------------------------
-        def _load_naics_reference(self) -> list[dict[str, Any]]:
+    def _load_naics_reference(self) -> list[dict[str, Any]]:
         if self._naics_cache is None:
             # Prefer full JSON; fall back to sample JSON; then CSV; finally a tiny built-in payload
             default_payload = [
@@ -1614,5 +1614,6 @@ def create_app(base_dir: Path | None = None) -> IntakeApplication:
 
 if __name__ == "__main__":  # pragma: no cover - manual execution helper
     create_app().serve()
+
 
 
