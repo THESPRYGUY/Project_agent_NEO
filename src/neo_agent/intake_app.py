@@ -6,7 +6,7 @@ import html
 import json
 import os
 import time
-from pathlib import Path\nimport csv
+from pathlib import Path\r\nimport csv
 from string import Template
 from typing import Any, Dict, Iterable, List, Mapping, Optional
 from urllib.parse import parse_qs
@@ -425,7 +425,7 @@ class IntakeApplication:
     def _safe_read_text(self, path: Path) -> str:
         """Read a text asset safely, tolerating mixed encodings.
 
-        Prefer UTFÃŽâ€œÃƒâ€¡ÃƒÂ¦8. If the file contains stray bytes (e.g., smart quotes
+        Prefer UTFÃƒÅ½Ã¢â‚¬Å“ÃƒÆ’Ã¢â‚¬Â¡ÃƒÆ’Ã‚Â¦8. If the file contains stray bytes (e.g., smart quotes
         pasted from Word), fall back to decoding with replacement so the app
         does not crash during initialisation.
         """
@@ -979,33 +979,80 @@ window.addEventListener('DOMContentLoaded', function () {
     # NAICS helpers ----------------------------------------------------
     def _load_naics_reference(self) -> list[dict[str, Any]]:
         if self._naics_cache is None:
-            use_sample = not self.naics_path.exists()
-            path = self.naics_path if not use_sample else self.naics_sample_path
-            if use_sample and not getattr(self, "_warned_naics_sample", False):
+        # Prefer full JSON; fall back to sample JSON; then CSV; finally a tiny builtâ€‘in payload
+        default_payload = [
+            {
+                "code": "54",
+                "title": "Professional, Scientific, and Technical Services",
+                "level": 2,
+                "parents": [],
+            },
+            {
+                "code": "541",
+                "title": "Professional, Scientific, and Technical Services (541)",
+                "level": 3,
+                "parents": [{"code": "54", "title": "Professional, Scientific, and Technical Services", "level": 2}],
+            },
+        ]
+        data: Any = None
+        if self.naics_path.exists():
+            data = self._safe_read_json(self.naics_path, default_payload)
+        elif self.naics_sample_path.exists():
+            if not getattr(self, "_warned_naics_sample", False):
                 try:
-                    LOGGER.warning(
-                        "Using NAICS sample dataset: %s (missing %s)",
-                        path,
-                        self.naics_path,
-                    )
+                    LOGGER.warning("Using NAICS sample dataset: %s (missing %s)", self.naics_sample_path, self.naics_path)
                 except Exception:
                     pass
                 self._warned_naics_sample = True
-            default_payload = [
-                {
-                    "code": "54",
-                    "title": "Professional, Scientific, and Technical Services",
-                    "level": 2,
-                    "parents": [],
-                },
-                {
-                    "code": "541",
-                    "title": "Professional, Scientific, and Technical Services (541)",
-                    "level": 3,
-                    "parents": [{"code": "54", "title": "Professional, Scientific, and Technical Services", "level": 2}],
-                },
-            ]
-            data = self._safe_read_json(path, default_payload)
+            data = self._safe_read_json(self.naics_sample_path, default_payload)
+        else:
+            # CSV fallback (2â€‘6 digit_2022_Codes.csv)
+            csv_path = self.data_root / "naics" / "2-6 digit_2022_Codes.csv"
+            if csv_path.exists():
+                try:
+                    import csv as _csv
+                    rows: list[dict[str, str]] = []
+                    with csv_path.open("r", encoding="utf-8", newline="") as handle:
+                        reader = _csv.DictReader(handle)
+                        headers = [h.lower() for h in (reader.fieldnames or [])]
+                        def pick(name_opts: list[str]) -> str | None:
+                            for opt in name_opts:
+                                for h in headers:
+                                    if opt in h:
+                                        return [x for x in (reader.fieldnames or []) if x.lower() == h][0]
+                            return None
+                        code_col = pick(["code"]) or (reader.fieldnames or [""])[0]
+                        title_col = pick(["title"]) or (reader.fieldnames or ["", ""])[1]
+                        for r in reader:
+                            code = str(r.get(code_col, "")).strip()
+                            title = str(r.get(title_col, "")).strip()
+                            if code and title:
+                                rows.append({"code": code, "title": title})
+                    entries_tmp: list[dict[str, Any]] = []
+                    index_tmp: dict[str, dict[str, Any]] = {}
+                    for row in rows:
+                        code = row["code"]
+                        level = len(code)
+                        if level < 2 or level > 6 or not code.isdigit():
+                            continue
+                        entry = {"code": code, "title": row["title"], "level": level, "parents": []}
+                        entries_tmp.append(entry)
+                        index_tmp[code] = entry
+                    for entry in entries_tmp:
+                        code = entry["code"]
+                        parents: list[dict[str, Any]] = []
+                        for lv in (2,3,4,5):
+                            if lv < entry["level"]:
+                                parent = index_tmp.get(code[:lv])
+                                if parent:
+                                    parents.append({"code": parent["code"], "title": parent["title"], "level": parent["level"]})
+                        entry["parents"] = parents
+                    data = entries_tmp
+                except Exception:
+                    LOGGER.exception("Failed to parse NAICS CSV fallback at %s", csv_path)
+                    data = default_payload
+            else:
+                data = default_payload
             entries: list[dict[str, Any]] = []
             index: dict[str, dict[str, Any]] = {}
             items: Iterable[Any]
