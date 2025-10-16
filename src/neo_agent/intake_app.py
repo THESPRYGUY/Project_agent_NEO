@@ -1288,10 +1288,7 @@ window.addEventListener('DOMContentLoaded', function () {
     ) -> WSGIResponse:
         path = str(path or "").strip()
         norm = path.split("?", 1)[0].rstrip("/")
-        try:
-            LOGGER.info("api:dispatch raw=%r norm=%r", path, norm)
-        except Exception:
-            pass
+        # path normalized above; temporary dispatch logging removed
         if norm == "/api/naics/roots" or norm == "/api/naics/search" or norm.startswith("/api/naics/"):
             return self._handle_naics_api(path, method, environ)
         if path == "/api/domains/curated" and method == "GET":
