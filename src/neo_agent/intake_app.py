@@ -447,7 +447,12 @@ class IntakeApplication:
         does not crash during initialisation.
         """
         if not path.exists():
-            LOGGER.warning("Persona asset missing: %s", path)
+            if not hasattr(self, "_warned_once"):
+                self._warned_once = set()
+            key = f"missing_text:{path}"
+            if key not in self._warned_once:
+                LOGGER.warning("Asset missing: %s", path)
+                self._warned_once.add(key)
             return ""
         try:
             return path.read_text(encoding="utf-8")
@@ -455,7 +460,12 @@ class IntakeApplication:
             try:
                 raw = path.read_bytes()
                 text = raw.decode("utf-8", errors="replace")
-                LOGGER.warning("Non-UTF-8 characters in %s; replaced invalid bytes", path)
+                if not hasattr(self, "_warned_once"):
+                    self._warned_once = set()
+                key = f"non_utf8:{path}"
+                if key not in self._warned_once:
+                    LOGGER.warning("Non-UTF-8 characters in %s; replaced invalid bytes", path)
+                    self._warned_once.add(key)
                 return text
             except Exception:
                 LOGGER.exception("Failed to read text at %s", path)
@@ -463,7 +473,12 @@ class IntakeApplication:
 
     def _safe_read_json(self, path: Path, default: Any) -> Any:
         if not path.exists():
-            LOGGER.warning("Persona config missing: %s", path)
+            if not hasattr(self, "_warned_once"):
+                self._warned_once = set()
+            key = f"missing_json:{path}"
+            if key not in self._warned_once:
+                LOGGER.warning("Config missing: %s", path)
+                self._warned_once.add(key)
             return default
         try:
             return json.loads(path.read_text(encoding="utf-8"))
