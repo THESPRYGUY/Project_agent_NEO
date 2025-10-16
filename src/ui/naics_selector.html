@@ -1,27 +1,20 @@
 <section class="naics-picker" data-naics-picker>
-  <style>
-    .naics-picker { margin: 0.75rem 0 0.5rem; }
-    .naics-picker .row { display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; margin-bottom: 0.5rem; }
-    .naics-picker .row-full { display: block; margin-bottom: 0.5rem; }
-    .naics-picker select, .naics-picker input[type=text] { width: 100%; padding: 0.4rem; border: 1px solid #ccd; border-radius: 6px; }
-    .naics-picker button { background: #1f3c88; color: #fff; border: none; border-radius: 6px; padding: 0.5rem 0.75rem; cursor: pointer; }
-    .naics-tip { color: #586; font-size: 0.9rem; margin: 0.25rem 0 0.5rem; }
-  </style>
+  <style> .naics-picker{margin:0.5rem 0 0.75rem;} .naics-picker label{display:block;font-weight:600;margin:0.4rem 0 0.2rem;color:#334;} .naics-picker select,.naics-picker input[type=text]{width:100%;padding:0.5rem;border:1px solid #ccd;border-radius:6px;margin-bottom:0.35rem;} .naics-picker button{width:100%;background:#1f3c88;color:#fff;border:none;border-radius:6px;padding:0.6rem 0.75rem;cursor:pointer;margin-top:0.25rem;} .naics-tip{color:#586;font-size:0.9rem;margin:0.25rem 0 0.5rem;} </style>
 
-  <div class="row-full">
+  <div>
     <input type="text" data-naics-search placeholder="Search NAICS (code or title e.g., 54, software)">
     <div class="naics-tip">Search to filter, or select a top-level sector below.</div>
   </div>
-  <div class="row">
-    <select data-naics-level="2"><option value="">Level 2 (2‑digit)</option></select>
-    <select data-naics-level="3" disabled><option value="">Level 3 (3‑digit)</option></select>
+  <div>
+    <select data-naics-level="2"><option value="">Level 2 (2â€‘digit)</option></select>
+    <select data-naics-level="3" disabled><option value="">Level 3 (3â€‘digit)</option></select>
   </div>
-  <div class="row">
-    <select data-naics-level="4" disabled><option value="">Level 4 (4‑digit)</option></select>
-    <select data-naics-level="5" disabled><option value="">Level 5 (5‑digit)</option></select>
+  <div>
+    <select data-naics-level="4" disabled><option value="">Level 4 (4â€‘digit)</option></select>
+    <select data-naics-level="5" disabled><option value="">Level 5 (5â€‘digit)</option></select>
   </div>
-  <div class="row">
-    <select data-naics-level="6" disabled><option value="">Level 6 (6‑digit)</option></select>
+  <div>
+    <select data-naics-level="6" disabled><option value="">Level 6 (6â€‘digit)</option></select>
     <button type="button" data-naics-confirm disabled>Confirm NAICS</button>
   </div>
 
@@ -51,8 +44,8 @@
         const res = await api('/api/naics/roots');
         const s2 = selects[0];
         if (res && Array.isArray(res.items)) {
-          s2.innerHTML = '<option value="">Level 2 (2‑digit)</option>';
-          res.items.forEach(item => s2.append(opt(item.code, `${item.code} — ${item.title}`)));
+          s2.innerHTML = '<option value="">Level 2 (2â€‘digit)</option>';
+          res.items.forEach(item => s2.append(opt(item.code, `${item.code} â€” ${item.title}`)));
           s2.disabled = false;
         }
         enableConfirmIfReady();
@@ -65,7 +58,7 @@
         const res = await api(`/api/naics/children/${encodeURIComponent(parent)}?level=${level}`);
         s.innerHTML = `<option value="">Level ${level} (${level}-digit)</option>`;
         if (res && Array.isArray(res.items)) {
-          res.items.forEach(item => s.append(opt(item.code, `${item.code} — ${item.title}`)));
+          res.items.forEach(item => s.append(opt(item.code, `${item.code} â€” ${item.title}`)));
           s.disabled = false;
         } else {
           s.disabled = true;
