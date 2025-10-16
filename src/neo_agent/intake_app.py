@@ -6,7 +6,8 @@ import html
 import json
 import os
 import time
-from pathlib import Path\r\nimport csv
+from pathlib import Path
+import csv
 from string import Template
 from typing import Any, Dict, Iterable, List, Mapping, Optional
 from urllib.parse import parse_qs
@@ -977,82 +978,72 @@ window.addEventListener('DOMContentLoaded', function () {
         return profile
 
     # NAICS helpers ----------------------------------------------------
-    def _load_naics_reference(self) -> list[dict[str, Any]]:
+        def _load_naics_reference(self) -> list[dict[str, Any]]:
         if self._naics_cache is None:
-        # Prefer full JSON; fall back to sample JSON; then CSV; finally a tiny builtâ€‘in payload
-        default_payload = [
-            {
-                "code": "54",
-                "title": "Professional, Scientific, and Technical Services",
-                "level": 2,
-                "parents": [],
-            },
-            {
-                "code": "541",
-                "title": "Professional, Scientific, and Technical Services (541)",
-                "level": 3,
-                "parents": [{"code": "54", "title": "Professional, Scientific, and Technical Services", "level": 2}],
-            },
-        ]
-        data: Any = None
-        if self.naics_path.exists():
-            data = self._safe_read_json(self.naics_path, default_payload)
-        elif self.naics_sample_path.exists():
-            if not getattr(self, "_warned_naics_sample", False):
-                try:
-                    LOGGER.warning("Using NAICS sample dataset: %s (missing %s)", self.naics_sample_path, self.naics_path)
-                except Exception:
-                    pass
-                self._warned_naics_sample = True
-            data = self._safe_read_json(self.naics_sample_path, default_payload)
-        else:
-            # CSV fallback (2â€‘6 digit_2022_Codes.csv)
-            csv_path = self.data_root / "naics" / "2-6 digit_2022_Codes.csv"
-            if csv_path.exists():
-                try:
-                    import csv as _csv
-                    rows: list[dict[str, str]] = []
-                    with csv_path.open("r", encoding="utf-8", newline="") as handle:
-                        reader = _csv.DictReader(handle)
-                        headers = [h.lower() for h in (reader.fieldnames or [])]
-                        def pick(name_opts: list[str]) -> str | None:
-                            for opt in name_opts:
-                                for h in headers:
-                                    if opt in h:
-                                        return [x for x in (reader.fieldnames or []) if x.lower() == h][0]
-                            return None
-                        code_col = pick(["code"]) or (reader.fieldnames or [""])[0]
-                        title_col = pick(["title"]) or (reader.fieldnames or ["", ""])[1]
-                        for r in reader:
-                            code = str(r.get(code_col, "")).strip()
-                            title = str(r.get(title_col, "")).strip()
-                            if code and title:
-                                rows.append({"code": code, "title": title})
-                    entries_tmp: list[dict[str, Any]] = []
-                    index_tmp: dict[str, dict[str, Any]] = {}
-                    for row in rows:
-                        code = row["code"]
-                        level = len(code)
-                        if level < 2 or level > 6 or not code.isdigit():
-                            continue
-                        entry = {"code": code, "title": row["title"], "level": level, "parents": []}
-                        entries_tmp.append(entry)
-                        index_tmp[code] = entry
-                    for entry in entries_tmp:
-                        code = entry["code"]
-                        parents: list[dict[str, Any]] = []
-                        for lv in (2,3,4,5):
-                            if lv < entry["level"]:
-                                parent = index_tmp.get(code[:lv])
-                                if parent:
-                                    parents.append({"code": parent["code"], "title": parent["title"], "level": parent["level"]})
-                        entry["parents"] = parents
-                    data = entries_tmp
-                except Exception:
-                    LOGGER.exception("Failed to parse NAICS CSV fallback at %s", csv_path)
-                    data = default_payload
+            # Prefer full JSON; fall back to sample JSON; then CSV; finally a tiny built-in payload
+            default_payload = [
+                {"code": "54", "title": "Professional, Scientific, and Technical Services", "level": 2, "parents": []},
+                {"code": "541", "title": "Professional, Scientific, and Technical Services (541)", "level": 3, "parents": [{"code": "54", "title": "Professional, Scientific, and Technical Services", "level": 2}]},
+            ]
+            data: Any = None
+            if self.naics_path.exists():
+                data = self._safe_read_json(self.naics_path, default_payload)
+            elif self.naics_sample_path.exists():
+                if not getattr(self, "_warned_naics_sample", False):
+                    try:
+                        LOGGER.warning("Using NAICS sample dataset: %s (missing %s)", self.naics_sample_path, self.naics_path)
+                    except Exception:
+                        pass
+                    self._warned_naics_sample = True
+                data = self._safe_read_json(self.naics_sample_path, default_payload)
             else:
-                data = default_payload
+                # CSV fallback (2-6 digit_2022_Codes.csv)
+                csv_path = self.data_root / "naics" / "2-6 digit_2022_Codes.csv"
+                if csv_path.exists():
+                    try:
+                        import csv as _csv
+                        rows: list[dict[str, str]] = []
+                        with csv_path.open("r", encoding="utf-8", newline="") as handle:
+                            reader = _csv.DictReader(handle)
+                            headers = [h.lower() for h in (reader.fieldnames or [])]
+                            def pick(name_opts: list[str]) -> str | None:
+                                for opt in name_opts:
+                                    for h in headers:
+                                        if opt in h:
+                                            return [x for x in (reader.fieldnames or []) if x.lower() == h][0]
+                                return None
+                            code_col = pick(["code"]) or (reader.fieldnames or [""])[0]
+                            title_col = pick(["title"]) or (reader.fieldnames or ["", ""])[1]
+                            for r in reader:
+                                code = str(r.get(code_col, "")).strip()
+                                title = str(r.get(title_col, "")).strip()
+                                if code and title:
+                                    rows.append({"code": code, "title": title})
+                        entries_tmp: list[dict[str, Any]] = []
+                        index_tmp: dict[str, dict[str, Any]] = {}
+                        for row in rows:
+                            code = row["code"]
+                            level = len(code)
+                            if level < 2 or level > 6 or not code.isdigit():
+                                continue
+                            entry = {"code": code, "title": row["title"], "level": level, "parents": []}
+                            entries_tmp.append(entry)
+                            index_tmp[code] = entry
+                        for entry in entries_tmp:
+                            code = entry["code"]
+                            parents: list[dict[str, Any]] = []
+                            for lv in (2,3,4,5):
+                                if lv < entry["level"]:
+                                    parent = index_tmp.get(code[:lv])
+                                    if parent:
+                                        parents.append({"code": parent["code"], "title": parent["title"], "level": parent["level"]})
+                            entry["parents"] = parents
+                        data = entries_tmp
+                    except Exception:
+                        LOGGER.exception("Failed to parse NAICS CSV fallback at %s", csv_path)
+                        data = default_payload
+                else:
+                    data = default_payload
             entries: list[dict[str, Any]] = []
             index: dict[str, dict[str, Any]] = {}
             items: Iterable[Any]
@@ -1062,7 +1053,6 @@ window.addEventListener('DOMContentLoaded', function () {
                 items = data
             else:
                 items = default_payload
-
             for raw in items:
                 if not isinstance(raw, Mapping):
                     continue
@@ -1078,9 +1068,7 @@ window.addEventListener('DOMContentLoaded', function () {
                 entry["level"] = level_value
                 parents = entry.get("parents")
                 if isinstance(parents, list):
-                    entry["parents"] = [
-                        dict(parent) for parent in parents if isinstance(parent, Mapping)
-                    ]
+                    entry["parents"] = [dict(parent) for parent in parents if isinstance(parent, Mapping)]
                 else:
                     entry["parents"] = []
                 entry["title"] = str(entry.get("title", ""))
@@ -1094,9 +1082,7 @@ window.addEventListener('DOMContentLoaded', function () {
                         index[str(code)] = entry
             self._naics_cache = entries
             self._naics_by_code = index
-        return list(self._naics_cache or [])
-
-    def _naics_entry(self, code: str) -> dict[str, Any] | None:
+        return list(self._naics_cache or [])def _naics_entry(self, code: str) -> dict[str, Any] | None:
         self._load_naics_reference()
         if not self._naics_by_code:
             return None
