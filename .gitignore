@@ -8,4 +8,17 @@ __pycache__/
 server.log
 server.err
 server.pid
+neo_*.log
+*.log
+*.out.log
+*.err.log
+__page.html
+__role_js.txt
+neo_tmp.html
+persona_state.json
+neo_agent_intake*.log
+neo_agent_server*.log
+src/neo_agent_pycache_/
+generated_specs/
+generated_repos/
 data/naics/*.xlsx

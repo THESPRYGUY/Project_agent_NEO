@@ -1535,6 +1535,16 @@ window.addEventListener('DOMContentLoaded', function () {
                     seen.add(code)
                     uniq.append(r)
             return self._json_response({"status": "ok", "items": uniq})
+        if norm == "/api/debug/function_counts" and method == "GET":
+            roles = self._function_role_data.get("roles", [])
+            counts: dict[str, int] = {}
+            if isinstance(roles, list):
+                for r in roles:
+                    if isinstance(r, Mapping):
+                        fn = str(r.get("function", ""))
+                        if fn:
+                            counts[fn] = counts.get(fn, 0) + 1
+            return self._json_response({"status": "ok", "counts": counts})
         if path in ("/api/health", "/api/healthz"):
             return self._json_response({"status": "ok"})
         if path == "/api/profile/validate":
