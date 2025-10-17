@@ -907,7 +907,7 @@ window.addEventListener('DOMContentLoaded', function () {
         generate_agent_script = self._indent_block(self._generate_agent_js, spaces=8)
         function_role_script = self._indent_block(self._function_role_js, spaces=8)
 
-        summary_html = _summary_block(None, str(self.profile_path), str(self.spec_dir))
+        summary_html = _summary_block(profile if isinstance(profile, Mapping) else None, str(self.profile_path), str(self.spec_dir))
 
         html_out = FORM_TEMPLATE.substitute(
             persona_styles=self._indent_block(persona_style_block),
@@ -918,10 +918,10 @@ window.addEventListener('DOMContentLoaded', function () {
             persona_tabs=persona_html,
             persona_hidden_value=html.escape(persona_hidden, quote=True),
             domain_selector_state=html.escape(domain_selector_state, quote=True),
-            naics_code=html.escape(naics_code, quote=True),
-            naics_title=html.escape(naics_title, quote=True),
-            naics_level=html.escape(naics_level, quote=True),
-            naics_lineage=html.escape(naics_lineage, quote=True),
+            naics_code=html.escape(str(naics_code), quote=True),
+            naics_title=html.escape(str(naics_title), quote=True),
+            naics_level=html.escape(str(naics_level), quote=True),
+            naics_lineage=html.escape(str(naics_lineage), quote=True),
             domain_selector_html=domain_selector_html,
             naics_selector_html=naics_selector_html,
             function_category=html.escape(function_category, quote=True),
@@ -1733,6 +1733,7 @@ window.addEventListener('DOMContentLoaded', function () {
             history = history[:history_limit]
 
         new_state: Dict[str, Any] = {
+            "version": "1.0.0",
             "operator": operator,
             "agent": agent,
             "alternates": alternates if isinstance(alternates, list) else [],
