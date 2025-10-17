@@ -209,9 +209,46 @@
     return roles.find((r) => r.code === code) || null;
   }
 
-  function updateRoleOptions() {
+  async function updateRoleOptions() {
     const fn = functionSelect.value;
     const query = roleSearch.value.trim();
+    roleSelect.innerHTML = '';
+    if (!fn) {
+      roleSelect.append(new Option('Select a role', '', true, true));
+      roleSelect.disabled = true;
+      updatePreview(null);
+      updateHiddenValues(null);
+      return;
+    }
+
+    // Prefer server-scoped roles to avoid any client-side mismatch
+    try {
+      const url = `/api/function_roles?fn=${encodeURIComponent(fn)}&q=${encodeURIComponent(query)}`;
+      const res = await fetch(url, { method: 'GET' });
+      if (res.ok) {
+        const payload = await res.json();
+        const items = Array.isArray(payload?.items) ? payload.items : [];
+        const sorted = items.sort((a, b) => {
+          const aLabel = (a.titles?.[0] || a.code || '').toLowerCase();
+          const bLabel = (b.titles?.[0] || b.code || '').toLowerCase();
+          return aLabel.localeCompare(bLabel);
+        });
+        roleSelect.append(new Option(sorted.length ? 'Select a role' : 'No roles match search', '', false, true));
+        sorted.forEach((role) => roleSelect.append(buildRoleOption(role)));
+        roleSelect.disabled = sorted.length === 0;
+
+        const currentCode = hiddenRoleCode?.value;
+        if (currentCode && sorted.some((r) => r.code === currentCode)) {
+          roleSelect.value = currentCode;
+        }
+        updatePreview(fetchRole(roleSelect.value));
+        return;
+      }
+    } catch (_) {
+      // Fall back to local filtering below
+    }
+
+    // Local fallback
     let filtered = roles
       .filter((role) => roleMatchesFunction(role, fn))
       .filter((role) => roleMatchesQuery(role, query))
@@ -220,8 +257,6 @@
         const bLabel = (b.titles?.[0] || b.code).toLowerCase();
         return aLabel.localeCompare(bLabel);
       });
-
-    // Fallback: if nothing matched exactly, try a looser includes-based match
     if (fn && filtered.length === 0) {
       const target = normaliseFn(fn);
       filtered = roles
@@ -233,25 +268,13 @@
           return aLabel.localeCompare(bLabel);
         });
     }
-
-    roleSelect.innerHTML = '';
-    if (!fn) {
-      roleSelect.append(new Option('Select a role', '', true, true));
-      roleSelect.disabled = true;
-      updatePreview(null);
-      updateHiddenValues(null);
-      return;
-    }
-
     roleSelect.append(new Option(filtered.length ? 'Select a role' : 'No roles match search', '', false, true));
     filtered.forEach((role) => roleSelect.append(buildRoleOption(role)));
     roleSelect.disabled = filtered.length === 0;
-
     const currentCode = hiddenRoleCode?.value;
     if (currentCode && filtered.some((role) => role.code === currentCode)) {
       roleSelect.value = currentCode;
     }
-
     updatePreview(fetchRole(roleSelect.value));
   }
 

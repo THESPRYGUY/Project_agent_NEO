@@ -1491,6 +1491,44 @@ window.addEventListener('DOMContentLoaded', function () {
             return self._handle_persona_api(path, method, environ)
         if path == "/api/agent/generate":
             return self._handle_agent_generate(method, environ)
+        if path == "/api/function_roles" and method == "GET":
+            # Scoped role lookup by business function + optional search query
+            from html import unescape as _html_unescape
+            qs = environ.get("QUERY_STRING", "") or ""
+            params = parse_qs(qs)
+            raw_fn = (params.get("fn") or [""])[0]
+            raw_q = (params.get("q") or [""])[0]
+
+            def _norm(text: str) -> str:
+                return " ".join((_html_unescape(str(text or "")).strip()).split()).lower()
+
+            target = _norm(raw_fn)
+            tokens = [t for t in _norm(raw_q).split(" ") if t]
+
+            roles = self._function_role_data.get("roles", [])
+            out: list[dict[str, Any]] = []
+            if isinstance(roles, list) and target:
+                for r in roles:
+                    if not isinstance(r, Mapping):
+                        continue
+                    rf = _norm(r.get("function", ""))
+                    if rf != target:
+                        continue
+                    hay = " ".join(
+                        [str(r.get("code", "")), str(r.get("seniority", ""))]
+                        + ([r.get("titles", [])] if isinstance(r.get("titles"), list) else [])
+                    ).lower()
+                    if tokens and not all(t in hay for t in tokens):
+                        continue
+                    out.append(
+                        {
+                            "code": r.get("code", ""),
+                            "function": r.get("function", ""),
+                            "seniority": r.get("seniority", ""),
+                            "titles": r.get("titles", []),
+                        }
+                    )
+            return self._json_response({"status": "ok", "items": out})
         if path in ("/api/health", "/api/healthz"):
             return self._json_response({"status": "ok"})
         if path == "/api/profile/validate":
