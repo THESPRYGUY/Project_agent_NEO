@@ -48,6 +48,7 @@
   };
 
   const roles = Array.isArray(data.roles) ? data.roles : [];
+  let __reqSeq = 0;
   const functionDefaults = data.functionDefaults || {};
 
   function populateFunctions() {
@@ -210,6 +211,7 @@
   }
 
   async function updateRoleOptions() {
+    const reqId = ++__reqSeq;
     const fn = functionSelect.value;
     const query = roleSearch.value.trim();
     roleSelect.innerHTML = '';
@@ -228,12 +230,19 @@
       if (res.ok) {
         const payload = await res.json();
         const items = Array.isArray(payload?.items) ? payload.items : [];
-        const sorted = items.sort((a, b) => {
+        // Deduplicate by role code
+        const seen = new Set();
+        const uniq = [];
+        for (const r of items) {
+          const code = r?.code || '';
+          if (code && !seen.has(code)) { seen.add(code); uniq.push(r); }
+        }
+        const sorted = uniq.sort((a, b) => {
           const aLabel = (a.titles?.[0] || a.code || '').toLowerCase();
           const bLabel = (b.titles?.[0] || b.code || '').toLowerCase();
           return aLabel.localeCompare(bLabel);
         });
-        if (sorted.length > 0) {
+        if (reqId === __reqSeq && sorted.length > 0) {
           roleSelect.append(new Option('Select a role', '', false, true));
           sorted.forEach((role) => roleSelect.append(buildRoleOption(role)));
           roleSelect.disabled = false;
@@ -269,9 +278,17 @@
           return aLabel.localeCompare(bLabel);
         });
     }
-    roleSelect.append(new Option(filtered.length ? 'Select a role' : 'No roles match search', '', false, true));
-    filtered.forEach((role) => roleSelect.append(buildRoleOption(role)));
-    roleSelect.disabled = filtered.length === 0 ? true : false;
+    if (reqId !== __reqSeq) { return; }
+    // Deduplicate local list
+    const seenLocal = new Set();
+    const uniqLocal = [];
+    for (const r of filtered) {
+      const code = r?.code || '';
+      if (code && !seenLocal.has(code)) { seenLocal.add(code); uniqLocal.push(r); }
+    }
+    roleSelect.append(new Option(uniqLocal.length ? 'Select a role' : 'No roles match search', '', false, true));
+    uniqLocal.forEach((role) => roleSelect.append(buildRoleOption(role)));
+    roleSelect.disabled = uniqLocal.length === 0 ? true : false;
     const currentCode = hiddenRoleCode?.value;
     if (currentCode && filtered.some((role) => role.code === currentCode)) {
       roleSelect.value = currentCode;
