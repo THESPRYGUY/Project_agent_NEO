@@ -195,7 +195,7 @@
     metrics.innerHTML = [
       `Autonomy default: ${autonomy !== null ? autonomy + '%' : 'N/A'}`,
       `Safety bias: ${safety !== null ? safety + '%' : 'N/A'}`,
-      `KPI weights - PRI ${pri !== null ? pri + '%' : 'N/A'}, HAL ${hal !== null ? hal + '%'}, AUD ${aud !== null ? aud + '%'} `
+      `KPI weights - PRI ${pri !== null ? pri + '%' : 'N/A'}, HAL ${hal !== null ? hal + '%' : 'N/A'}, AUD ${aud !== null ? aud + '%' : 'N/A'} `
     ].join(' | ');
     preview.append(metrics);
   }
