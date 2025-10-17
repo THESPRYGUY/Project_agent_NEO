@@ -323,7 +323,11 @@
   }
 
   functionSelect.addEventListener('change', handleFunctionChange);
+  // Extra listeners to ensure updates on all user interactions
+  functionSelect.addEventListener('input', handleFunctionChange);
+  functionSelect.addEventListener('keyup', handleFunctionChange);
   roleSearch.addEventListener('input', updateRoleOptions);
+  roleSearch.addEventListener('keyup', updateRoleOptions);
   roleSelect.addEventListener('change', handleRoleChange);
 
   initialLoad();
