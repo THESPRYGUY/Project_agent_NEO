@@ -467,8 +467,14 @@ class IntakeApplication:
         try:
             return json.loads(path.read_text(encoding="utf-8"))
         except json.JSONDecodeError:
-            LOGGER.exception("Failed to parse JSON at %s", path)
-            return default
+            # Retry with UTF-8 BOM tolerant decoding, then fall back to default
+            try:
+                raw = path.read_bytes()
+                text = raw.decode("utf-8-sig")  # strips BOM if present
+                return json.loads(text)
+            except Exception:
+                LOGGER.exception("Failed to parse JSON at %s", path)
+                return default
     def _load_persona_assets(self) -> dict[str, str]:
         html = self._safe_read_text(self.ui_dir / "persona_tabs.html")
         base_css = self._safe_read_text(self.ui_dir / "persona.css")
@@ -516,21 +522,93 @@ class IntakeApplication:
         }
 
     def _load_function_role_data(self) -> dict[str, Any]:
-        functions = self._safe_read_json(self.business_functions_path, [])
-        if not isinstance(functions, list):
-            functions = []
-        roles = self._safe_read_json(self.role_catalog_path, [])
-        if not isinstance(roles, list):
-            roles = []
+        """Load function/role data with resilient fallbacks.
+
+        Builds a unified set of business functions from multiple sources:
+        - data/functions/business_functions.json (preferred explicit list)
+        - keys from data/functions/functions_catalog.json values (flattened)
+        - distinct values of the "function" field in data/roles/role_catalog.json
+
+        Any missing files are tolerated; the union is de-duplicated and
+        sorted for stable UI rendering.
+        """
+        # Load raw sources (tolerate missing files)
+        functions_raw = self._safe_read_json(self.business_functions_path, [])
+        if not isinstance(functions_raw, list):
+            functions_raw = []
+
+        roles_raw = self._safe_read_json(self.role_catalog_path, [])
+        if not isinstance(roles_raw, list):
+            roles_raw = []
+
         routing_defaults = self._safe_read_json(self.routing_defaults_path, {})
         if not isinstance(routing_defaults, Mapping):
             routing_defaults = {}
+
         function_catalog = self._safe_read_json(self.functions_catalog_path, {})
         if not isinstance(function_catalog, Mapping):
             function_catalog = {}
+
+        # Build allowed set from role catalog and routing default keys
+        role_functions: set[str] = set()
+        try:
+            for role in roles_raw:
+                if isinstance(role, Mapping):
+                    fn = role.get("function")
+                    if fn:
+                        role_functions.add(str(fn))
+        except Exception:
+            pass
+
+        default_functions: set[str] = set()
+        try:
+            for key in routing_defaults.keys():
+                default_functions.add(str(key))
+        except Exception:
+            pass
+
+        allowed: set[str] = role_functions.union(default_functions)
+
+        # Aggregate candidate names
+        candidates: set[str] = set()
+        for item in functions_raw:
+            try:
+                if item:
+                    candidates.add(str(item))
+            except Exception:
+                continue
+        try:
+            for value in function_catalog.values():
+                if isinstance(value, list):
+                    for entry in value:
+                        if entry:
+                            candidates.add(str(entry))
+        except Exception:
+            pass
+        # Always include the allowed functions from roles/defaults
+        candidates |= allowed
+
+        # If we have an allow-list (from roles/defaults), filter candidates to it; otherwise keep candidates
+        if allowed:
+            final_functions = sorted({name for name in candidates if name in allowed}, key=lambda s: s.lower())
+        else:
+            final_functions = sorted(candidates, key=lambda s: s.lower())
+
+        # Log a brief summary for diagnostics
+        try:
+            LOGGER.debug(
+                "Function/role data loaded: functions_raw=%d, catalog_groups=%d, roles=%d, union=%d",
+                len(functions_raw),
+                len(function_catalog) if isinstance(function_catalog, Mapping) else 0,
+                len(roles_raw),
+                len(final_functions),
+            )
+        except Exception:
+            pass
+
         return {
-            "functions": functions,
-            "roles": roles,
+            "functions": final_functions,
+            "roles": roles_raw,
             "functionDefaults": routing_defaults,
             "catalog": function_catalog,
         }

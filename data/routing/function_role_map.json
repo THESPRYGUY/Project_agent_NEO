@@ -1,0 +1,130 @@
+{
+  "Executive/General Management": {
+    "workflows": ["StrategicPlanningFlow"],
+    "connectors": ["erp:read", "crm:read", "bi:read"],
+    "report_templates": ["Executive KPI Pulse"],
+    "autonomy_default": 0.4,
+    "safety_bias": 0.72,
+    "kpi_weights": {"PRI": 0.5, "HAL": 0.3, "AUD": 0.2}
+  },
+  "Finance": {
+    "workflows": ["FinancePlanningFlow"],
+    "connectors": ["erp:read", "bi:read"],
+    "report_templates": ["Finance KPI Pack"],
+    "autonomy_default": 0.32,
+    "safety_bias": 0.82,
+    "kpi_weights": {"PRI": 0.52, "HAL": 0.28, "AUD": 0.2}
+  },
+  "Operations": {
+    "workflows": ["OpsPerformanceFlow"],
+    "connectors": ["mes:read", "erp:read"],
+    "report_templates": ["Operational Throughput Report"],
+    "autonomy_default": 0.38,
+    "safety_bias": 0.74,
+    "kpi_weights": {"PRI": 0.48, "HAL": 0.32, "AUD": 0.2}
+  },
+  "Supply Chain": {
+    "workflows": ["DemandPlanningFlow"],
+    "connectors": ["erp:read", "wms:read"],
+    "report_templates": ["Inventory Health Brief"],
+    "autonomy_default": 0.36,
+    "safety_bias": 0.76,
+    "kpi_weights": {"PRI": 0.45, "HAL": 0.35, "AUD": 0.2}
+  },
+  "Sales": {
+    "workflows": ["PipelineReviewFlow"],
+    "connectors": ["crm:read", "bi:read"],
+    "report_templates": ["Revenue Forecast Brief"],
+    "autonomy_default": 0.44,
+    "safety_bias": 0.66,
+    "kpi_weights": {"PRI": 0.55, "HAL": 0.25, "AUD": 0.2}
+  },
+  "Marketing": {
+    "workflows": ["CampaignPerformanceLoop"],
+    "connectors": ["marketing:auto", "crm:read"],
+    "report_templates": ["Campaign KPI Scorecard"],
+    "autonomy_default": 0.4,
+    "safety_bias": 0.64,
+    "kpi_weights": {"PRI": 0.46, "HAL": 0.28, "AUD": 0.26}
+  },
+  "Customer Success": {
+    "workflows": ["RenewalRiskFlow"],
+    "connectors": ["crm:read", "support:read"],
+    "report_templates": ["Customer Health Watchlist"],
+    "autonomy_default": 0.38,
+    "safety_bias": 0.72,
+    "kpi_weights": {"PRI": 0.44, "HAL": 0.36, "AUD": 0.2}
+  },
+  "Product Management": {
+    "workflows": ["ProductRoadmapFlow"],
+    "connectors": ["roadmap:tool", "analytics:web"],
+    "report_templates": ["Product KPI Pulse"],
+    "autonomy_default": 0.42,
+    "safety_bias": 0.64,
+    "kpi_weights": {"PRI": 0.49, "HAL": 0.29, "AUD": 0.22}
+  },
+  "Engineering/IT": {
+    "workflows": ["DeliveryCadenceFlow"],
+    "connectors": ["ticketing:read", "ci:read"],
+    "report_templates": ["Engineering Velocity Brief"],
+    "autonomy_default": 0.4,
+    "safety_bias": 0.75,
+    "kpi_weights": {"PRI": 0.45, "HAL": 0.3, "AUD": 0.25}
+  },
+  "Data & Analytics": {
+    "workflows": ["InsightsDeliveryFlow"],
+    "connectors": ["bi:read", "warehouse:query"],
+    "report_templates": ["Insight Highlights"],
+    "autonomy_default": 0.38,
+    "safety_bias": 0.72,
+    "kpi_weights": {"PRI": 0.45, "HAL": 0.32, "AUD": 0.23}
+  },
+  "HR/People": {
+    "workflows": ["WorkforcePlanningFlow"],
+    "connectors": ["hris:read", "ats:read"],
+    "report_templates": ["People Metrics Brief"],
+    "autonomy_default": 0.3,
+    "safety_bias": 0.82,
+    "kpi_weights": {"PRI": 0.35, "HAL": 0.35, "AUD": 0.3}
+  },
+  "Legal & Compliance": {
+    "workflows": ["PolicyComplianceFlow"],
+    "connectors": ["clm:read", "dms:read"],
+    "report_templates": ["Compliance Exceptions Log"],
+    "autonomy_default": 0.28,
+    "safety_bias": 0.88,
+    "kpi_weights": {"PRI": 0.33, "HAL": 0.27, "AUD": 0.4}
+  },
+  "Security & Risk": {
+    "workflows": ["ThreatMonitoringLoop"],
+    "connectors": ["siem:read", "grc:read"],
+    "report_templates": ["Security Incident Brief"],
+    "autonomy_default": 0.3,
+    "safety_bias": 0.9,
+    "kpi_weights": {"PRI": 0.32, "HAL": 0.26, "AUD": 0.42}
+  },
+  "ESG/Sustainability": {
+    "workflows": ["ESGMetricTrackingFlow"],
+    "connectors": ["esg:reporting", "erp:read"],
+    "report_templates": ["ESG KPI Brief"],
+    "autonomy_default": 0.31,
+    "safety_bias": 0.82,
+    "kpi_weights": {"PRI": 0.34, "HAL": 0.34, "AUD": 0.32}
+  },
+  "Facilities/Real Estate": {
+    "workflows": ["MaintenanceScheduleFlow"],
+    "connectors": ["cmms:read", "bms:read"],
+    "report_templates": ["Maintenance Backlog Summary"],
+    "autonomy_default": 0.28,
+    "safety_bias": 0.78,
+    "kpi_weights": {"PRI": 0.38, "HAL": 0.32, "AUD": 0.3}
+  },
+  "R&D/Innovation": {
+    "workflows": ["InnovationPipelineFlow"],
+    "connectors": ["plm:read", "lms:read"],
+    "report_templates": ["Innovation Portfolio Brief"],
+    "autonomy_default": 0.43,
+    "safety_bias": 0.65,
+    "kpi_weights": {"PRI": 0.48, "HAL": 0.32, "AUD": 0.2}
+  }
+}

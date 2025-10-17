@@ -1,0 +1,34 @@
+<section class="function-role" data-function-role-picker>
+  <h2 class="function-role__heading">Business Function &amp; Role</h2>
+  <p class="function-role__description">
+    Select the business function aligned to your NAICS focus, then choose a role. Search supports partial titles (e.g. “controller”).
+  </p>
+  <div class="function-role__grid">
+    <label class="function-role__field">
+      <span class="function-role__label">Business Function</span>
+      <select data-function-select aria-describedby="function-helper">
+        <option value="">Select a business function</option>
+      </select>
+      <span id="function-helper" class="function-role__hint">Required; filters available roles.</span>
+    </label>
+    <label class="function-role__field">
+      <span class="function-role__label">Search Role Titles</span>
+      <input type="search" data-role-search placeholder="e.g. Controller" aria-describedby="role-helper" />
+      <span id="role-helper" class="function-role__hint">Type to filter by title, seniority, or keywords.</span>
+    </label>
+    <label class="function-role__field">
+      <span class="function-role__label">Primary Role</span>
+      <select data-role-select disabled>
+        <option value="">Select a role</option>
+      </select>
+    </label>
+  </div>
+  <div class="function-role__preview" data-role-preview aria-live="polite" aria-atomic="true">
+    <p class="function-role__preview-empty">Select a role to view default workflows, connectors, and KPIs.</p>
+  </div>
+  <input type="hidden" name="business_function" data-hidden-business-function value="">
+  <input type="hidden" name="role_code" data-hidden-role-code value="">
+  <input type="hidden" name="role_title" data-hidden-role-title value="">
+  <input type="hidden" name="role_seniority" data-hidden-role-seniority value="">
+  <input type="hidden" name="routing_defaults_json" data-hidden-routing-defaults value="">
+</section>

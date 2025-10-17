@@ -1,0 +1,19 @@
+{
+  "Strategic": [
+    "AI Strategy & Governance",
+    "Prompt Architecture & Evaluation",
+    "Workflow Orchestration",
+    "Observability & Telemetry"
+  ],
+  "Technical": [
+    "Agentic RAG & Knowledge Graphs",
+    "Tool & Connector Integrations",
+    "Memory & Data Governance",
+    "Safety & Privacy Compliance"
+  ],
+  "Support": [
+    "Onboarding & Training",
+    "Reporting & Publishing",
+    "Lifecycle & Change Mgmt"
+  ]
+}
