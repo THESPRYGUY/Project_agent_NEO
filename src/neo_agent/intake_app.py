@@ -1491,7 +1491,7 @@ window.addEventListener('DOMContentLoaded', function () {
             return self._handle_persona_api(path, method, environ)
         if path == "/api/agent/generate":
             return self._handle_agent_generate(method, environ)
-        if path == "/api/function_roles" and method == "GET":
+        if norm == "/api/function_roles" and method == "GET":
             # Scoped role lookup by business function + optional search query
             from html import unescape as _html_unescape
             qs = environ.get("QUERY_STRING", "") or ""
