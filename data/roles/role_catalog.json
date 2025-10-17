@@ -1,0 +1,425 @@
+[
+  {
+    "code": "EXEC:CXO",
+    "function": "Executive/General Management",
+    "seniority": "C-Level",
+    "titles": ["Chief Operating Officer", "Chief Transformation Officer"],
+    "defaults": {
+      "workflows": ["StrategicPlanningFlow", "ExecutiveOpsReview"],
+      "connectors": ["erp:read", "crm:read", "bi:read", "slack:send"],
+      "report_templates": ["Executive KPI Pulse", "Risk & Opportunity Brief"],
+      "autonomy_default": 0.45,
+      "safety_bias": 0.7,
+      "kpi_weights": {"PRI": 0.5, "HAL": 0.3, "AUD": 0.2}
+    }
+  },
+  {
+    "code": "FIN:VP",
+    "function": "Finance",
+    "seniority": "VP",
+    "titles": ["VP Finance", "Head of Finance"],
+    "defaults": {
+      "workflows": ["FinancePlanningFlow", "QuarterCloseFlow"],
+      "connectors": ["erp:read", "erp:write", "bi:read"],
+      "report_templates": ["Finance KPI Pack", "CFO Risk Summary"],
+      "autonomy_default": 0.35,
+      "safety_bias": 0.8,
+      "kpi_weights": {"PRI": 0.55, "HAL": 0.25, "AUD": 0.2}
+    }
+  },
+  {
+    "code": "FIN:CONTROLLER",
+    "function": "Finance",
+    "seniority": "Director",
+    "titles": ["Corporate Controller", "Director of Accounting"],
+    "defaults": {
+      "workflows": ["CloseManagementFlow", "PolicyComplianceFlow"],
+      "connectors": ["erp:read", "erp:write", "audit:log"],
+      "report_templates": ["Close Status Tracker", "Compliance Exceptions Log"],
+      "autonomy_default": 0.28,
+      "safety_bias": 0.85,
+      "kpi_weights": {"PRI": 0.4, "HAL": 0.3, "AUD": 0.3}
+    }
+  },
+  {
+    "code": "OPS:DIR",
+    "function": "Operations",
+    "seniority": "Director",
+    "titles": ["Director of Operations", "Operations Excellence Lead"],
+    "defaults": {
+      "workflows": ["OpsPerformanceFlow", "ContinuousImprovementLoop"],
+      "connectors": ["erp:read", "mes:read", "ticketing:read"],
+      "report_templates": ["Operational Throughput Report", "Improvement Backlog Digest"],
+      "autonomy_default": 0.42,
+      "safety_bias": 0.7,
+      "kpi_weights": {"PRI": 0.48, "HAL": 0.32, "AUD": 0.2}
+    }
+  },
+  {
+    "code": "OPS:PLANT",
+    "function": "Operations",
+    "seniority": "Manager",
+    "titles": ["Plant Manager", "Site Operations Manager"],
+    "defaults": {
+      "workflows": ["ShiftHandoverFlow", "IncidentResponseLoop"],
+      "connectors": ["mes:read", "scada:read", "email:send_internal"],
+      "report_templates": ["Daily Production Brief", "Incident Trend Summary"],
+      "autonomy_default": 0.33,
+      "safety_bias": 0.78,
+      "kpi_weights": {"PRI": 0.5, "HAL": 0.3, "AUD": 0.2}
+    }
+  },
+  {
+    "code": "SC:DIR",
+    "function": "Supply Chain",
+    "seniority": "Director",
+    "titles": ["Director Supply Chain", "Head of Logistics"],
+    "defaults": {
+      "workflows": ["DemandPlanningFlow", "LogisticsExceptionFlow"],
+      "connectors": ["erp:read", "wms:read", "tms:read", "email:send_internal"],
+      "report_templates": ["Logistics Cost Dashboard", "Inventory Health Brief"],
+      "autonomy_default": 0.4,
+      "safety_bias": 0.72,
+      "kpi_weights": {"PRI": 0.46, "HAL": 0.34, "AUD": 0.2}
+    }
+  },
+  {
+    "code": "SC:PLANNER",
+    "function": "Supply Chain",
+    "seniority": "Manager",
+    "titles": ["Supply Planner", "Demand Planner"],
+    "defaults": {
+      "workflows": ["DemandReviewFlow", "SupplierRiskCheck"],
+      "connectors": ["erp:read", "supplier:portal", "email:send_external"],
+      "report_templates": ["Forecast Accuracy Tracker", "Supplier Risk Watchlist"],
+      "autonomy_default": 0.3,
+      "safety_bias": 0.76,
+      "kpi_weights": {"PRI": 0.44, "HAL": 0.36, "AUD": 0.2}
+    }
+  },
+  {
+    "code": "SALES:VP",
+    "function": "Sales",
+    "seniority": "VP",
+    "titles": ["VP Sales", "Head of Revenue"],
+    "defaults": {
+      "workflows": ["PipelineReviewFlow", "ForecastCommitFlow"],
+      "connectors": ["crm:read", "crm:write", "bi:read"],
+      "report_templates": ["Revenue Forecast Brief", "Deal Risk Report"],
+      "autonomy_default": 0.47,
+      "safety_bias": 0.65,
+      "kpi_weights": {"PRI": 0.58, "HAL": 0.22, "AUD": 0.2}
+    }
+  },
+  {
+    "code": "SALES:MANAGER",
+    "function": "Sales",
+    "seniority": "Manager",
+    "titles": ["Regional Sales Manager", "Sales Enablement Manager"],
+    "defaults": {
+      "workflows": ["DealCoachingFlow", "EnablementProgramTracker"],
+      "connectors": ["crm:read", "lms:read", "email:send_internal"],
+      "report_templates": ["Team Performance Digest", "Enablement Progress Snapshot"],
+      "autonomy_default": 0.38,
+      "safety_bias": 0.68,
+      "kpi_weights": {"PRI": 0.52, "HAL": 0.28, "AUD": 0.2}
+    }
+  },
+  {
+    "code": "MKT:DIR",
+    "function": "Marketing",
+    "seniority": "Director",
+    "titles": ["Director of Marketing", "Demand Gen Director"],
+    "defaults": {
+      "workflows": ["CampaignPerformanceLoop", "LeadLifecycleFlow"],
+      "connectors": ["crm:read", "marketing:auto", "analytics:web"],
+      "report_templates": ["Campaign KPI Scorecard", "Pipeline Attribution Brief"],
+      "autonomy_default": 0.43,
+      "safety_bias": 0.62,
+      "kpi_weights": {"PRI": 0.49, "HAL": 0.27, "AUD": 0.24}
+    }
+  },
+  {
+    "code": "MKT:MANAGER",
+    "function": "Marketing",
+    "seniority": "Manager",
+    "titles": ["Content Marketing Manager", "Field Marketing Manager"],
+    "defaults": {
+      "workflows": ["ContentProductionFlow", "EventReadinessChecklist"],
+      "connectors": ["marketing:auto", "cms:read", "email:send_external"],
+      "report_templates": ["Content Performance Brief", "Event Impact Summary"],
+      "autonomy_default": 0.36,
+      "safety_bias": 0.66,
+      "kpi_weights": {"PRI": 0.48, "HAL": 0.24, "AUD": 0.28}
+    }
+  },
+  {
+    "code": "CS:DIR",
+    "function": "Customer Success",
+    "seniority": "Director",
+    "titles": ["Director of Customer Success", "Head of Customer Experience"],
+    "defaults": {
+      "workflows": ["RenewalRiskFlow", "VoiceOfCustomerLoop"],
+      "connectors": ["crm:read", "support:read", "csat:read"],
+      "report_templates": ["Customer Health Watchlist", "VOC Highlights"],
+      "autonomy_default": 0.41,
+      "safety_bias": 0.7,
+      "kpi_weights": {"PRI": 0.46, "HAL": 0.34, "AUD": 0.2}
+    }
+  },
+  {
+    "code": "CS:MANAGER",
+    "function": "Customer Success",
+    "seniority": "Manager",
+    "titles": ["Customer Success Manager", "Account Manager"],
+    "defaults": {
+      "workflows": ["QuarterlyBusinessReviewFlow", "RiskEscalationLoop"],
+      "connectors": ["crm:read", "support:read", "email:send_external"],
+      "report_templates": ["Account Pulse Brief", "Renewal Action Plan"],
+      "autonomy_default": 0.34,
+      "safety_bias": 0.72,
+      "kpi_weights": {"PRI": 0.45, "HAL": 0.35, "AUD": 0.2}
+    }
+  },
+  {
+    "code": "PROD:DIR",
+    "function": "Product Management",
+    "seniority": "Director",
+    "titles": ["Director of Product", "Group Product Manager"],
+    "defaults": {
+      "workflows": ["ProductRoadmapFlow", "LaunchReadinessFlow"],
+      "connectors": ["roadmap:tool", "analytics:web", "ticketing:read"],
+      "report_templates": ["Product KPI Pulse", "Roadmap Highlights"],
+      "autonomy_default": 0.44,
+      "safety_bias": 0.64,
+      "kpi_weights": {"PRI": 0.5, "HAL": 0.28, "AUD": 0.22}
+    }
+  },
+  {
+    "code": "PROD:PM",
+    "function": "Product Management",
+    "seniority": "Manager",
+    "titles": ["Product Manager", "Product Owner"],
+    "defaults": {
+      "workflows": ["BacklogRefinementLoop", "ExperimentReviewFlow"],
+      "connectors": ["analytics:web", "ticketing:read", "feature:flag"],
+      "report_templates": ["Experiment Summary", "Backlog Health Report"],
+      "autonomy_default": 0.39,
+      "safety_bias": 0.66,
+      "kpi_weights": {"PRI": 0.48, "HAL": 0.3, "AUD": 0.22}
+    }
+  },
+  {
+    "code": "ENG:VP",
+    "function": "Engineering/IT",
+    "seniority": "VP",
+    "titles": ["VP Engineering", "Head of Technology"],
+    "defaults": {
+      "workflows": ["DeliveryCadenceFlow", "PlatformHealthReview"],
+      "connectors": ["ticketing:read", "ci:read", "status:page"],
+      "report_templates": ["Engineering Velocity Brief", "Incident Postmortem Digest"],
+      "autonomy_default": 0.45,
+      "safety_bias": 0.68,
+      "kpi_weights": {"PRI": 0.47, "HAL": 0.33, "AUD": 0.2}
+    }
+  },
+  {
+    "code": "ENG:ITSM",
+    "function": "Engineering/IT",
+    "seniority": "Manager",
+    "titles": ["IT Service Manager", "IT Operations Lead"],
+    "defaults": {
+      "workflows": ["IncidentResponseLoop", "ChangeApprovalFlow"],
+      "connectors": ["itsm:read", "itsm:write", "status:page"],
+      "report_templates": ["Incident SLA Report", "Change Risk Brief"],
+      "autonomy_default": 0.32,
+      "safety_bias": 0.82,
+      "kpi_weights": {"PRI": 0.42, "HAL": 0.28, "AUD": 0.3}
+    }
+  },
+  {
+    "code": "DATA:LEAD",
+    "function": "Data & Analytics",
+    "seniority": "Lead",
+    "titles": ["Head of Analytics", "Analytics Lead"],
+    "defaults": {
+      "workflows": ["InsightsDeliveryFlow", "DataQualityReview"],
+      "connectors": ["bi:read", "warehouse:query", "notebook:run"],
+      "report_templates": ["Insight Highlights", "Data Quality Watch"],
+      "autonomy_default": 0.4,
+      "safety_bias": 0.7,
+      "kpi_weights": {"PRI": 0.48, "HAL": 0.3, "AUD": 0.22}
+    }
+  },
+  {
+    "code": "DATA:ANALYST",
+    "function": "Data & Analytics",
+    "seniority": "Senior IC",
+    "titles": ["Senior Data Analyst", "Analytics Consultant"],
+    "defaults": {
+      "workflows": ["AdhocRequestFlow", "InsightValidationLoop"],
+      "connectors": ["bi:read", "warehouse:query", "sheet:write"],
+      "report_templates": ["Insights Digest", "Request Tracker"],
+      "autonomy_default": 0.35,
+      "safety_bias": 0.72,
+      "kpi_weights": {"PRI": 0.46, "HAL": 0.32, "AUD": 0.22}
+    }
+  },
+  {
+    "code": "HR:DIR",
+    "function": "HR/People",
+    "seniority": "Director",
+    "titles": ["Director of HR", "People Operations Director"],
+    "defaults": {
+      "workflows": ["WorkforcePlanningFlow", "PolicyDeploymentLoop"],
+      "connectors": ["hris:read", "ats:read", "email:send_internal"],
+      "report_templates": ["People Metrics Brief", "Policy Compliance Snapshot"],
+      "autonomy_default": 0.33,
+      "safety_bias": 0.8,
+      "kpi_weights": {"PRI": 0.38, "HAL": 0.32, "AUD": 0.3}
+    }
+  },
+  {
+    "code": "HR:BP",
+    "function": "HR/People",
+    "seniority": "Manager",
+    "titles": ["HR Business Partner", "People Partner"],
+    "defaults": {
+      "workflows": ["TalentConversationFlow", "OrgChangeChecklist"],
+      "connectors": ["hris:read", "email:send_internal", "survey:read"],
+      "report_templates": ["Org Health Brief", "Talent Risk Watchlist"],
+      "autonomy_default": 0.31,
+      "safety_bias": 0.78,
+      "kpi_weights": {"PRI": 0.36, "HAL": 0.34, "AUD": 0.3}
+    }
+  },
+  {
+    "code": "LEGAL:COUNSEL",
+    "function": "Legal & Compliance",
+    "seniority": "Counsel",
+    "titles": ["Corporate Counsel", "Senior Legal Advisor"],
+    "defaults": {
+      "workflows": ["ContractReviewFlow", "PolicyExceptionFlow"],
+      "connectors": ["clm:read", "dms:read", "email:send_internal"],
+      "report_templates": ["Contract Cycle Summary", "Compliance Exception Log"],
+      "autonomy_default": 0.27,
+      "safety_bias": 0.88,
+      "kpi_weights": {"PRI": 0.34, "HAL": 0.26, "AUD": 0.4}
+    }
+  },
+  {
+    "code": "SEC:RISK",
+    "function": "Security & Risk",
+    "seniority": "Director",
+    "titles": ["Director of Security", "Head of Risk Management"],
+    "defaults": {
+      "workflows": ["ThreatMonitoringLoop", "RiskRegisterReview"],
+      "connectors": ["siem:read", "grc:read", "email:send_internal"],
+      "report_templates": ["Security Incident Brief", "Risk Register Digest"],
+      "autonomy_default": 0.29,
+      "safety_bias": 0.9,
+      "kpi_weights": {"PRI": 0.32, "HAL": 0.24, "AUD": 0.44}
+    }
+  },
+  {
+    "code": "ESG:LEAD",
+    "function": "ESG/Sustainability",
+    "seniority": "Lead",
+    "titles": ["Head of Sustainability", "ESG Program Lead"],
+    "defaults": {
+      "workflows": ["ESGMetricTrackingFlow", "RegulatoryReportingFlow"],
+      "connectors": ["esg:reporting", "erp:read", "email:send_external"],
+      "report_templates": ["ESG KPI Brief", "Regulatory Submission Tracker"],
+      "autonomy_default": 0.33,
+      "safety_bias": 0.82,
+      "kpi_weights": {"PRI": 0.36, "HAL": 0.34, "AUD": 0.3}
+    }
+  },
+  {
+    "code": "FAC:MANAGER",
+    "function": "Facilities/Real Estate",
+    "seniority": "Manager",
+    "titles": ["Facilities Manager", "Workplace Operations Lead"],
+    "defaults": {
+      "workflows": ["MaintenanceScheduleFlow", "SpacePlanningLoop"],
+      "connectors": ["cmms:read", "bms:read", "email:send_internal"],
+      "report_templates": ["Maintenance Backlog Summary", "Space Utilization Brief"],
+      "autonomy_default": 0.3,
+      "safety_bias": 0.75,
+      "kpi_weights": {"PRI": 0.4, "HAL": 0.3, "AUD": 0.3}
+    }
+  },
+  {
+    "code": "RANDD:LEAD",
+    "function": "R&D/Innovation",
+    "seniority": "Director",
+    "titles": ["Director of R&D", "Innovation Program Lead"],
+    "defaults": {
+      "workflows": ["InnovationPipelineFlow", "ExperimentReviewLoop"],
+      "connectors": ["plm:read", "lms:read", "email:send_internal"],
+      "report_templates": ["Innovation Portfolio Brief", "Experiment Learnings Digest"],
+      "autonomy_default": 0.46,
+      "safety_bias": 0.62,
+    "kpi_weights": {"PRI": 0.5, "HAL": 0.3, "AUD": 0.2}
+    }
+  }
+  ,
+  { "code": "FIN:CFO", "function": "Finance", "seniority": "C-Level", "titles": ["Chief Financial Officer", "CFO"] },
+  { "code": "FIN:FPNA", "function": "Finance", "seniority": "Director", "titles": ["Director FP&A", "FP&A Director"] },
+  { "code": "FIN:ACCTMGR", "function": "Finance", "seniority": "Manager", "titles": ["Accounting Manager"] },
+  { "code": "FIN:ARAP", "function": "Finance", "seniority": "Manager", "titles": ["AR/AP Manager"] },
+  { "code": "FIN:TREAS", "function": "Finance", "seniority": "Manager", "titles": ["Treasury Manager"] },
+
+  { "code": "OPS:VP", "function": "Operations", "seniority": "VP", "titles": ["VP Operations"] },
+  { "code": "OPS:MANAGER", "function": "Operations", "seniority": "Manager", "titles": ["Operations Manager"] },
+  { "code": "OPS:QUALITY", "function": "Operations", "seniority": "Manager", "titles": ["Quality Manager"] },
+
+  { "code": "SC:LOGMGR", "function": "Supply Chain", "seniority": "Manager", "titles": ["Logistics Manager"] },
+  { "code": "SC:PROC", "function": "Supply Chain", "seniority": "Director", "titles": ["Director of Procurement"] },
+  { "code": "SC:INVMGR", "function": "Supply Chain", "seniority": "Manager", "titles": ["Inventory Manager"] },
+
+  { "code": "SALES:CRO", "function": "Sales", "seniority": "C-Level", "titles": ["Chief Revenue Officer", "CRO"] },
+  { "code": "SALES:DIR", "function": "Sales", "seniority": "Director", "titles": ["Sales Director"] },
+  { "code": "SALES:AEMGR", "function": "Sales", "seniority": "Manager", "titles": ["Account Executive Manager"] },
+
+  { "code": "MKT:CMO", "function": "Marketing", "seniority": "C-Level", "titles": ["Chief Marketing Officer", "CMO"] },
+  { "code": "MKT:DEMAND", "function": "Marketing", "seniority": "Manager", "titles": ["Demand Generation Manager"] },
+  { "code": "MKT:BRAND", "function": "Marketing", "seniority": "Director", "titles": ["Director of Brand Marketing"] },
+
+  { "code": "CS:VP", "function": "Customer Success", "seniority": "VP", "titles": ["VP Customer Success"] },
+  { "code": "CS:SUPPORT", "function": "Customer Success", "seniority": "Manager", "titles": ["Support Manager"] },
+  { "code": "CS:CSM", "function": "Customer Success", "seniority": "Senior IC", "titles": ["Customer Success Manager"] },
+
+  { "code": "PROD:VP", "function": "Product Management", "seniority": "VP", "titles": ["VP Product"] },
+  { "code": "PROD:PM", "function": "Product Management", "seniority": "Senior IC", "titles": ["Product Manager"] },
+  { "code": "PROD:OPS", "function": "Product Management", "seniority": "Manager", "titles": ["Product Operations Manager"] },
+
+  { "code": "ENG:CIO", "function": "Engineering/IT", "seniority": "C-Level", "titles": ["Chief Information Officer", "CIO"] },
+  { "code": "ENG:ENGMGR", "function": "Engineering/IT", "seniority": "Manager", "titles": ["Software Engineering Manager"] },
+  { "code": "ENG:DEVOPS", "function": "Engineering/IT", "seniority": "Manager", "titles": ["DevOps Manager"] },
+  { "code": "ENG:ITSDIR", "function": "Engineering/IT", "seniority": "Director", "titles": ["Director of IT Service Management"] },
+
+  { "code": "DATA:CDO", "function": "Data & Analytics", "seniority": "C-Level", "titles": ["Chief Data Officer", "CDO"] },
+  { "code": "DATA:ENGMGR", "function": "Data & Analytics", "seniority": "Manager", "titles": ["Data Engineering Manager"] },
+  { "code": "DATA:ANLMGR", "function": "Data & Analytics", "seniority": "Manager", "titles": ["Analytics Manager"] },
+
+  { "code": "HR:CHRO", "function": "HR/People", "seniority": "C-Level", "titles": ["Chief Human Resources Officer", "CHRO"] },
+  { "code": "HR:MANAGER", "function": "HR/People", "seniority": "Manager", "titles": ["HR Manager"] },
+  { "code": "HR:TALEAD", "function": "HR/People", "seniority": "Lead", "titles": ["Talent Acquisition Lead"] },
+
+  { "code": "LEGAL:GC", "function": "Legal & Compliance", "seniority": "C-Level", "titles": ["General Counsel"] },
+  { "code": "LEGAL:COMP", "function": "Legal & Compliance", "seniority": "Manager", "titles": ["Compliance Officer"] },
+
+  { "code": "SEC:CISO", "function": "Security & Risk", "seniority": "C-Level", "titles": ["Chief Information Security Officer", "CISO"] },
+  { "code": "SEC:GRCMGR", "function": "Security & Risk", "seniority": "Manager", "titles": ["GRC Manager"] },
+  { "code": "SEC:SECOPS", "function": "Security & Risk", "seniority": "Manager", "titles": ["Security Operations Manager"] },
+
+  { "code": "ESG:CSO", "function": "ESG/Sustainability", "seniority": "C-Level", "titles": ["Chief Sustainability Officer", "CSO"] },
+  { "code": "ESG:MANAGER", "function": "ESG/Sustainability", "seniority": "Manager", "titles": ["Sustainability Manager"] },
+
+  { "code": "FAC:DIR", "function": "Facilities/Real Estate", "seniority": "Director", "titles": ["Director of Facilities"] },
+  { "code": "FAC:REMAN", "function": "Facilities/Real Estate", "seniority": "Manager", "titles": ["Real Estate Manager"] },
+
+  { "code": "EXEC:CSO", "function": "Executive/General Management", "seniority": "C-Level", "titles": ["Chief Strategy Officer", "CSO"] },
+  { "code": "EXEC:GM", "function": "Executive/General Management", "seniority": "Director", "titles": ["General Manager"] }
+]

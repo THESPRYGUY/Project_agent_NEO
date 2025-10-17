@@ -4,3 +4,8 @@ coverage/
 __pycache__/
 *.pyc
 .DS_Store
+# Local dev artifacts
+server.log
+server.err
+server.pid
+data/naics/*.xlsx
