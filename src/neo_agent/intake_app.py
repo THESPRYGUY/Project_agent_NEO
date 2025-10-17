@@ -7,6 +7,7 @@ import json
 import os
 import time
 from pathlib import Path
+import csv
 from string import Template
 from typing import Any, Dict, Iterable, List, Mapping, Optional
 from urllib.parse import parse_qs
@@ -205,33 +206,16 @@ $extra_styles
                 </label>
                 <label>Version
                     <input type="text" name="agent_version" value="$agent_version">
-                </label>
-                <label>Primary Domain
-                    <select name="domain" required>
-                        $domain_options
-                    </select>
-                </label>
-                <label>Primary Role
-                    <select name="role" required>
-                        $role_options
-                    </select>
-                </label>
+                </label>\n                <!-- NAICS Picker (moved into Agent Profile) -->\n                <input type="hidden" name="naics_code" value="$naics_code">\n                <input type="hidden" name="naics_title" value="$naics_title">\n                <input type="hidden" name="naics_level" value="$naics_level">\n                <input type="hidden" name="naics_lineage_json" value="$naics_lineage">\n                $naics_selector_html
+                <!-- Primary Domain removed: replaced by NAICS picker -->
+                <!-- Primary Role removed: replaced by Business Function & Role -->
                 <section id="mbti-section" data-testid="mbti-section" data-mbti-tooltips="enabled" class="persona-inline">
                     <input type="hidden" name="agent_persona" value="$persona_hidden_value" data-persona-input>
                     $persona_tabs
                 </section>
             </fieldset>
 
-            <fieldset>
-                <legend>Domain & Classification</legend>
-                <input type="hidden" name="domain_selector" value="$domain_selector_state" data-hidden-domain-selector>
-                <input type="hidden" name="naics_code" value="$naics_code">
-                <input type="hidden" name="naics_title" value="$naics_title">
-                <input type="hidden" name="naics_level" value="$naics_level">
-                <input type="hidden" name="naics_lineage_json" value="$naics_lineage">
-                $domain_selector_html
-                $naics_selector_html
-            </fieldset>
+            <fieldset>\n                <legend>Domain & Classification</legend>\n                <input type="hidden" name="domain_selector" value="$domain_selector_state" data-hidden-domain-selector>\n                $domain_selector_html\n            </fieldset>
 
             <fieldset>
                 <legend>Business Function & Role</legend>
@@ -442,7 +426,7 @@ class IntakeApplication:
     def _safe_read_text(self, path: Path) -> str:
         """Read a text asset safely, tolerating mixed encodings.
 
-        Prefer UTFΓÇæ8. If the file contains stray bytes (e.g., smart quotes
+        Prefer UTFÃƒÆ’Ã…Â½ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¦8. If the file contains stray bytes (e.g., smart quotes
         pasted from Word), fall back to decoding with replacement so the app
         does not crash during initialisation.
         """
@@ -996,33 +980,70 @@ window.addEventListener('DOMContentLoaded', function () {
     # NAICS helpers ----------------------------------------------------
     def _load_naics_reference(self) -> list[dict[str, Any]]:
         if self._naics_cache is None:
-            use_sample = not self.naics_path.exists()
-            path = self.naics_path if not use_sample else self.naics_sample_path
-            if use_sample and not getattr(self, "_warned_naics_sample", False):
-                try:
-                    LOGGER.warning(
-                        "Using NAICS sample dataset: %s (missing %s)",
-                        path,
-                        self.naics_path,
-                    )
-                except Exception:
-                    pass
-                self._warned_naics_sample = True
+            # Prefer full JSON; fall back to sample JSON; then CSV; finally a tiny built-in payload
             default_payload = [
-                {
-                    "code": "54",
-                    "title": "Professional, Scientific, and Technical Services",
-                    "level": 2,
-                    "parents": [],
-                },
-                {
-                    "code": "541",
-                    "title": "Professional, Scientific, and Technical Services (541)",
-                    "level": 3,
-                    "parents": [{"code": "54", "title": "Professional, Scientific, and Technical Services", "level": 2}],
-                },
+                {"code": "54", "title": "Professional, Scientific, and Technical Services", "level": 2, "parents": []},
+                {"code": "541", "title": "Professional, Scientific, and Technical Services (541)", "level": 3, "parents": [{"code": "54", "title": "Professional, Scientific, and Technical Services", "level": 2}]},
             ]
-            data = self._safe_read_json(path, default_payload)
+            data: Any = None
+            if self.naics_path.exists():
+                data = self._safe_read_json(self.naics_path, default_payload)
+            elif self.naics_sample_path.exists():
+                if not getattr(self, "_warned_naics_sample", False):
+                    try:
+                        LOGGER.warning("Using NAICS sample dataset: %s (missing %s)", self.naics_sample_path, self.naics_path)
+                    except Exception:
+                        pass
+                    self._warned_naics_sample = True
+                data = self._safe_read_json(self.naics_sample_path, default_payload)
+            else:
+                # CSV fallback (2-6 digit_2022_Codes.csv)
+                csv_path = self.data_root / "naics" / "2-6 digit_2022_Codes.csv"
+                if csv_path.exists():
+                    try:
+                        import csv as _csv
+                        rows: list[dict[str, str]] = []
+                        with csv_path.open("r", encoding="utf-8", newline="") as handle:
+                            reader = _csv.DictReader(handle)
+                            headers = [h.lower() for h in (reader.fieldnames or [])]
+                            def pick(name_opts: list[str]) -> str | None:
+                                for opt in name_opts:
+                                    for h in headers:
+                                        if opt in h:
+                                            return [x for x in (reader.fieldnames or []) if x.lower() == h][0]
+                                return None
+                            code_col = pick(["code"]) or (reader.fieldnames or [""])[0]
+                            title_col = pick(["title"]) or (reader.fieldnames or ["", ""])[1]
+                            for r in reader:
+                                code = str(r.get(code_col, "")).strip()
+                                title = str(r.get(title_col, "")).strip()
+                                if code and title:
+                                    rows.append({"code": code, "title": title})
+                        entries_tmp: list[dict[str, Any]] = []
+                        index_tmp: dict[str, dict[str, Any]] = {}
+                        for row in rows:
+                            code = row["code"]
+                            level = len(code)
+                            if level < 2 or level > 6 or not code.isdigit():
+                                continue
+                            entry = {"code": code, "title": row["title"], "level": level, "parents": []}
+                            entries_tmp.append(entry)
+                            index_tmp[code] = entry
+                        for entry in entries_tmp:
+                            code = entry["code"]
+                            parents: list[dict[str, Any]] = []
+                            for lv in (2,3,4,5):
+                                if lv < entry["level"]:
+                                    parent = index_tmp.get(code[:lv])
+                                    if parent:
+                                        parents.append({"code": parent["code"], "title": parent["title"], "level": parent["level"]})
+                            entry["parents"] = parents
+                        data = entries_tmp
+                    except Exception:
+                        LOGGER.exception("Failed to parse NAICS CSV fallback at %s", csv_path)
+                        data = default_payload
+                else:
+                    data = default_payload
             entries: list[dict[str, Any]] = []
             index: dict[str, dict[str, Any]] = {}
             items: Iterable[Any]
@@ -1032,7 +1053,6 @@ window.addEventListener('DOMContentLoaded', function () {
                 items = data
             else:
                 items = default_payload
-
             for raw in items:
                 if not isinstance(raw, Mapping):
                     continue
@@ -1048,9 +1068,7 @@ window.addEventListener('DOMContentLoaded', function () {
                 entry["level"] = level_value
                 parents = entry.get("parents")
                 if isinstance(parents, list):
-                    entry["parents"] = [
-                        dict(parent) for parent in parents if isinstance(parent, Mapping)
-                    ]
+                    entry["parents"] = [dict(parent) for parent in parents if isinstance(parent, Mapping)]
                 else:
                     entry["parents"] = []
                 entry["title"] = str(entry.get("title", ""))
@@ -1216,7 +1234,8 @@ window.addEventListener('DOMContentLoaded', function () {
                 if values:
                     query = str(values[0])
             start = time.perf_counter()
-            items = self._naics_search(query, limit=50)
+            # Return a generous set so UI search can populate cascades without missing candidates
+            items = self._naics_search(query, limit=500)
             duration_ms = (time.perf_counter() - start) * 1000
             return self._json_response(
                 {
@@ -1598,5 +1617,7 @@ def create_app(base_dir: Path | None = None) -> IntakeApplication:
 
 if __name__ == "__main__":  # pragma: no cover - manual execution helper
     create_app().serve()
+
+
 
 
