@@ -2,13 +2,13 @@
   "version": "1.0.0",
   "meta": {
     "version": "1.0",
-    "generated_at": "2025-10-17T21:12:38Z"
+    "generated_at": "2025-10-17T21:29:28Z"
   },
   "slugs": {
-    "agent": "da-neo-1-0-0"
+    "agent": "grid-neo-1-0-0"
   },
   "agent": {
-    "name": "DA_NEO",
+    "name": "Grid_NEO",
     "version": "1.0.0",
     "persona": {
       "mbti_code": "ENTJ",
@@ -38,23 +38,28 @@
       "level": 6,
       "lineage": [
         {
-          "title": "Professional, Scientific, and Technical Services",
           "code": "54",
+          "title": "Professional, Scientific, and Technical Services",
           "level": 2
         },
         {
-          "title": "Professional, Scientific, and Technical Services",
           "code": "541",
+          "title": "Professional, Scientific, and Technical Services",
           "level": 3
         },
         {
-          "title": "Legal Services",
           "code": "5411",
+          "title": "Legal Services",
           "level": 4
         },
         {
+          "code": "54111",
           "title": "Offices of Lawyers",
+          "level": 5
+        },
+        {
           "code": "541110",
+          "title": "Offices of Lawyers",
           "level": 6
         }
       ]
@@ -80,20 +85,22 @@
     }
   },
   "capabilities": {
-    "toolsets_normalized": [],
+    "toolsets_normalized": [
+      "risk_assessment"
+    ],
     "attributes_normalized": []
   },
   "preferences": {
     "autonomy": 100,
     "confidence": 50,
-    "collaboration": 85,
+    "collaboration": 97,
     "communication_style": "Crisp, Analytical, Executive",
     "collaboration_mode": "Planner-Builder-Evaluator"
   },
   "mapping_hints": {
     "neo_agent_config_json": {
       "agent": {
-        "name": "DA_NEO",
+        "name": "Grid_NEO",
         "version": "1.0.0"
       },
       "business_function": "Legal & Compliance",
@@ -129,23 +136,28 @@
           "level": 6,
           "lineage": [
             {
-              "title": "Professional, Scientific, and Technical Services",
               "code": "54",
+              "title": "Professional, Scientific, and Technical Services",
               "level": 2
             },
             {
-              "title": "Professional, Scientific, and Technical Services",
               "code": "541",
+              "title": "Professional, Scientific, and Technical Services",
               "level": 3
             },
             {
-              "title": "Legal Services",
               "code": "5411",
+              "title": "Legal Services",
               "level": 4
             },
             {
+              "code": "54111",
               "title": "Offices of Lawyers",
+              "level": 5
+            },
+            {
               "code": "541110",
+              "title": "Offices of Lawyers",
               "level": 6
             }
           ]

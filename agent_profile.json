@@ -1,7 +1,7 @@
 {
   "version": "1.0.0",
   "agent": {
-    "name": "DA_NEO",
+    "name": "Grid_NEO",
     "version": "1.0.0",
     "persona": "ENTJ",
     "domain": "",
@@ -22,7 +22,9 @@
     "business_function": "Legal & Compliance"
   },
   "toolsets": {
-    "selected": [],
+    "selected": [
+      "Risk Assessment"
+    ],
     "custom": []
   },
   "attributes": {
@@ -33,7 +35,7 @@
     "sliders": {
       "autonomy": 100,
       "confidence": 50,
-      "collaboration": 85
+      "collaboration": 97
     },
     "communication_style": "Crisp, Analytical, Executive",
     "collaboration_mode": "Planner-Builder-Evaluator"
@@ -72,19 +74,109 @@
     "alternates": [
       {
         "code": "INTJ",
-        "blendedScore": 75
+        "blendedScore": 72
       },
       {
         "code": "ENTP",
-        "blendedScore": 75
+        "blendedScore": 72
       },
       {
         "code": "ENFJ",
-        "blendedScore": 74
+        "blendedScore": 72
       }
     ],
-    "updated_at": "2025-10-17T21:12:28Z",
+    "updated_at": "2025-10-17T21:29:09Z",
     "history": [
+      {
+        "operator": {
+          "code": "ENTJ",
+          "name": "Commander",
+          "nickname": "Decisive Leader"
+        },
+        "agent": {
+          "code": "ENTJ",
+          "rationale": [
+            "Compatibility with operator: 100%",
+            "Domain not provided; using generic persona baseline."
+          ],
+          "compatibility": 100,
+          "role_fit": 60,
+          "blended": 85,
+          "mbti": {
+            "mbti_code": "ENTJ",
+            "name": "Decisive Leader",
+            "description": "Visionary organizers who mobilize teams toward ambitious goals.",
+            "axes": {
+              "EI": "E",
+              "SN": "N",
+              "TF": "T",
+              "JP": "J"
+            },
+            "suggested_traits": []
+          }
+        },
+        "stored_at": "2025-10-17T21:29:07Z"
+      },
+      {
+        "operator": {
+          "code": "ENTJ",
+          "name": "Commander",
+          "nickname": "Decisive Leader"
+        },
+        "agent": {
+          "code": "ENTJ",
+          "rationale": [
+            "Compatibility with operator: 100%",
+            "Domain not provided; using generic persona baseline."
+          ],
+          "compatibility": 100,
+          "role_fit": 60,
+          "blended": 85,
+          "mbti": {
+            "mbti_code": "ENTJ",
+            "name": "Decisive Leader",
+            "description": "Visionary organizers who mobilize teams toward ambitious goals.",
+            "axes": {
+              "EI": "E",
+              "SN": "N",
+              "TF": "T",
+              "JP": "J"
+            },
+            "suggested_traits": []
+          }
+        },
+        "stored_at": "2025-10-17T21:20:11Z"
+      },
+      {
+        "operator": {
+          "code": "ENTJ",
+          "name": "Commander",
+          "nickname": "Decisive Leader"
+        },
+        "agent": {
+          "code": "ENTJ",
+          "rationale": [
+            "Compatibility with operator: 100%",
+            "Domain not provided; using generic persona baseline."
+          ],
+          "compatibility": 100,
+          "role_fit": 60,
+          "blended": 85,
+          "mbti": {
+            "mbti_code": "ENTJ",
+            "name": "Decisive Leader",
+            "description": "Visionary organizers who mobilize teams toward ambitious goals.",
+            "axes": {
+              "EI": "E",
+              "SN": "N",
+              "TF": "T",
+              "JP": "J"
+            },
+            "suggested_traits": []
+          }
+        },
+        "stored_at": "2025-10-17T21:12:28Z"
+      },
       {
         "operator": {
           "code": "ENTJ",
@@ -144,96 +236,6 @@
           }
         },
         "stored_at": "2025-10-17T20:47:47Z"
-      },
-      {
-        "operator": {
-          "code": "ENTJ",
-          "name": "Commander",
-          "nickname": "Decisive Leader"
-        },
-        "agent": {
-          "code": "ENTJ",
-          "rationale": [
-            "Compatibility with operator: 100%",
-            "Domain not provided; using generic persona baseline."
-          ],
-          "compatibility": 100,
-          "role_fit": 60,
-          "blended": 85,
-          "mbti": {
-            "mbti_code": "ENTJ",
-            "name": "Decisive Leader",
-            "description": "Visionary organizers who mobilize teams toward ambitious goals.",
-            "axes": {
-              "EI": "E",
-              "SN": "N",
-              "TF": "T",
-              "JP": "J"
-            },
-            "suggested_traits": []
-          }
-        },
-        "stored_at": "2025-10-17T18:54:39Z"
-      },
-      {
-        "operator": {
-          "code": "ENTJ",
-          "name": "Commander",
-          "nickname": "Decisive Leader"
-        },
-        "agent": {
-          "code": "ENTJ",
-          "rationale": [
-            "Compatibility with operator: 100%",
-            "Domain not provided; using generic persona baseline."
-          ],
-          "compatibility": 100,
-          "role_fit": 60,
-          "blended": 85,
-          "mbti": {
-            "mbti_code": "ENTJ",
-            "name": "Decisive Leader",
-            "description": "Visionary organizers who mobilize teams toward ambitious goals.",
-            "axes": {
-              "EI": "E",
-              "SN": "N",
-              "TF": "T",
-              "JP": "J"
-            },
-            "suggested_traits": []
-          }
-        },
-        "stored_at": "2025-10-17T16:30:24Z"
-      },
-      {
-        "operator": {
-          "code": "ISFJ",
-          "name": "Steward",
-          "nickname": "People Guardian"
-        },
-        "agent": {
-          "code": "ISFJ",
-          "rationale": [
-            "Compatibility with operator: 100%",
-            "Domain not provided; using generic persona baseline."
-          ],
-          "compatibility": 100,
-          "role_fit": 60,
-          "blended": 85,
-          "mbti": {
-            "mbti_code": "ISFJ",
-            "name": "People Guardian",
-            "description": "Reliable caretakers focused on dependable, people-first delivery.",
-            "axes": {
-              "EI": "I",
-              "SN": "S",
-              "TF": "F",
-              "JP": "J"
-            },
-            "suggested_traits": []
-          }
-        },
-        "stored_at": "2025-10-17T04:12:44Z"
       }
     ],
     "persona_details": {
@@ -270,13 +272,13 @@
         "level": 4
       },
       {
-        "code": "54119",
-        "title": "Other Legal Services",
+        "code": "54111",
+        "title": "Offices of Lawyers",
         "level": 5
       },
       {
-        "code": "541199",
-        "title": "All Other Legal Services",
+        "code": "541110",
+        "title": "Offices of Lawyers",
         "level": 6
       }
     ]
@@ -303,13 +305,13 @@
           "level": 4
         },
         {
-          "code": "54119",
-          "title": "Other Legal Services",
+          "code": "54111",
+          "title": "Offices of Lawyers",
           "level": 5
         },
         {
-          "code": "541199",
-          "title": "All Other Legal Services",
+          "code": "541110",
+          "title": "Offices of Lawyers",
           "level": 6
         }
       ]
@@ -344,13 +346,13 @@
   "_compiled": {
     "meta": {
       "version": "1.0",
-      "generated_at": "2025-10-17T21:12:38Z"
+      "generated_at": "2025-10-17T21:29:28Z"
     },
     "slugs": {
-      "agent": "da-neo-1-0-0"
+      "agent": "grid-neo-1-0-0"
     },
     "agent": {
-      "name": "DA_NEO",
+      "name": "Grid_NEO",
       "version": "1.0.0",
       "persona": {
         "mbti_code": "ENTJ",
@@ -395,13 +397,13 @@
             "level": 4
           },
           {
-            "code": "54119",
-            "title": "Other Legal Services",
+            "code": "54111",
+            "title": "Offices of Lawyers",
             "level": 5
           },
           {
-            "code": "541199",
-            "title": "All Other Legal Services",
+            "code": "541110",
+            "title": "Offices of Lawyers",
             "level": 6
           }
         ]
@@ -427,20 +429,22 @@
       }
     },
     "capabilities": {
-      "toolsets_normalized": [],
+      "toolsets_normalized": [
+        "risk_assessment"
+      ],
       "attributes_normalized": []
     },
     "preferences": {
       "autonomy": 100,
       "confidence": 50,
-      "collaboration": 85,
+      "collaboration": 97,
       "communication_style": "Crisp, Analytical, Executive",
       "collaboration_mode": "Planner-Builder-Evaluator"
     },
     "mapping_hints": {
       "neo_agent_config_json": {
         "agent": {
-          "name": "DA_NEO",
+          "name": "Grid_NEO",
           "version": "1.0.0"
         },
         "business_function": "Legal & Compliance",
@@ -491,13 +495,13 @@
                 "level": 4
               },
               {
-                "code": "54119",
-                "title": "Other Legal Services",
+                "code": "54111",
+                "title": "Offices of Lawyers",
                 "level": 5
               },
               {
-                "code": "541199",
-                "title": "All Other Legal Services",
+                "code": "541110",
+                "title": "Offices of Lawyers",
                 "level": 6
               }
             ]
