@@ -67,10 +67,10 @@
 
   function normaliseFn(value) {
     return String(value || '')
-      .toLowerCase()
-      .replace(/&/g, '&')
-      .replace(/\s+/g, ' ')
-      .trim();
+      .replace(/&amp;/gi, '&')
+      .replace(/[\u00a0\s]+/g, ' ')
+      .trim()
+      .toLowerCase();
   }
 
   function roleMatchesFunction(role, fn) {
