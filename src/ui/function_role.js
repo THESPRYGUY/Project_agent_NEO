@@ -212,7 +212,7 @@
   function updateRoleOptions() {
     const fn = functionSelect.value;
     const query = roleSearch.value.trim();
-    const filtered = roles
+    let filtered = roles
       .filter((role) => roleMatchesFunction(role, fn))
       .filter((role) => roleMatchesQuery(role, query))
       .sort((a, b) => {
@@ -220,6 +220,19 @@
         const bLabel = (b.titles?.[0] || b.code).toLowerCase();
         return aLabel.localeCompare(bLabel);
       });
+
+    // Fallback: if nothing matched exactly, try a looser includes-based match
+    if (fn && filtered.length === 0) {
+      const target = normaliseFn(fn);
+      filtered = roles
+        .filter((role) => normaliseFn(role.function || '').includes(target) || target.includes(normaliseFn(role.function || '')))
+        .filter((role) => roleMatchesQuery(role, query))
+        .sort((a, b) => {
+          const aLabel = (a.titles?.[0] || a.code).toLowerCase();
+          const bLabel = (b.titles?.[0] || b.code).toLowerCase();
+          return aLabel.localeCompare(bLabel);
+        });
+    }
 
     roleSelect.innerHTML = '';
     if (!fn) {
