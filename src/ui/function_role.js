@@ -233,16 +233,17 @@
           const bLabel = (b.titles?.[0] || b.code || '').toLowerCase();
           return aLabel.localeCompare(bLabel);
         });
-        roleSelect.append(new Option(sorted.length ? 'Select a role' : 'No roles match search', '', false, true));
-        sorted.forEach((role) => roleSelect.append(buildRoleOption(role)));
-        roleSelect.disabled = sorted.length === 0;
-
-        const currentCode = hiddenRoleCode?.value;
-        if (currentCode && sorted.some((r) => r.code === currentCode)) {
-          roleSelect.value = currentCode;
+        if (sorted.length > 0) {
+          roleSelect.append(new Option('Select a role', '', false, true));
+          sorted.forEach((role) => roleSelect.append(buildRoleOption(role)));
+          roleSelect.disabled = false;
+          const currentCode = hiddenRoleCode?.value;
+          if (currentCode && sorted.some((r) => r.code === currentCode)) {
+            roleSelect.value = currentCode;
+          }
+          updatePreview(fetchRole(roleSelect.value));
+          return; // only return when we have results from server
         }
-        updatePreview(fetchRole(roleSelect.value));
-        return;
       }
     } catch (_) {
       // Fall back to local filtering below
@@ -270,7 +271,7 @@
     }
     roleSelect.append(new Option(filtered.length ? 'Select a role' : 'No roles match search', '', false, true));
     filtered.forEach((role) => roleSelect.append(buildRoleOption(role)));
-    roleSelect.disabled = filtered.length === 0;
+    roleSelect.disabled = filtered.length === 0 ? true : false;
     const currentCode = hiddenRoleCode?.value;
     if (currentCode && filtered.some((role) => role.code === currentCode)) {
       roleSelect.value = currentCode;

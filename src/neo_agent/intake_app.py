@@ -1514,10 +1514,8 @@ window.addEventListener('DOMContentLoaded', function () {
                     rf = _norm(r.get("function", ""))
                     if rf != target:
                         continue
-                    hay = " ".join(
-                        [str(r.get("code", "")), str(r.get("seniority", ""))]
-                        + ([r.get("titles", [])] if isinstance(r.get("titles"), list) else [])
-                    ).lower()
+                    titles_list = r.get("titles", []) if isinstance(r.get("titles"), list) else []
+                    hay = " ".join([str(r.get("code", "")), str(r.get("seniority", ""))] + [str(t) for t in titles_list]).lower()
                     if tokens and not all(t in hay for t in tokens):
                         continue
                     out.append(
