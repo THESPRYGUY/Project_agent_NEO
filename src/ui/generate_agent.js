@@ -3,10 +3,12 @@
   if (!btn) { return; }
   const hidden = (name) => document.querySelector('[name="' + name + '"]');
   function ready(){
+    const name = (hidden('agent_name')||{}).value || '';
     const nc = (hidden('naics_code')||{}).value || '';
+    const fn = (hidden('business_function')||{}).value || '';
     const rc = (hidden('role_code')||{}).value || '';
     const rt = (hidden('role_title')||{}).value || '';
-    return nc && (rc || rt);
+    return Boolean(name && nc && fn && (rc || rt));
   }
   function update(){
     if (ready()) { btn.removeAttribute('disabled'); }

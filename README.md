@@ -52,6 +52,11 @@ metadata is scraped and merged with the manual selections. Submitting the form
 creates `agent_profile.json` alongside a `generated_specs/` directory containing the
 derived configuration and metadata artifacts used by the generator.
 
+#### Intake Section Order & Gating
+- Order: Agent Profile → Business Context (NAICS + Domain) → Business Function & Role → Persona Alignment → Toolsets → Attributes → Preferences → LinkedIn → Custom Notes
+- Generate Agent Repo is enabled only when: agent_name, NAICS, business_function, and role are all set.
+- Persona Suggest is enabled after choosing a role.
+
 ## Testing
 
 The repository relies on `pytest` for test execution:

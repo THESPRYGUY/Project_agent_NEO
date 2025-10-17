@@ -205,6 +205,21 @@ function initialiseTooltips(types) {
     }
   }
 
+  function roleSelected() {
+    const hiddenRole = document.querySelector('[name="role_code"]');
+    const hiddenTitle = document.querySelector('[name="role_title"]');
+    const code = (hiddenRole && hiddenRole.value) || '';
+    const title = (hiddenTitle && hiddenTitle.value) || '';
+    return Boolean(code || title);
+  }
+
+  function updatePersonaGating() {
+    if (suggestButton) {
+      suggestButton.disabled = !roleSelected();
+    }
+    // acceptButton remains governed by suggestion flow
+  }
+
   function fetchConfiguration() {
     fetchJson(configUrl)
       .then((data) => {
@@ -253,6 +268,7 @@ function initialiseTooltips(types) {
       operatorGrid.appendChild(button);
     });
 
+    updatePersonaGating();
     suggestButton.addEventListener('click', handleSuggestPersona);
     acceptButton.addEventListener('click', persistPersonaSelection);
     initialiseTooltips(types);
@@ -400,6 +416,12 @@ function initialiseTooltips(types) {
         showSummary('Unable to persist persona state. Check the server logs for details.');
       });
   }
+
+  // React to function/role changes to gate suggestion
+  document.addEventListener('business:functionChanged', updatePersonaGating, true);
+  document.addEventListener('role:changed', updatePersonaGating, true);
+  document.addEventListener('change', updatePersonaGating, true);
+  document.addEventListener('input', updatePersonaGating, true);
 
   function restoreState() {
     updatePersonaInput('');
