@@ -1,4 +1,5 @@
 {
+  "version": "1.0.0",
   "agent": {
     "name": "DA_NEO",
     "version": "1.0.0",
@@ -30,16 +31,17 @@
   },
   "preferences": {
     "sliders": {
-      "autonomy": 50,
+      "autonomy": 100,
       "confidence": 50,
-      "collaboration": 50
+      "collaboration": 85
     },
-    "communication_style": "Formal",
-    "collaboration_mode": "Solo"
+    "communication_style": "Crisp, Analytical, Executive",
+    "collaboration_mode": "Planner-Builder-Evaluator"
   },
   "notes": "",
   "linkedin": {},
   "persona": {
+    "version": "1.0.0",
     "operator": {
       "code": "ENTJ",
       "name": "Commander",
@@ -70,19 +72,109 @@
     "alternates": [
       {
         "code": "INTJ",
-        "blendedScore": 72
+        "blendedScore": 75
       },
       {
         "code": "ENTP",
-        "blendedScore": 72
+        "blendedScore": 75
       },
       {
         "code": "ENFJ",
-        "blendedScore": 72
+        "blendedScore": 74
       }
     ],
-    "updated_at": "2025-10-17T18:54:39Z",
+    "updated_at": "2025-10-17T21:12:28Z",
     "history": [
+      {
+        "operator": {
+          "code": "ENTJ",
+          "name": "Commander",
+          "nickname": "Decisive Leader"
+        },
+        "agent": {
+          "code": "ENTJ",
+          "rationale": [
+            "Compatibility with operator: 100%",
+            "Domain not provided; using generic persona baseline."
+          ],
+          "compatibility": 100,
+          "role_fit": 60,
+          "blended": 85,
+          "mbti": {
+            "mbti_code": "ENTJ",
+            "name": "Decisive Leader",
+            "description": "Visionary organizers who mobilize teams toward ambitious goals.",
+            "axes": {
+              "EI": "E",
+              "SN": "N",
+              "TF": "T",
+              "JP": "J"
+            },
+            "suggested_traits": []
+          }
+        },
+        "stored_at": "2025-10-17T20:55:31Z"
+      },
+      {
+        "operator": {
+          "code": "ENTJ",
+          "name": "Commander",
+          "nickname": "Decisive Leader"
+        },
+        "agent": {
+          "code": "ENTJ",
+          "rationale": [
+            "Compatibility with operator: 100%",
+            "Domain not provided; using generic persona baseline."
+          ],
+          "compatibility": 100,
+          "role_fit": 60,
+          "blended": 85,
+          "mbti": {
+            "mbti_code": "ENTJ",
+            "name": "Decisive Leader",
+            "description": "Visionary organizers who mobilize teams toward ambitious goals.",
+            "axes": {
+              "EI": "E",
+              "SN": "N",
+              "TF": "T",
+              "JP": "J"
+            },
+            "suggested_traits": []
+          }
+        },
+        "stored_at": "2025-10-17T20:47:47Z"
+      },
+      {
+        "operator": {
+          "code": "ENTJ",
+          "name": "Commander",
+          "nickname": "Decisive Leader"
+        },
+        "agent": {
+          "code": "ENTJ",
+          "rationale": [
+            "Compatibility with operator: 100%",
+            "Domain not provided; using generic persona baseline."
+          ],
+          "compatibility": 100,
+          "role_fit": 60,
+          "blended": 85,
+          "mbti": {
+            "mbti_code": "ENTJ",
+            "name": "Decisive Leader",
+            "description": "Visionary organizers who mobilize teams toward ambitious goals.",
+            "axes": {
+              "EI": "E",
+              "SN": "N",
+              "TF": "T",
+              "JP": "J"
+            },
+            "suggested_traits": []
+          }
+        },
+        "stored_at": "2025-10-17T18:54:39Z"
+      },
       {
         "operator": {
           "code": "ENTJ",
@@ -142,36 +234,6 @@
           }
         },
         "stored_at": "2025-10-17T04:12:44Z"
-      },
-      {
-        "operator": {
-          "code": "ENTJ",
-          "name": "Commander",
-          "nickname": "Decisive Leader"
-        },
-        "agent": {
-          "code": "ENTJ",
-          "rationale": [
-            "Compatibility with operator: 100%",
-            "Domain not provided; using generic persona baseline."
-          ],
-          "compatibility": 100,
-          "role_fit": 60,
-          "blended": 85,
-          "mbti": {
-            "mbti_code": "ENTJ",
-            "name": "Decisive Leader",
-            "description": "Visionary organizers who mobilize teams toward ambitious goals.",
-            "axes": {
-              "EI": "E",
-              "SN": "N",
-              "TF": "T",
-              "JP": "J"
-            },
-            "suggested_traits": []
-          }
-        },
-        "stored_at": "2025-10-17T03:02:18Z"
       }
     ],
     "persona_details": {
@@ -185,8 +247,73 @@
         "JP": "J"
       },
       "suggested_traits": []
-    },
-    "version": "1.0.0"
+    }
+  },
+  "naics": {
+    "code": "541110",
+    "title": "Offices of Lawyers",
+    "level": 6,
+    "lineage": [
+      {
+        "code": "54",
+        "title": "Professional, Scientific, and Technical Services",
+        "level": 2
+      },
+      {
+        "code": "541",
+        "title": "Professional, Scientific, and Technical Services",
+        "level": 3
+      },
+      {
+        "code": "5411",
+        "title": "Legal Services",
+        "level": 4
+      },
+      {
+        "code": "54119",
+        "title": "Other Legal Services",
+        "level": 5
+      },
+      {
+        "code": "541199",
+        "title": "All Other Legal Services",
+        "level": 6
+      }
+    ]
+  },
+  "classification": {
+    "naics": {
+      "code": "541110",
+      "title": "Offices of Lawyers",
+      "level": 6,
+      "lineage": [
+        {
+          "code": "54",
+          "title": "Professional, Scientific, and Technical Services",
+          "level": 2
+        },
+        {
+          "code": "541",
+          "title": "Professional, Scientific, and Technical Services",
+          "level": 3
+        },
+        {
+          "code": "5411",
+          "title": "Legal Services",
+          "level": 4
+        },
+        {
+          "code": "54119",
+          "title": "Other Legal Services",
+          "level": 5
+        },
+        {
+          "code": "541199",
+          "title": "All Other Legal Services",
+          "level": 6
+        }
+      ]
+    }
   },
   "business_function": "Legal & Compliance",
   "role": {
@@ -197,14 +324,14 @@
   },
   "routing_defaults": {
     "workflows": [
-      "PolicyComplianceFlow"
+      "DefaultFlow"
     ],
     "connectors": [
-      "clm:read",
-      "dms:read"
+      "sharepoint",
+      "gdrive"
     ],
     "report_templates": [
-      "Compliance Exceptions Log"
+      "Executive Risk Summary"
     ],
     "autonomy_default": 0.28,
     "safety_bias": 0.88,
@@ -217,7 +344,7 @@
   "_compiled": {
     "meta": {
       "version": "1.0",
-      "generated_at": "2025-10-17T20:25:56Z"
+      "generated_at": "2025-10-17T21:12:38Z"
     },
     "slugs": {
       "agent": "da-neo-1-0-0"
@@ -247,18 +374,49 @@
       }
     },
     "classification": {
-      "naics": {}
+      "naics": {
+        "code": "541110",
+        "title": "Offices of Lawyers",
+        "level": 6,
+        "lineage": [
+          {
+            "code": "54",
+            "title": "Professional, Scientific, and Technical Services",
+            "level": 2
+          },
+          {
+            "code": "541",
+            "title": "Professional, Scientific, and Technical Services",
+            "level": 3
+          },
+          {
+            "code": "5411",
+            "title": "Legal Services",
+            "level": 4
+          },
+          {
+            "code": "54119",
+            "title": "Other Legal Services",
+            "level": 5
+          },
+          {
+            "code": "541199",
+            "title": "All Other Legal Services",
+            "level": 6
+          }
+        ]
+      }
     },
     "routing": {
       "workflows": [
-        "PolicyComplianceFlow"
+        "DefaultFlow"
       ],
       "connectors": [
-        "clm:read",
-        "dms:read"
+        "sharepoint",
+        "gdrive"
       ],
       "report_templates": [
-        "Compliance Exceptions Log"
+        "Executive Risk Summary"
       ],
       "autonomy_default": 0.28,
       "safety_bias": 0.88,
@@ -273,11 +431,11 @@
       "attributes_normalized": []
     },
     "preferences": {
-      "autonomy": 50,
+      "autonomy": 100,
       "confidence": 50,
-      "collaboration": 50,
-      "communication_style": "Formal",
-      "collaboration_mode": "Solo"
+      "collaboration": 85,
+      "communication_style": "Crisp, Analytical, Executive",
+      "collaboration_mode": "Planner-Builder-Evaluator"
     },
     "mapping_hints": {
       "neo_agent_config_json": {
@@ -294,14 +452,14 @@
         },
         "routing_hints": {
           "workflows": [
-            "PolicyComplianceFlow"
+            "DefaultFlow"
           ],
           "connectors": [
-            "clm:read",
-            "dms:read"
+            "sharepoint",
+            "gdrive"
           ],
           "report_templates": [
-            "Compliance Exceptions Log"
+            "Executive Risk Summary"
           ],
           "autonomy_default": 0.28,
           "safety_bias": 0.88,
@@ -311,15 +469,47 @@
             "AUD": 0.4
           }
         },
-        "classification": {}
+        "classification": {
+          "naics": {
+            "code": "541110",
+            "title": "Offices of Lawyers",
+            "level": 6,
+            "lineage": [
+              {
+                "code": "54",
+                "title": "Professional, Scientific, and Technical Services",
+                "level": 2
+              },
+              {
+                "code": "541",
+                "title": "Professional, Scientific, and Technical Services",
+                "level": 3
+              },
+              {
+                "code": "5411",
+                "title": "Legal Services",
+                "level": 4
+              },
+              {
+                "code": "54119",
+                "title": "Other Legal Services",
+                "level": 5
+              },
+              {
+                "code": "541199",
+                "title": "All Other Legal Services",
+                "level": 6
+              }
+            ]
+          }
+        }
       }
     },
     "gating": {
       "has_name": true,
-      "has_naics": false,
+      "has_naics": true,
       "has_function": true,
       "has_role": true
     }
-  },
-  "version": "1.0.0"
+  }
 }

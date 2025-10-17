@@ -1,7 +1,8 @@
 {
+  "version": "1.0.0",
   "meta": {
     "version": "1.0",
-    "generated_at": "2025-10-17T20:25:56Z"
+    "generated_at": "2025-10-17T21:12:38Z"
   },
   "slugs": {
     "agent": "da-neo-1-0-0"
@@ -31,18 +32,44 @@
     }
   },
   "classification": {
-    "naics": {}
+    "naics": {
+      "code": "541110",
+      "title": "Offices of Lawyers",
+      "level": 6,
+      "lineage": [
+        {
+          "title": "Professional, Scientific, and Technical Services",
+          "code": "54",
+          "level": 2
+        },
+        {
+          "title": "Professional, Scientific, and Technical Services",
+          "code": "541",
+          "level": 3
+        },
+        {
+          "title": "Legal Services",
+          "code": "5411",
+          "level": 4
+        },
+        {
+          "title": "Offices of Lawyers",
+          "code": "541110",
+          "level": 6
+        }
+      ]
+    }
   },
   "routing": {
     "workflows": [
-      "PolicyComplianceFlow"
+      "DefaultFlow"
     ],
     "connectors": [
-      "clm:read",
-      "dms:read"
+      "sharepoint",
+      "gdrive"
     ],
     "report_templates": [
-      "Compliance Exceptions Log"
+      "Executive Risk Summary"
     ],
     "autonomy_default": 0.28,
     "safety_bias": 0.88,
@@ -57,11 +84,11 @@
     "attributes_normalized": []
   },
   "preferences": {
-    "autonomy": 50,
+    "autonomy": 100,
     "confidence": 50,
-    "collaboration": 50,
-    "communication_style": "Formal",
-    "collaboration_mode": "Solo"
+    "collaboration": 85,
+    "communication_style": "Crisp, Analytical, Executive",
+    "collaboration_mode": "Planner-Builder-Evaluator"
   },
   "mapping_hints": {
     "neo_agent_config_json": {
@@ -78,14 +105,14 @@
       },
       "routing_hints": {
         "workflows": [
-          "PolicyComplianceFlow"
+          "DefaultFlow"
         ],
         "connectors": [
-          "clm:read",
-          "dms:read"
+          "sharepoint",
+          "gdrive"
         ],
         "report_templates": [
-          "Compliance Exceptions Log"
+          "Executive Risk Summary"
         ],
         "autonomy_default": 0.28,
         "safety_bias": 0.88,
@@ -95,14 +122,41 @@
           "AUD": 0.4
         }
       },
-      "classification": {}
+      "classification": {
+        "naics": {
+          "code": "541110",
+          "title": "Offices of Lawyers",
+          "level": 6,
+          "lineage": [
+            {
+              "title": "Professional, Scientific, and Technical Services",
+              "code": "54",
+              "level": 2
+            },
+            {
+              "title": "Professional, Scientific, and Technical Services",
+              "code": "541",
+              "level": 3
+            },
+            {
+              "title": "Legal Services",
+              "code": "5411",
+              "level": 4
+            },
+            {
+              "title": "Offices of Lawyers",
+              "code": "541110",
+              "level": 6
+            }
+          ]
+        }
+      }
     }
   },
   "gating": {
     "has_name": true,
-    "has_naics": false,
+    "has_naics": true,
     "has_function": true,
     "has_role": true
-  },
-  "version": "1.0.0"
+  }
 }
