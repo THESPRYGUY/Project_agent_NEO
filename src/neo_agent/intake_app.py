@@ -206,16 +206,19 @@ $extra_styles
                 </label>
                 <label>Version
                     <input type="text" name="agent_version" value="$agent_version">
-                </label>\n                <!-- NAICS Picker (moved into Agent Profile) -->\n                <input type="hidden" name="naics_code" value="$naics_code">\n                <input type="hidden" name="naics_title" value="$naics_title">\n                <input type="hidden" name="naics_level" value="$naics_level">\n                <input type="hidden" name="naics_lineage_json" value="$naics_lineage">\n                $naics_selector_html
-                <!-- Primary Domain removed: replaced by NAICS picker -->
-                <!-- Primary Role removed: replaced by Business Function & Role -->
-                <section id="mbti-section" data-testid="mbti-section" data-mbti-tooltips="enabled" class="persona-inline">
-                    <input type="hidden" name="agent_persona" value="$persona_hidden_value" data-persona-input>
-                    $persona_tabs
-                </section>
+                </label>
             </fieldset>
 
-            <fieldset>\n                <legend>Domain & Classification</legend>\n                <input type="hidden" name="domain_selector" value="$domain_selector_state" data-hidden-domain-selector>\n                $domain_selector_html\n            </fieldset>
+            <fieldset>
+                <legend>Business Context</legend>
+                <input type="hidden" name="naics_code" value="$naics_code">
+                <input type="hidden" name="naics_title" value="$naics_title">
+                <input type="hidden" name="naics_level" value="$naics_level">
+                <input type="hidden" name="naics_lineage_json" value="$naics_lineage">
+                $naics_selector_html
+                <input type="hidden" name="domain_selector" value="$domain_selector_state" data-hidden-domain-selector>
+                $domain_selector_html
+            </fieldset>
 
             <fieldset>
                 <legend>Business Function & Role</legend>
@@ -226,6 +229,14 @@ $extra_styles
                 <div class="generate-agent">
                     <button type="button" data-generate-agent disabled>Generate Agent Repo</button>
                 </div>
+            </fieldset>
+
+            <fieldset>
+                <legend>Persona Alignment</legend>
+                <section id="mbti-section" data-testid="mbti-section" data-mbti-tooltips="enabled" class="persona-inline">
+                    <input type="hidden" name="agent_persona" value="$persona_hidden_value" data-persona-input>
+                    $persona_tabs
+                </section>
             </fieldset>
 
             <fieldset>
