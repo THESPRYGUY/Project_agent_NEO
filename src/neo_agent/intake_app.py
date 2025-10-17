@@ -829,6 +829,41 @@ window.addEventListener('DOMContentLoaded', function () {
                         return f'<option value="{html.escape(str(label), quote=True)}"{sel}>{html.escape(str(label))}</option>'
                     extra_opts = "\n".join(_opt(fn) for fn in fn_list)
                     fr_html_raw = fr_html_raw.replace(marker, marker + "\n" + extra_opts, 1)
+            # Also pre-populate role options for the currently selected function (if any).
+            # If none selected, show all roles to avoid a disabled control.
+            selected_fn_norm = (business_function or "").strip().lower().replace("&", "&")
+            role_default_marker = '<option value="">Select a role</option>'
+            roles_src = self._function_role_data.get("roles", [])
+            roles_for_select: list[dict[str, Any]] = []
+            if isinstance(roles_src, list):
+                for r in roles_src:
+                    if not isinstance(r, Mapping):
+                        continue
+                    if selected_fn_norm:
+                        rf = str(r.get("function", "")).strip().lower().replace("&", "&")
+                        if rf != selected_fn_norm:
+                            continue
+                    roles_for_select.append(r)
+            if roles_for_select:
+                # Enable the select (remove disabled) and inject options
+                fr_html_raw = fr_html_raw.replace('data-role-select disabled', 'data-role-select')
+                def _role_label(role: Mapping[str, Any]) -> str:
+                    titles = role.get("titles") if isinstance(role.get("titles"), list) else []
+                    primary = titles[0] if titles else ""
+                    code = role.get("code") or ""
+                    label = (str(primary) + (f" ({code})" if code else "")).strip() or str(code)
+                    return label
+                # Sort by label for stable UI
+                roles_for_select.sort(key=lambda r: _role_label(r).lower())
+                role_opts = []
+                current_code = _str(role_payload.get("code", "")) if isinstance(role_payload, Mapping) else ""
+                for r in roles_for_select:
+                    code = html.escape(str(r.get("code", "")), quote=True)
+                    label = html.escape(_role_label(r))
+                    sel = ' selected' if current_code and str(r.get("code", "")) == current_code else ''
+                    role_opts.append(f'<option value="{code}"{sel}>{label}</option>')
+                if role_default_marker in fr_html_raw:
+                    fr_html_raw = fr_html_raw.replace(role_default_marker, role_default_marker + "\n" + "\n".join(role_opts), 1)
         except Exception:
             # If anything goes wrong, keep the original template and rely on JS init.
             pass

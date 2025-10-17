@@ -271,12 +271,24 @@
     updateHiddenValues(role);
     updatePreview(role);
     dispatchEvent('role:changed', { value: role ? role.code : '', role });
+    // If function is unset or mismatched, align it with the selected role
+    if (role && functionSelect) {
+      const current = functionSelect.value || '';
+      if (!current || normaliseFn(current) !== normaliseFn(role.function || '')) {
+        functionSelect.value = role.function || '';
+        if (hiddenFunction) hiddenFunction.value = functionSelect.value;
+      }
+    }
   }
 
   function initialLoad() {
     populateFunctions();
     if (hiddenFunction && hiddenFunction.value) {
       functionSelect.value = hiddenFunction.value;
+    }
+    // If server prepopulated roles (or none), ensure the select is enabled when items exist
+    if (roleSelect.options && roleSelect.options.length > 1) {
+      roleSelect.disabled = false;
     }
     updateRoleOptions();
     const initialRole = fetchRole(hiddenRoleCode?.value || '');
