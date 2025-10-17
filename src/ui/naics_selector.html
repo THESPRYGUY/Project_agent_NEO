@@ -192,6 +192,14 @@
       });
 
       loadRoots();
+      // Rehydrate the cascade from hidden value if present
+      try {
+        const existing = (hCode && hCode.value) || '';
+        if (existing) {
+          // applySelection calls loadRoots/children as needed
+          (async () => { await applySelection(existing); enableConfirmIfReady(); })();
+        }
+      } catch (_) {}
     })();
   </script>
 </section>
