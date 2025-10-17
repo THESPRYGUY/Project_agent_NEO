@@ -14,6 +14,20 @@
   const alternatesContainer = root.querySelector('[data-alternates]');
   const personaInput = document.querySelector('[data-persona-input]');
 
+  // Defensive: ensure tab buttons never submit the form
+  try {
+    const tabOperator = document.getElementById('persona-tab-operator');
+    const tabAgent = document.getElementById('persona-tab-agent');
+    [tabOperator, tabAgent].forEach((btn) => {
+      if (btn && btn.getAttribute('type') !== 'button') {
+        btn.setAttribute('type', 'button');
+      }
+      if (btn) {
+        btn.addEventListener('click', (ev) => ev.preventDefault());
+      }
+    });
+  } catch (_) {}
+
 const tooltipRoot = document.querySelector('[data-mbti-tooltips="enabled"]');
 let tooltipElement = null;
 let tooltipData = new Map();

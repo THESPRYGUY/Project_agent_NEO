@@ -1613,12 +1613,25 @@ window.addEventListener('DOMContentLoaded', function () {
                 if not self.profile_path.parent.exists():
                     self.profile_path.parent.mkdir(parents=True, exist_ok=True)
                 with self.profile_path.open("w", encoding="utf-8") as handle:
-                    json.dump(profile, handle, indent=2)
+                    to_write = {"version": "1.0.0"}
+                    try:
+                        if isinstance(profile, dict):
+                            to_write.update(profile)
+                    except Exception:
+                        pass
+                    json.dump(to_write, handle, indent=2)
                 # Also write a sibling compiled profile for tools that prefer a standalone file
                 if compiled is not None:
                     compiled_path = self.profile_path.with_name("agent_profile.compiled.json")
                     with compiled_path.open("w", encoding="utf-8") as handle:
-                        json.dump(compiled, handle, indent=2)
+                        # Include a top-level version for pack_loader compatibility
+                        payload = {"version": "1.0.0"}
+                        try:
+                            if isinstance(compiled, dict):
+                                payload.update(compiled)
+                        except Exception:
+                            pass
+                        json.dump(payload, handle, indent=2)
                 generate_agent_specs(profile, self.spec_dir)
                 LOGGER.info("Generated profile at %s", self.profile_path)
                 response_body = self.render_form(
