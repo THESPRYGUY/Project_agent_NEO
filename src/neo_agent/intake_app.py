@@ -1526,7 +1526,15 @@ window.addEventListener('DOMContentLoaded', function () {
                             "titles": r.get("titles", []),
                         }
                     )
-            return self._json_response({"status": "ok", "items": out})
+            # Deduplicate by role code
+            seen: set[str] = set()
+            uniq: list[dict[str, Any]] = []
+            for r in out:
+                code = str(r.get("code", ""))
+                if code and code not in seen:
+                    seen.add(code)
+                    uniq.append(r)
+            return self._json_response({"status": "ok", "items": uniq})
         if path in ("/api/health", "/api/healthz"):
             return self._json_response({"status": "ok"})
         if path == "/api/profile/validate":
