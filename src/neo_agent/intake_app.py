@@ -815,7 +815,25 @@ window.addEventListener('DOMContentLoaded', function () {
         domain_selector_html = self._indent_block(self._domain_selector_assets.get("html", ""), spaces=8)
         naics_selector_html = self._indent_block(self._naics_selector_html, spaces=8)
         function_select_html = self._indent_block(self._function_select_html, spaces=8)
-        function_role_html = self._indent_block(self._function_role_html, spaces=8)
+        # Pre-populate business function options server-side as a resilient fallback
+        # so the picker is usable even if client JS fails to execute.
+        fr_html_raw = self._function_role_html
+        try:
+            marker = '<option value="">Select a business function</option>'
+            if marker in fr_html_raw:
+                fn_list = self._function_role_data.get("functions", [])
+                if isinstance(fn_list, list) and fn_list:
+                    selected_fn = business_function
+                    def _opt(label: str) -> str:
+                        sel = ' selected' if selected_fn and str(selected_fn) == str(label) else ''
+                        return f'<option value="{html.escape(str(label), quote=True)}"{sel}>{html.escape(str(label))}</option>'
+                    extra_opts = "\n".join(_opt(fn) for fn in fn_list)
+                    fr_html_raw = fr_html_raw.replace(marker, marker + "\n" + extra_opts, 1)
+        except Exception:
+            # If anything goes wrong, keep the original template and rely on JS init.
+            pass
+
+        function_role_html = self._indent_block(fr_html_raw, spaces=8)
 
         domain_bundle_script = self._indent_block(
             "\n".join(

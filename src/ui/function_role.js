@@ -65,8 +65,16 @@
     }
   }
 
+  function normaliseFn(value) {
+    return String(value || '')
+      .toLowerCase()
+      .replace(/&/g, '&')
+      .replace(/\s+/g, ' ')
+      .trim();
+  }
+
   function roleMatchesFunction(role, fn) {
-    return role.function && role.function.toLowerCase() === String(fn || '').toLowerCase();
+    return !!role.function && normaliseFn(role.function) === normaliseFn(fn);
   }
 
   function roleMatchesQuery(role, query) {
