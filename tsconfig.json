@@ -1,21 +1,14 @@
 {
   "compilerOptions": {
-    "target": "ES2019",
-    "module": "commonjs",
+    "target": "ES2020",
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
     "strict": true,
     "esModuleInterop": true,
-    "forceConsistentCasingInFileNames": true,
-    "skipLibCheck": true,
     "resolveJsonModule": true,
-    "moduleResolution": "node",
-    "outDir": "build"
+    "skipLibCheck": true,
+    "types": ["vitest"]
   },
-  "include": [
-    "src/persona/**/*.ts",
-    "tests/js/**/*.ts"
-  ],
-  "exclude": [
-    "node_modules"
-  ],
-  "version": "0.1.0"
+  "include": ["src/**/*", "tests/js/**/*"]
 }
+
