@@ -35,9 +35,9 @@ jobs:
           node-version: '20.x'
       - name: Install deps
         run: |
-          npm ci || npm i --no-fund --no-audit
-      - name: Run JS tests
+          npm i --no-fund --no-audit
+      - name: Run JS tests (vitest)
         env:
           NAICS_BASE_URL: http://127.0.0.1:5000
         run: |
-          npm test --silent
+          npx vitest run --reporter=dot
