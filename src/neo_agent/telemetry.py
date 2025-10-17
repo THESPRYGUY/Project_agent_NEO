@@ -59,3 +59,17 @@ def emit_mbti_persona_selected(meta: Mapping[str, Any]) -> None:
         "axes": axes,
     }
     emit_event("persona:selected", payload)
+
+
+def emit_repo_generated_event(result: Mapping[str, Any] | None = None) -> None:
+    """Emit a repo:generated event with minimal context.
+
+    Accepts an optional mapping from the repo generator containing fields like
+    path/name. The schema is intentionally loose so this stays non-breaking.
+    """
+
+    if not isinstance(result, Mapping):
+        emit_event("repo:generated", {})
+        return
+    payload = {k: str(v) for k, v in result.items() if isinstance(k, str)}
+    emit_event("repo:generated", payload)
