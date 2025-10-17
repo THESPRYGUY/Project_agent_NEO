@@ -1082,7 +1082,9 @@ window.addEventListener('DOMContentLoaded', function () {
                         index[str(code)] = entry
             self._naics_cache = entries
             self._naics_by_code = index
-        return list(self._naics_cache or [])def _naics_entry(self, code: str) -> dict[str, Any] | None:
+        return list(self._naics_cache or [])
+
+    def _naics_entry(self, code: str) -> dict[str, Any] | None:
         self._load_naics_reference()
         if not self._naics_by_code:
             return None
@@ -1232,7 +1234,8 @@ window.addEventListener('DOMContentLoaded', function () {
                 if values:
                     query = str(values[0])
             start = time.perf_counter()
-            items = self._naics_search(query, limit=50)
+            # Return a generous set so UI search can populate cascades without missing candidates
+            items = self._naics_search(query, limit=500)
             duration_ms = (time.perf_counter() - start) * 1000
             return self._json_response(
                 {

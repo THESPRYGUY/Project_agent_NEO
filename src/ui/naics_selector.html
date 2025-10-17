@@ -1,31 +1,39 @@
 <section class="naics-picker" data-naics-picker>
-  <style> .naics-picker{margin:0.5rem 0 0.75rem;} .naics-picker label{display:block;font-weight:600;margin:0.4rem 0 0.2rem;color:#334;} .naics-picker select,.naics-picker input[type=text]{width:100%;padding:0.5rem;border:1px solid #ccd;border-radius:6px;margin-bottom:0.35rem;} .naics-picker button{width:100%;background:#1f3c88;color:#fff;border:none;border-radius:6px;padding:0.6rem 0.75rem;cursor:pointer;margin-top:0.25rem;} .naics-tip{color:#586;font-size:0.9rem;margin:0.25rem 0 0.5rem;} </style>
+  <style>
+    .naics-picker{margin:0.5rem 0 0.75rem;}
+    .naics-picker label{display:block;font-weight:600;margin:0.4rem 0 0.2rem;color:#334;}
+    .naics-picker select,.naics-picker input[type=text]{width:100%;padding:0.5rem;border:1px solid #ccd;border-radius:6px;margin-bottom:0.35rem;}
+    .naics-picker button{width:100%;background:#1f3c88;color:#fff;border:none;border-radius:6px;padding:0.6rem 0.75rem;cursor:pointer;margin-top:0.25rem;}
+    .naics-tip{color:#586;font-size:0.9rem;margin:0.25rem 0 0.5rem;}
+  </style>
 
   <div>
-    <input type="text" data-naics-search placeholder="Search NAICS (code or title e.g., 54, software)">
+    <input type="text" data-naics-search placeholder="Search NAICS (code or title e.g., 54, construction)">
     <div class="naics-tip">Search to filter, or select a top-level sector below.</div>
+    <div data-naics-results style="position:relative"></div>
   </div>
   <div>
-    <select data-naics-level="2"><option value="">Level 2 (2â€‘digit)</option></select>
-    <select data-naics-level="3" disabled><option value="">Level 3 (3â€‘digit)</option></select>
+    <select data-naics-level="2"><option value="">Level 2 (2-digit)</option></select>
+    <select data-naics-level="3" disabled><option value="">Level 3 (3-digit)</option></select>
   </div>
   <div>
-    <select data-naics-level="4" disabled><option value="">Level 4 (4â€‘digit)</option></select>
-    <select data-naics-level="5" disabled><option value="">Level 5 (5â€‘digit)</option></select>
+    <select data-naics-level="4" disabled><option value="">Level 4 (4-digit)</option></select>
+    <select data-naics-level="5" disabled><option value="">Level 5 (5-digit)</option></select>
   </div>
   <div>
-    <select data-naics-level="6" disabled><option value="">Level 6 (6â€‘digit)</option></select>
+    <select data-naics-level="6" disabled><option value="">Level 6 (6-digit)</option></select>
     <button type="button" data-naics-confirm disabled>Confirm NAICS</button>
   </div>
 
   <script>
     (function () {
-      const root = document.currentScript && document.currentScript.closest('[data-naics-picker]') || document.querySelector('[data-naics-picker]');
+      const root = (document.currentScript && document.currentScript.closest('[data-naics-picker]')) || document.querySelector('[data-naics-picker]');
       if (!root) { return; }
       const get = (sel) => root.querySelector(sel);
       const api = (p) => fetch(p, { credentials: 'same-origin' }).then(r => r.text()).then(t => { try { return JSON.parse(t); } catch(_) { return null; } });
 
       const searchBox = get('[data-naics-search]');
+      const resultsHost = get('[data-naics-results]');
       const selects = [2,3,4,5,6].map(l => get(`[data-naics-level="${l}"]`));
       const btn = get('[data-naics-confirm]');
 
@@ -36,16 +44,24 @@
       const hLineage = hidden('naics_lineage_json');
 
       function opt(value, label) { const o = document.createElement('option'); o.value = value; o.textContent = label; return o; }
-      function clearFrom(level) { for (let i = 0; i < selects.length; i++) { const s = selects[i]; const lv = 2 + i; if (lv >= level) { s.innerHTML = `<option value="">Level ${lv} (${lv}-digit)</option>`; s.disabled = true; } } }
-      function enableConfirmIfReady() { const code = getSelectedCode(); btn.disabled = !code; }
-      function getSelectedCode() { for (let i = selects.length - 1; i >= 0; i--) { const s = selects[i]; if (s && !s.disabled && s.value) { return s.value; } } return ''; }
+      function clearFrom(level) {
+        for (let i = 0; i < selects.length; i++) {
+          const s = selects[i]; const lv = 2 + i;
+          if (s && lv >= level) { s.innerHTML = `<option value="">Level ${lv} (${lv}-digit)</option>`; s.disabled = true; }
+        }
+      }
+      function enableConfirmIfReady() { const code = getSelectedCode(); if (btn) btn.disabled = !code; }
+      function getSelectedCode() {
+        for (let i = selects.length - 1; i >= 0; i--) { const s = selects[i]; if (s && !s.disabled && s.value) { return s.value; } }
+        return '';
+      }
 
       async function loadRoots() {
         const res = await api('/api/naics/roots');
         const s2 = selects[0];
-        if (res && Array.isArray(res.items)) {
-          s2.innerHTML = '<option value="">Level 2 (2â€‘digit)</option>';
-          res.items.forEach(item => s2.append(opt(item.code, `${item.code} â€” ${item.title}`)));
+        if (s2) { s2.innerHTML = '<option value="">Level 2 (2-digit)</option>'; }
+        if (res && Array.isArray(res.items) && s2) {
+          res.items.forEach(item => s2.append(opt(item.code, `${item.code} - ${item.title}`)));
           s2.disabled = false;
         }
         enableConfirmIfReady();
@@ -53,17 +69,15 @@
 
       async function loadChildren(parent, level) {
         const idx = level - 2; // index in selects
-        const s = selects[idx];
-        if (!s) return;
+        const s = selects[idx]; if (!s) return;
         const res = await api(`/api/naics/children/${encodeURIComponent(parent)}?level=${level}`);
         s.innerHTML = `<option value="">Level ${level} (${level}-digit)</option>`;
-        if (res && Array.isArray(res.items)) {
-          res.items.forEach(item => s.append(opt(item.code, `${item.code} â€” ${item.title}`)));
+        if (res && Array.isArray(res.items) && res.items.length) {
+          res.items.forEach(item => s.append(opt(item.code, `${item.code} - ${item.title}`)));
           s.disabled = false;
         } else {
           s.disabled = true;
         }
-        // clear deeper levels
         clearFrom(level + 1);
         enableConfirmIfReady();
       }
@@ -71,52 +85,86 @@
       async function handleSelectChange(e) {
         const s = e.target; const lv = Number(s.getAttribute('data-naics-level')) || 0;
         if (!lv) return;
-        // clear deeper levels then fetch next
         clearFrom(lv + 1);
         const code = s.value;
         if (code && lv < 6) { await loadChildren(code, lv + 1); }
         enableConfirmIfReady();
       }
 
+      function clearResults() { if (resultsHost) resultsHost.innerHTML = ''; }
+
+      function renderResults(items) {
+        if (!resultsHost) return;
+        const box = document.createElement('div');
+        box.style.position = 'absolute';
+        box.style.left = '0';
+        box.style.right = '0';
+        box.style.background = '#fff';
+        box.style.border = '1px solid #ccd';
+        box.style.borderTop = 'none';
+        box.style.maxHeight = '240px';
+        box.style.overflow = 'auto';
+        box.style.zIndex = '10';
+        const take = (items || []).slice(0, 50);
+        take.forEach(item => {
+          const row = document.createElement('div');
+          row.textContent = `${item.code} - ${item.title}`;
+          row.style.padding = '6px 8px';
+          row.style.cursor = 'pointer';
+          row.addEventListener('mousedown', (ev) => ev.preventDefault());
+          row.addEventListener('click', async () => {
+            await applySelection(item.code);
+            clearResults();
+            enableConfirmIfReady();
+          });
+          box.appendChild(row);
+        });
+        clearResults();
+        if (take.length) resultsHost.appendChild(box);
+      }
+
+      async function applySelection(code) {
+        if (!code) return;
+        clearFrom(2);
+        await loadRoots();
+        const path = (code || '').split('').reduce((acc, ch, i) => { const c = (acc[i-1]||'') + ch; acc.push(c); return acc; }, []);
+        const steps = path.filter(c => c.length >= 2 && c.length <= 6);
+        for (let i=0;i<steps.length;i++) {
+          const c = steps[i];
+          const level = c.length;
+          // Ensure options for current level are present by loading from parent deterministically
+          if (level > 2) {
+            await loadChildren(c.slice(0, level - 1), level);
+          }
+          const s = selects[level - 2];
+          if (s) { s.value = c; s.disabled = false; }
+        }
+        // Preload next level options for smoother UX
+        const last = steps[steps.length - 1];
+        if (last && last.length < 6) {
+          await loadChildren(last, last.length + 1);
+        }
+        enableConfirmIfReady();
+      }
+
       let timer = null;
+      let lastResults = [];
       async function handleSearchInput() {
         const q = String(searchBox.value || '').trim();
         if (timer) { clearTimeout(timer); }
         timer = setTimeout(async () => {
+          clearResults();
           if (!q) return;
           const res = await api(`/api/naics/search?q=${encodeURIComponent(q)}`);
           if (res && Array.isArray(res.items) && res.items.length) {
-            // pick the first result as a convenience: load its lineage to populate selects
-            const pick = res.items[0];
-            // traverse: fill level2..N selects where possible
-            clearFrom(2);
-            const path = (pick.code || '').split('').reduce((acc, ch, i) => { const c = (acc[i-1]||'') + ch; acc.push(c); return acc; }, []);
-            // path will be like ['5','54','541','5411',...]; start from 2-digit
-            const steps = path.filter(c => c.length >= 2 && c.length <= 6);
-            if (steps.length) {
-              // load roots then children chains
-              await loadRoots();
-              // set progressively
-              for (let i=0;i<steps.length;i++) {
-                const code = steps[i];
-                const level = code.length;
-                // ensure current level select has the code option; if not, fetch children from parent
-                const s = selects[level-2];
-                if (s && !Array.from(s.options).some(o => o.value === code)) {
-                  const parent = code.slice(0, code.length-1);
-                  await loadChildren(parent, level);
-                }
-                if (s) { s.value = code; s.disabled = false; }
-              }
-              enableConfirmIfReady();
-            }
+            lastResults = res.items;
+            renderResults(lastResults);
           }
         }, 250);
       }
 
       async function handleConfirm() {
-        const code = getSelectedCode();
-        if (!code) return;
+        const code = getSelectedCode(); if (!code) return;
         const detail = await api(`/api/naics/code/${encodeURIComponent(code)}`);
         const entry = detail && detail.entry ? detail.entry : null;
         const lineage = entry && Array.isArray(entry.lineage) ? entry.lineage : [];
@@ -124,21 +172,26 @@
         if (hTitle) hTitle.value = entry && entry.title || '';
         if (hLevel) hLevel.value = String(entry && entry.level || code.length);
         if (hLineage) hLineage.value = JSON.stringify(lineage);
-        // fire an input event so gating/preview listeners update
         document.dispatchEvent(new Event('input', { bubbles: true }));
         document.dispatchEvent(new Event('change', { bubbles: true }));
-        btn.textContent = 'Confirmed';
-        setTimeout(() => { btn.textContent = 'Confirm NAICS'; }, 800);
+        if (btn) { btn.textContent = 'Confirmed'; setTimeout(() => { btn.textContent = 'Confirm NAICS'; }, 800); }
       }
 
-      // Wire events
       selects.forEach(s => s && s.addEventListener('change', handleSelectChange));
       if (searchBox) searchBox.addEventListener('input', handleSearchInput);
       if (btn) btn.addEventListener('click', handleConfirm);
+      if (searchBox) searchBox.addEventListener('blur', () => setTimeout(clearResults, 150));
+      if (searchBox) searchBox.addEventListener('keydown', async (ev) => {
+        if (ev.key === 'Enter') {
+          ev.preventDefault();
+          if (lastResults && lastResults.length) {
+            await applySelection(lastResults[0].code);
+            clearResults();
+          }
+        }
+      });
 
-      // Init
       loadRoots();
     })();
   </script>
 </section>
-
