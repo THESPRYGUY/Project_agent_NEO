@@ -830,21 +830,20 @@ window.addEventListener('DOMContentLoaded', function () {
                     extra_opts = "\n".join(_opt(fn) for fn in fn_list)
                     fr_html_raw = fr_html_raw.replace(marker, marker + "\n" + extra_opts, 1)
             # Also pre-populate role options for the currently selected function (if any).
-            # If none selected, show all roles to avoid a disabled control.
+            # Do NOT prepopulate with all roles by default; we prefer a disabled select
+            # until the user chooses a business function so the list stays scoped.
             selected_fn_norm = (business_function or "").strip().lower().replace("&", "&")
             role_default_marker = '<option value="">Select a role</option>'
             roles_src = self._function_role_data.get("roles", [])
             roles_for_select: list[dict[str, Any]] = []
-            if isinstance(roles_src, list):
+            if isinstance(roles_src, list) and selected_fn_norm:
                 for r in roles_src:
                     if not isinstance(r, Mapping):
                         continue
-                    if selected_fn_norm:
-                        rf = str(r.get("function", "")).strip().lower().replace("&", "&")
-                        if rf != selected_fn_norm:
-                            continue
-                    roles_for_select.append(r)
-            if roles_for_select:
+                    rf = str(r.get("function", "")).strip().lower().replace("&", "&")
+                    if rf == selected_fn_norm:
+                        roles_for_select.append(r)
+            if selected_fn_norm and roles_for_select:
                 # Enable the select (remove disabled) and inject options
                 fr_html_raw = fr_html_raw.replace('data-role-select disabled', 'data-role-select')
                 def _role_label(role: Mapping[str, Any]) -> str:
