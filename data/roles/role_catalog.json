@@ -360,7 +360,66 @@
       "report_templates": ["Innovation Portfolio Brief", "Experiment Learnings Digest"],
       "autonomy_default": 0.46,
       "safety_bias": 0.62,
-      "kpi_weights": {"PRI": 0.5, "HAL": 0.3, "AUD": 0.2}
+    "kpi_weights": {"PRI": 0.5, "HAL": 0.3, "AUD": 0.2}
     }
   }
+  ,
+  { "code": "FIN:CFO", "function": "Finance", "seniority": "C-Level", "titles": ["Chief Financial Officer", "CFO"] },
+  { "code": "FIN:FPNA", "function": "Finance", "seniority": "Director", "titles": ["Director FP&A", "FP&A Director"] },
+  { "code": "FIN:ACCTMGR", "function": "Finance", "seniority": "Manager", "titles": ["Accounting Manager"] },
+  { "code": "FIN:ARAP", "function": "Finance", "seniority": "Manager", "titles": ["AR/AP Manager"] },
+  { "code": "FIN:TREAS", "function": "Finance", "seniority": "Manager", "titles": ["Treasury Manager"] },
+
+  { "code": "OPS:VP", "function": "Operations", "seniority": "VP", "titles": ["VP Operations"] },
+  { "code": "OPS:MANAGER", "function": "Operations", "seniority": "Manager", "titles": ["Operations Manager"] },
+  { "code": "OPS:QUALITY", "function": "Operations", "seniority": "Manager", "titles": ["Quality Manager"] },
+
+  { "code": "SC:LOGMGR", "function": "Supply Chain", "seniority": "Manager", "titles": ["Logistics Manager"] },
+  { "code": "SC:PROC", "function": "Supply Chain", "seniority": "Director", "titles": ["Director of Procurement"] },
+  { "code": "SC:INVMGR", "function": "Supply Chain", "seniority": "Manager", "titles": ["Inventory Manager"] },
+
+  { "code": "SALES:CRO", "function": "Sales", "seniority": "C-Level", "titles": ["Chief Revenue Officer", "CRO"] },
+  { "code": "SALES:DIR", "function": "Sales", "seniority": "Director", "titles": ["Sales Director"] },
+  { "code": "SALES:AEMGR", "function": "Sales", "seniority": "Manager", "titles": ["Account Executive Manager"] },
+
+  { "code": "MKT:CMO", "function": "Marketing", "seniority": "C-Level", "titles": ["Chief Marketing Officer", "CMO"] },
+  { "code": "MKT:DEMAND", "function": "Marketing", "seniority": "Manager", "titles": ["Demand Generation Manager"] },
+  { "code": "MKT:BRAND", "function": "Marketing", "seniority": "Director", "titles": ["Director of Brand Marketing"] },
+
+  { "code": "CS:VP", "function": "Customer Success", "seniority": "VP", "titles": ["VP Customer Success"] },
+  { "code": "CS:SUPPORT", "function": "Customer Success", "seniority": "Manager", "titles": ["Support Manager"] },
+  { "code": "CS:CSM", "function": "Customer Success", "seniority": "Senior IC", "titles": ["Customer Success Manager"] },
+
+  { "code": "PROD:VP", "function": "Product Management", "seniority": "VP", "titles": ["VP Product"] },
+  { "code": "PROD:PM", "function": "Product Management", "seniority": "Senior IC", "titles": ["Product Manager"] },
+  { "code": "PROD:OPS", "function": "Product Management", "seniority": "Manager", "titles": ["Product Operations Manager"] },
+
+  { "code": "ENG:CIO", "function": "Engineering/IT", "seniority": "C-Level", "titles": ["Chief Information Officer", "CIO"] },
+  { "code": "ENG:ENGMGR", "function": "Engineering/IT", "seniority": "Manager", "titles": ["Software Engineering Manager"] },
+  { "code": "ENG:DEVOPS", "function": "Engineering/IT", "seniority": "Manager", "titles": ["DevOps Manager"] },
+  { "code": "ENG:ITSDIR", "function": "Engineering/IT", "seniority": "Director", "titles": ["Director of IT Service Management"] },
+
+  { "code": "DATA:CDO", "function": "Data & Analytics", "seniority": "C-Level", "titles": ["Chief Data Officer", "CDO"] },
+  { "code": "DATA:ENGMGR", "function": "Data & Analytics", "seniority": "Manager", "titles": ["Data Engineering Manager"] },
+  { "code": "DATA:ANLMGR", "function": "Data & Analytics", "seniority": "Manager", "titles": ["Analytics Manager"] },
+
+  { "code": "HR:CHRO", "function": "HR/People", "seniority": "C-Level", "titles": ["Chief Human Resources Officer", "CHRO"] },
+  { "code": "HR:MANAGER", "function": "HR/People", "seniority": "Manager", "titles": ["HR Manager"] },
+  { "code": "HR:TALEAD", "function": "HR/People", "seniority": "Lead", "titles": ["Talent Acquisition Lead"] },
+
+  { "code": "LEGAL:GC", "function": "Legal & Compliance", "seniority": "C-Level", "titles": ["General Counsel"] },
+  { "code": "LEGAL:COMP", "function": "Legal & Compliance", "seniority": "Manager", "titles": ["Compliance Officer"] },
+
+  { "code": "SEC:CISO", "function": "Security & Risk", "seniority": "C-Level", "titles": ["Chief Information Security Officer", "CISO"] },
+  { "code": "SEC:GRCMGR", "function": "Security & Risk", "seniority": "Manager", "titles": ["GRC Manager"] },
+  { "code": "SEC:SECOPS", "function": "Security & Risk", "seniority": "Manager", "titles": ["Security Operations Manager"] },
+
+  { "code": "ESG:CSO", "function": "ESG/Sustainability", "seniority": "C-Level", "titles": ["Chief Sustainability Officer", "CSO"] },
+  { "code": "ESG:MANAGER", "function": "ESG/Sustainability", "seniority": "Manager", "titles": ["Sustainability Manager"] },
+
+  { "code": "FAC:DIR", "function": "Facilities/Real Estate", "seniority": "Director", "titles": ["Director of Facilities"] },
+  { "code": "FAC:REMAN", "function": "Facilities/Real Estate", "seniority": "Manager", "titles": ["Real Estate Manager"] },
+
+  { "code": "EXEC:CSO", "function": "Executive/General Management", "seniority": "C-Level", "titles": ["Chief Strategy Officer", "CSO"] },
+  { "code": "EXEC:GM", "function": "Executive/General Management", "seniority": "Director", "titles": ["General Manager"] }
 ]
