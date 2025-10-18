@@ -1603,10 +1603,22 @@ window.addEventListener('DOMContentLoaded', function () {
                         )
                         linkedin_data = {}
                 profile = self._build_profile(data, linkedin_data)
+                # Compile a normalized view for downstream mapping (non-breaking addition)
+                try:
+                    from .profile_compiler import compile_profile  # lazy import to avoid start-up cost
+                    compiled = compile_profile(profile)
+                    profile["_compiled"] = compiled
+                except Exception:
+                    compiled = None
                 if not self.profile_path.parent.exists():
                     self.profile_path.parent.mkdir(parents=True, exist_ok=True)
                 with self.profile_path.open("w", encoding="utf-8") as handle:
                     json.dump(profile, handle, indent=2)
+                # Also write a sibling compiled profile for tools that prefer a standalone file
+                if compiled is not None:
+                    compiled_path = self.profile_path.with_name("agent_profile.compiled.json")
+                    with compiled_path.open("w", encoding="utf-8") as handle:
+                        json.dump(compiled, handle, indent=2)
                 generate_agent_specs(profile, self.spec_dir)
                 LOGGER.info("Generated profile at %s", self.profile_path)
                 response_body = self.render_form(
