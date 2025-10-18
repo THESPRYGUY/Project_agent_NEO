@@ -34,9 +34,13 @@ class ValidationResult:
 
 
 def discover_pack_files(root: Path) -> List[Path]:
-    """Return all JSON files in ``root`` (non-recursive) sorted by name."""
+    """Return all JSON files in ``root`` (non-recursive) sorted by name.
 
-    return sorted(p for p in root.glob("*.json") if p.is_file())
+    Ignores known ephemeral artifacts that are not packs, e.g. persona_state.json.
+    """
+
+    ignore = {"persona_state.json"}
+    return sorted(p for p in root.glob("*.json") if p.is_file() and p.name not in ignore)
 
 
 def load_json(path: Path) -> JsonDict:

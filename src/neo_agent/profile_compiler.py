@@ -110,6 +110,7 @@ def compile_profile(profile: Mapping[str, Any]) -> Dict[str, Any]:
     sliders = _coerce_map(preferences.get("sliders"))
 
     compiled: Dict[str, Any] = {
+        "version": version or "1.0.0",
         "meta": {
             "version": "1.0",
             "generated_at": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -173,4 +174,3 @@ def compile_profile(profile: Mapping[str, Any]) -> Dict[str, Any]:
     }
 
     return compiled
-
