@@ -907,7 +907,19 @@ window.addEventListener('DOMContentLoaded', function () {
         generate_agent_script = self._indent_block(self._generate_agent_js, spaces=8)
         function_role_script = self._indent_block(self._function_role_js, spaces=8)
 
-        summary_html = _summary_block(None, str(self.profile_path), str(self.spec_dir))
+        # Show a JSON preview panel for the last generated profile. If a profile
+        # is provided (POST), prefer it; otherwise try to load the last-saved file.
+        summary_profile: Mapping[str, Any] | None = profile if isinstance(profile, Mapping) and profile else None
+        if summary_profile is None and self.profile_path.exists():
+            try:
+                with self.profile_path.open("r", encoding="utf-8") as handle:
+                    loaded = json.load(handle)
+                if isinstance(loaded, Mapping):
+                    summary_profile = loaded
+            except Exception:
+                summary_profile = None
+
+        summary_html = _summary_block(summary_profile, str(self.profile_path), str(self.spec_dir))
 
         html_out = FORM_TEMPLATE.substitute(
             persona_styles=self._indent_block(persona_style_block),
@@ -1827,5 +1839,4 @@ def create_app(base_dir: Path | None = None) -> IntakeApplication:
 
 if __name__ == "__main__":  # pragma: no cover - manual execution helper
     create_app().serve()
-
 
