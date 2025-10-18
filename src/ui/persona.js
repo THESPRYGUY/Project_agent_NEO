@@ -164,7 +164,11 @@ function initialiseTooltips(types) {
     const panels = root.querySelectorAll('.persona-panel');
 
     tabs.forEach((tab) => {
-      tab.addEventListener('click', () => activateTab(tab.dataset.tabTarget));
+      tab.addEventListener('click', (event) => {
+        // Prevent default form submission if these buttons live inside a <form>
+        if (event) { try { event.preventDefault(); event.stopPropagation(); } catch (_) {} }
+        activateTab(tab.dataset.tabTarget);
+      });
       tab.addEventListener('keydown', (event) => {
         if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
           return;

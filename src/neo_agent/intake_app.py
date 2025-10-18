@@ -916,12 +916,12 @@ window.addEventListener('DOMContentLoaded', function () {
             domain_options=domain_options,
             role_options=role_options,
             persona_tabs=persona_html,
-            persona_hidden_value=html.escape(persona_hidden, quote=True),
-            domain_selector_state=html.escape(domain_selector_state, quote=True),
-            naics_code=html.escape(naics_code, quote=True),
-            naics_title=html.escape(naics_title, quote=True),
-            naics_level=html.escape(naics_level, quote=True),
-            naics_lineage=html.escape(naics_lineage, quote=True),
+            persona_hidden_value=html.escape(str(persona_hidden) if persona_hidden is not None else "", quote=True),
+            domain_selector_state=html.escape(str(domain_selector_state) if domain_selector_state is not None else "", quote=True),
+            naics_code=html.escape(str(naics_code) if naics_code is not None else "", quote=True),
+            naics_title=html.escape(str(naics_title) if naics_title is not None else "", quote=True),
+            naics_level=html.escape(str(naics_level) if naics_level is not None else "", quote=True),
+            naics_lineage=html.escape(str(naics_lineage) if naics_lineage is not None else "", quote=True),
             domain_selector_html=domain_selector_html,
             naics_selector_html=naics_selector_html,
             function_category=html.escape(function_category, quote=True),
@@ -1603,6 +1603,12 @@ window.addEventListener('DOMContentLoaded', function () {
                         )
                         linkedin_data = {}
                 profile = self._build_profile(data, linkedin_data)
+                # Ensure root-level version for pack validators (raw profile keeps agent.version too)
+                if not isinstance(profile, dict):
+                    profile = dict(profile or {})
+                if "version" not in profile:
+                    agent_block = profile.get("agent") if isinstance(profile.get("agent"), dict) else {}
+                    profile["version"] = agent_block.get("version") or "1.0.0"
                 # Compile a normalized view for downstream mapping (non-breaking addition)
                 try:
                     from .profile_compiler import compile_profile  # lazy import to avoid start-up cost
@@ -1616,6 +1622,13 @@ window.addEventListener('DOMContentLoaded', function () {
                     json.dump(profile, handle, indent=2)
                 # Also write a sibling compiled profile for tools that prefer a standalone file
                 if compiled is not None:
+                    # Mirror version at top-level for compiled artifact as well
+                    if "version" not in compiled:
+                        compiled_version = profile.get("version") or (profile.get("agent", {}) or {}).get("version") or "1.0.0"
+                        try:
+                            compiled["version"] = compiled_version
+                        except Exception:
+                            pass
                     compiled_path = self.profile_path.with_name("agent_profile.compiled.json")
                     with compiled_path.open("w", encoding="utf-8") as handle:
                         json.dump(compiled, handle, indent=2)
@@ -1814,7 +1827,5 @@ def create_app(base_dir: Path | None = None) -> IntakeApplication:
 
 if __name__ == "__main__":  # pragma: no cover - manual execution helper
     create_app().serve()
-
-
 
 
