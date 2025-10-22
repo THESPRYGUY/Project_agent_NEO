@@ -1,4 +1,4 @@
-"""Utilities for loading and inspecting NEO agent pack specifications.
+﻿"""Utilities for loading and inspecting NEO agent pack specifications.
 
 This module provides a CLI oriented helper that discovers JSON pack
 definitions in the repository, validates their core structure, and prints a
@@ -33,16 +33,23 @@ class ValidationResult:
         return self.payload.get("id") or self.payload.get("pack") or self.path.name
 
 
-def discover_pack_files(root: Path) -> List[Path]:
-    """Return all JSON files in ``root`` (non-recursive) sorted by name.
 
-    Ignores known ephemeral artifacts that are not packs, e.g. persona_state.json.
+def discover_pack_files(root: Path) -> List[Path]:
+    """Return all canonical pack JSON files in ``root`` (non-recursive).
+
+    Filters to filenames matching the canonical pack naming scheme NN_*.json
+    where NN is two digits (01..20). This avoids unrelated JSON artifacts in
+    the repository root (e.g., persona state or compiled profiles).
     """
 
-    ignore = {"persona_state.json"}
-    return sorted(p for p in root.glob("*.json") if p.is_file() and p.name not in ignore)
-
-
+    files: List[Path] = []
+    for p in root.glob("*.json"):
+        if not p.is_file():
+            continue
+        name = p.name
+        if len(name) >= 3 and name[0:2].isdigit() and name[2] == "_":
+            files.append(p)
+    return sorted(files)
 def load_json(path: Path) -> JsonDict:
     """Load a JSON document from disk."""
 

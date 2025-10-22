@@ -18,6 +18,7 @@ from .linkedin import scrape_linkedin_profile
 from .logging import get_logger
 from .repo_generator import AgentRepoGenerationError, generate_agent_repo
 from .spec_generator import generate_agent_specs
+from .services.identity_utils import generate_agent_id
 
 try:  # pragma: no cover - telemetry is optional in some environments
     from .telemetry import (
@@ -201,11 +202,49 @@ $extra_styles
         <form method="post" action="/">
             <fieldset>
                 <legend>Agent Profile</legend>
-                <label>Agent Name
-                    <input type="text" name="agent_name" placeholder="e.g., Atlas Analyst" value="$agent_name" required>
-                </label>
                 <label>Version
                     <input type="text" name="agent_version" value="$agent_version">
+                </label>
+            </fieldset>
+
+            <fieldset>
+                <legend>Identity</legend>
+                <input type="hidden" name="agent_name" value="$agent_name">
+                <label>Agent Name
+                    <input type="text" name="identity.agent_name" placeholder="e.g., Atlas Analyst" value="$agent_name" required data-identity-agent-name>
+                </label>
+                <label>Display Name
+                    <input type="text" name="identity.display_name" placeholder="Display name" value="$agent_name" readonly data-identity-display-name>
+                </label>
+                <label>Agent ID
+                    <input type="text" name="identity.agent_id" placeholder="auto-generated" value="" readonly data-identity-agent-id>
+                </label>
+                <label>Owners (comma separated)
+                    <input type="text" name="identity.owners" placeholder="CAIO, CPA, TeamLead" value="">
+                </label>
+                <label><input type="checkbox" name="identity.no_impersonation" value="true" checked> No impersonation</label>
+                <label>Attribution Policy
+                    <select name="identity.attribution_policy">
+                        <option value="original" selected>original</option>
+                        <option value="derived">derived</option>
+                    </select>
+                </label>
+                <p class="notice">ID regenerates when NAICS, Function, Role or Name changes.</p>
+            </fieldset>
+
+            <fieldset>
+                <legend>Role Profile</legend>
+                <label>Archetype
+                    <input type="text" name="role_profile.archetype" value="">
+                </label>
+                <label>Role Title
+                    <input type="text" name="role_profile.role_title" value="">
+                </label>
+                <label>Role Recipe Ref
+                    <input type="text" name="role_profile.role_recipe_ref" value="">
+                </label>
+                <label>Objectives (comma separated)
+                    <input type="text" name="role_profile.objectives" value="">
                 </label>
             </fieldset>
 
@@ -290,9 +329,114 @@ $extra_styles
             </fieldset>
 
             <fieldset>
+                <legend>Sector Profile</legend>
+                <label>Sector
+                    <input type="text" name="sector_profile.sector" value="">
+                </label>
+                <label>Industry
+                    <input type="text" name="sector_profile.industry" value="">
+                </label>
+                <label>Region (comma separated)
+                    <input type="text" name="sector_profile.region" value="">
+                </label>
+                <label>Languages (comma separated)
+                    <input type="text" name="sector_profile.languages" value="">
+                </label>
+                <label>Domain Tags (comma separated)
+                    <input type="text" name="sector_profile.domain_tags" value="">
+                </label>
+                <label>Risk Tier
+                    <input type="text" name="sector_profile.risk_tier" value="">
+                </label>
+                <label>Regulatory (comma separated)
+                    <input type="text" name="sector_profile.regulatory" value="">
+                </label>
+            </fieldset>
+
+            <fieldset>
+                <legend>Capabilities & Tools</legend>
+                <label>Tool Connectors (JSON array)
+                    <textarea name="capabilities_tools.tool_connectors_json" rows="4" placeholder='[{"name":"sharepoint","enabled":true,"scopes":["read"],"secret_ref":"SET_ME"}]'></textarea>
+                </label>
+                <label>Human-Gate Actions (comma separated)
+                    <input type="text" name="capabilities_tools.human_gate.actions" value="">
+                </label>
+            </fieldset>
+
+            <fieldset>
+                <legend>Memory</legend>
+                <label>Memory Scopes (comma separated)
+                    <input type="text" name="memory.memory_scopes" value="">
+                </label>
+                <label>Initial Memory Packs (comma separated)
+                    <input type="text" name="memory.initial_memory_packs" value="">
+                </label>
+                <label>Optional Packs (comma separated)
+                    <input type="text" name="memory.optional_packs" value="">
+                </label>
+                <label>Data Sources (comma separated)
+                    <input type="text" name="memory.data_sources" value="">
+                </label>
+            </fieldset>
+
+            <fieldset>
+                <legend>Governance & Evaluation</legend>
+                <label>Risk Register Tags (comma separated)
+                    <input type="text" name="governance_eval.risk_register_tags" value="">
+                </label>
+                <label>PII Flags (comma separated)
+                    <input type="text" name="governance_eval.pii_flags" value="">
+                </label>
+                <label>Classification Default
+                    <select name="governance_eval.classification_default">
+                        <option value="confidential" selected>confidential</option>
+                        <option value="restricted">restricted</option>
+                        <option value="public">public</option>
+                    </select>
+                </label>
+                <label>RBAC Roles (comma separated)
+                    <input type="text" name="governance.rbac.roles" value="">
+                </label>
+            </fieldset>
+
+            <fieldset>
+                <legend>Lifecycle & KPI</legend>
+                <label>Lifecycle Stage
+                    <select name="lifecycle.stage">
+                        <option value="dev" selected>dev</option>
+                        <option value="staging">staging</option>
+                        <option value="prod">prod</option>
+                    </select>
+                </label>
+            </fieldset>
+
+            <fieldset>
+                <legend>Observability & Telemetry</legend>
+                <label>Sampling Rate (0-1)
+                    <input type="text" name="telemetry.sampling.rate" value="1.0">
+                </label>
+                <label>Sinks (comma separated)
+                    <input type="text" name="telemetry.sinks" value="">
+                </label>
+                <label>PII Redaction Strategy
+                    <select name="telemetry.pii_redaction.strategy">
+                        <option value="mask" selected>mask</option>
+                        <option value="hash+mask">hash+mask</option>
+                    </select>
+                </label>
+            </fieldset>
+
+            <fieldset>
                 <legend>Custom Notes</legend>
                 <label>Engagement Notes
                     <textarea name="notes" rows="4" placeholder="Outline constraints, knowledge packs, or workflow context.">$notes</textarea>
+                </label>
+            </fieldset>
+
+            <fieldset>
+                <legend>Advanced Overrides (JSON)</legend>
+                <label>Overrides
+                    <textarea name="advanced_overrides" rows="6" placeholder='{ }'></textarea>
                 </label>
             </fieldset>
 
@@ -311,6 +455,9 @@ $domain_bundle_script
         </script>
         <script>
 $function_role_script
+        </script>
+        <script>
+$identity_script
         </script>
         <script>
 $generate_agent_script
@@ -652,8 +799,36 @@ class IntakeApplication:
         message: str | None = None,
         profile: Mapping[str, Any] | None = None,
     ) -> str:
+        submitted_profile_arg = profile if isinstance(profile, Mapping) and profile else None
         if not isinstance(profile, Mapping):
-            profile = {}
+            # Prefill from the last saved profile if present; otherwise provide a light demo profile
+            try:
+                if self.profile_path.exists():
+                    saved = self._safe_read_json(self.profile_path, None)
+                else:
+                    saved = None
+            except Exception:
+                saved = None
+            if isinstance(saved, Mapping):
+                profile = saved
+            else:
+                profile = {
+                    "agent": {"name": "Sample Agent", "version": "1.0.0", "persona": "ENTJ"},
+                    "toolsets": {"selected": ["Data Analysis", "Reporting"], "custom": []},
+                    "attributes": {"selected": ["Strategic"], "custom": []},
+                    "preferences": {
+                        "sliders": {"autonomy": 70, "confidence": 65, "collaboration": 60},
+                        "communication_style": "Formal",
+                        "collaboration_mode": "Cross-Functional",
+                    },
+                    "identity": {
+                        "agent_name": "Sample Agent",
+                        "display_name": "Sample Agent",
+                        "owners": ["CAIO", "CPA", "TeamLead"],
+                        "no_impersonation": True,
+                        "attribution_policy": "original",
+                    },
+                }
         agent_section_candidate = profile.get("agent") if isinstance(profile, Mapping) else None
         agent_section = agent_section_candidate if isinstance(agent_section_candidate, Mapping) else {}
         toolset_section_candidate = profile.get("toolsets") if isinstance(profile, Mapping) else None
@@ -738,9 +913,9 @@ window.addEventListener('DOMContentLoaded', function () {
                     if isinstance(nested, Mapping):
                         naics_section = nested
 
-        naics_code = naics_section.get("code", "") if naics_section else ""
-        naics_title = naics_section.get("title", "") if naics_section else ""
-        naics_level = naics_section.get("level", "") if naics_section else ""
+        naics_code = str(naics_section.get("code", "")) if naics_section else ""
+        naics_title = str(naics_section.get("title", "")) if naics_section else ""
+        naics_level = str(naics_section.get("level", "")) if naics_section else ""
         naics_lineage = ""
         if naics_section and isinstance(naics_section.get("lineage"), list):
             naics_lineage = json.dumps(naics_section["lineage"], ensure_ascii=False)
@@ -906,108 +1081,167 @@ window.addEventListener('DOMContentLoaded', function () {
 
         generate_agent_script = self._indent_block(self._generate_agent_js, spaces=8)
         function_role_script = self._indent_block(self._function_role_js, spaces=8)
+        identity_script = self._indent_block(
+            """
+(function(){
+  const form = document.querySelector('form');
+  if (!form) return;
+  function get(name){ return form.querySelector('[name="'+name+'"]'); }
+  function set(name,val){ const el=get(name); if(el){ el.value = val||''; } }
+  function mirror(){ const n = (get('identity.agent_name')||{}).value || ''; set('identity.display_name', n); set('agent_name', n); }
+  async function regen(){
+    mirror();
+    const na = (get('naics_code')||{}).value || '';
+    const fn = (get('business_function')||{}).value || '';
+    const rc = (get('role_code')||{}).value || '';
+    const nm = (get('identity.agent_name')||{}).value || '';
+    if (!na || !fn || !rc || !nm) return;
+    try {
+      const res = await fetch('/api/identity/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ naics_code: na, business_function: fn, role_code: rc, agent_name: nm }) });
+      const data = await res.json();
+      if (data && data.agent_id) { set('identity.agent_id', data.agent_id); }
+    } catch (e) { /* ignore */ }
+  }
+  const schedule=(()=>{ let t; return ()=>{ clearTimeout(t); t=setTimeout(regen,200); };})();
+  form.addEventListener('input', function(e){ if (e && e.target && e.target.name === 'identity.agent_name') schedule(); }, true);
+  document.addEventListener('business:functionChanged', schedule, true);
+  document.addEventListener('role:changed', schedule, true);
+  document.addEventListener('change', function(e){ if (e && e.target && e.target.name === 'naics_code') schedule(); }, true);
+  mirror();
+})();
+""",
+            spaces=8,
+        )
 
-        # Show a JSON preview panel for the last generated profile. If a profile
-        # is provided (POST), prefer it; otherwise try to load the last-saved file.
-        summary_profile: Mapping[str, Any] | None = profile if isinstance(profile, Mapping) and profile else None
-        if summary_profile is None and self.profile_path.exists():
-            try:
-                with self.profile_path.open("r", encoding="utf-8") as handle:
-                    loaded = json.load(handle)
-                if isinstance(loaded, Mapping):
-                    summary_profile = loaded
-            except Exception:
-                summary_profile = None
+        # JSON viewer: prefer submitted profile, else last-saved on disk
+        submitted_profile = submitted_profile_arg
+        summary_source = submitted_profile
+        if summary_source is None:
+            summary_source = self._safe_read_json(self.profile_path, None)
+            if not isinstance(summary_source, Mapping):
+                summary_source = None
+        summary_html = _summary_block(summary_source, str(self.profile_path), str(self.spec_dir))
 
-        summary_html = _summary_block(summary_profile, str(self.profile_path), str(self.spec_dir))
+        # NAICS coercion to strings before escaping/injecting
+        naics_code     = str(naics_code)
+        naics_title    = str(naics_title)
+        naics_level    = str(naics_level)
+        naics_lineage  = str(naics_lineage)
+        safe_code      = html.escape(naics_code)
+        safe_title     = html.escape(naics_title)
+        safe_level     = html.escape(naics_level)
+        safe_lineage   = html.escape(naics_lineage)
 
-        html_out = FORM_TEMPLATE.substitute(
-            persona_styles=self._indent_block(persona_style_block),
-            extra_styles=extra_styles,
+        # Final page assembly
+        page = FORM_TEMPLATE.substitute(
+            persona_styles=persona_style_block or "",
+            extra_styles=extra_styles or "",
             notice=_notice(message),
-            domain_options=domain_options,
-            role_options=role_options,
-            persona_tabs=persona_html,
-            persona_hidden_value=html.escape(str(persona_hidden) if persona_hidden is not None else "", quote=True),
-            domain_selector_state=html.escape(str(domain_selector_state) if domain_selector_state is not None else "", quote=True),
-            naics_code=html.escape(str(naics_code) if naics_code is not None else "", quote=True),
-            naics_title=html.escape(str(naics_title) if naics_title is not None else "", quote=True),
-            naics_level=html.escape(str(naics_level) if naics_level is not None else "", quote=True),
-            naics_lineage=html.escape(str(naics_lineage) if naics_lineage is not None else "", quote=True),
-            domain_selector_html=domain_selector_html,
-            naics_selector_html=naics_selector_html,
-            function_category=html.escape(function_category, quote=True),
-            function_specialties=function_specialties_json,
-            function_select_html=function_select_html,
-            function_role_html=function_role_html,
+            persona_tabs=persona_html or "",
+            persona_script=persona_script or "",
+            persona_hidden_value=persona_hidden or "",
+            summary=summary_html or "",
+            agent_name=html.escape(agent_name, quote=True),
+            agent_version=html.escape(agent_version, quote=True),
+            notes=html.escape(notes_value or "", quote=True),
+            communication_options=communication_options,
+            collaboration_options=collaboration_options,
+            autonomy_value=str(autonomy_value),
+            confidence_value=str(confidence_value),
+            collaboration_value=str(collaboration_value),
             toolset_checkboxes=toolset_checkboxes,
             attribute_checkboxes=attribute_checkboxes,
             custom_toolsets=html.escape(custom_toolsets_value, quote=True),
             custom_attributes=html.escape(custom_attributes_value, quote=True),
-            autonomy_value=autonomy_value,
-            confidence_value=confidence_value,
-            collaboration_value=collaboration_value,
-            communication_options=communication_options,
-            collaboration_options=collaboration_options,
             linkedin_url=html.escape(linkedin_url, quote=True),
-            notes=html.escape(notes_value),
-            summary=summary_html,
-            persona_script=self._indent_block(persona_script, spaces=8),
-            function_role_bootstrap=function_role_bootstrap,
-            domain_bundle_script=domain_bundle_script,
-            function_role_script=function_role_script,
-            generate_agent_script=generate_agent_script,
-            agent_name=html.escape(agent_name, quote=True),
-            agent_version=html.escape(agent_version, quote=True),
+            naics_selector_html=naics_selector_html,
+            naics_code=safe_code,
+            naics_title=safe_title,
+            naics_level=safe_level,
+            naics_lineage=safe_lineage,
+            domain_selector_state=html.escape(domain_selector_state or "", quote=True),
+            domain_selector_html=domain_selector_html,
+            function_select_html=function_select_html,
+            function_role_html=function_role_html,
+            function_category=html.escape(function_category or "", quote=True),
+            function_specialties=function_specialties_json or "",
+            function_role_bootstrap=function_role_bootstrap or "",
+            domain_bundle_script=domain_bundle_script or "",
+            function_role_script=function_role_script or "",
+            identity_script=identity_script or "",
+            generate_agent_script=generate_agent_script or "",
         )
-        return html_out
+        return page
 
-    def _build_profile(
-        self,
-        data: Mapping[str, Any],
-        linkedin: Mapping[str, Any] | None = None,
-    ) -> Dict[str, Any]:
+    # ------------------------------ Persistence ------------------------------
+    def _save_persona_state(self, state: Mapping[str, Any]) -> Mapping[str, Any]:
+        """Persist persona selection state enriched with MBTI details.
+
+        Returns the enriched state mapping that was saved.
+        """
+        agent = dict(state.get("agent") or {})
+        code = agent.get("code")
+        enriched = self._enrich_persona_metadata(code)
+        if enriched:
+            agent.setdefault("mbti", enriched)
+        payload = {
+            **dict(state),
+            "agent": agent,
+            "persona_details": enriched or {},
+            "updated_at": int(time.time()),
+        }
+        try:
+            with self.persona_state_path.open("w", encoding="utf-8") as handle:
+                json.dump(payload, handle, indent=2)
+        except Exception:
+            pass
+        return payload
+
+    def _load_persona_state(self) -> Mapping[str, Any]:
+        def _default() -> Mapping[str, Any]:
+            return {"operator": None, "agent": None, "alternates": [], "persona_details": {}}
+        try:
+            with self.persona_state_path.open("r", encoding="utf-8") as handle:
+                data = json.load(handle)
+            if not isinstance(data, Mapping):
+                return _default()
+            out = dict(_default())
+            out.update({k: data.get(k) for k in ("operator", "agent", "alternates", "persona_details")})
+            return out
+        except Exception:
+            return _default()
+
+    def _build_profile(self, params: Mapping[str, list[str] | str], persona_state: Mapping[str, Any] | None) -> Mapping[str, Any]:
         def _get(name: str, default: str = "") -> str:
-            values = data.get(name, []) if isinstance(data, Mapping) else []
-            if isinstance(values, list):
-                return values[0] if values else default
-            try:
-                return str(values)
-            except Exception:
-                return default
+            v = params.get(name)
+            if isinstance(v, list):
+                return str(v[0]) if v else default
+            return str(v) if isinstance(v, str) else default
+        def _get_list(name: str) -> list[str]:
+            v = params.get(name)
+            if isinstance(v, list):
+                return [str(x) for x in v if x]
+            return [str(v)] if isinstance(v, str) and v else []
 
-        def _getlist(name: str) -> List[str]:
-            values = data.get(name, []) if isinstance(data, Mapping) else []
-            return [str(v) for v in values] if isinstance(values, list) else []
+        persona_state = persona_state or self._load_persona_state()
+        persona_block = {
+            "operator": persona_state.get("operator"),
+            "agent": persona_state.get("agent"),
+            "alternates": persona_state.get("alternates") or [],
+        }
 
-        def _parse_json(name: str) -> Any:
-            raw = _get(name)
-            if not raw:
-                return None
-            try:
-                return json.loads(raw)
-            except (json.JSONDecodeError, TypeError):
-                LOGGER.debug("Failed to parse JSON payload for field %s", name, exc_info=True)
-                return None
-
-        linkedin = linkedin or {}
-
+        persona_code = _get("agent_persona")
         profile: Dict[str, Any] = {
             "agent": {
-                "name": _get("agent_name", "Custom Project NEO Agent"),
+                "name": _get("agent_name"),
                 "version": _get("agent_version", "1.0.0"),
-                "persona": _get("agent_persona", ""),
-                "domain": _get("domain", ""),
-                "role": _get("role", ""),
+                "persona": persona_code,
+                "mbti": self._enrich_persona_metadata(persona_code),
+                "domain": _get("domain"),
+                "role": _get("role"),
             },
-            "toolsets": {
-                "selected": _getlist("toolsets"),
-                "custom": _split_csv(_get("custom_toolsets")),
-            },
-            "attributes": {
-                "selected": _getlist("attributes"),
-                "custom": _split_csv(_get("custom_attributes")),
-            },
+            "toolsets": {"selected": _get_list("toolsets"), "custom": _get("toolsets_custom")},
+            "attributes": {"selected": _get_list("attributes"), "custom": _get("attributes_custom")},
             "preferences": {
                 "sliders": {
                     "autonomy": int(_get("autonomy", "50") or 50),
@@ -1017,826 +1251,171 @@ window.addEventListener('DOMContentLoaded', function () {
                 "communication_style": _get("communication_style"),
                 "collaboration_mode": _get("collaboration_mode"),
             },
-            "notes": _get("notes", ""),
-            "linkedin": linkedin,
-            "persona": self._load_persona_state(),
+            "notes": _get("notes"),
+            "linkedin": {"url": _get("linkedin_url")},
+            "persona": persona_block,
         }
-
-        persona_state = profile.get("persona")
-        enriched_persona = None
-        if isinstance(persona_state, Mapping):
-            agent_state = persona_state.get("agent")
-            if isinstance(agent_state, Mapping):
-                mbti_block = agent_state.get("mbti")
-                if isinstance(mbti_block, Mapping):
-                    enriched_persona = mbti_block
-            if not enriched_persona:
-                details_block = persona_state.get("persona_details")
-                if isinstance(details_block, Mapping):
-                    enriched_persona = details_block
-        fallback_persona = profile["agent"].get("persona")
-        if not enriched_persona and fallback_persona:
-            enriched_persona = self._enrich_persona_metadata(fallback_persona)
-        if isinstance(enriched_persona, Mapping):
-            profile["agent"]["mbti"] = dict(enriched_persona)
-            code_value = enriched_persona.get("mbti_code")
-            if code_value:
-                profile["agent"]["persona"] = str(code_value)
-            if emit_mbti_persona_selected and not profile["agent"].get("_mbti_telemetry_emitted"):
-                try:
-                    emit_mbti_persona_selected(enriched_persona)
-                    profile["agent"]["_mbti_telemetry_emitted"] = True
-                except Exception:
-                    LOGGER.debug("Failed to emit MBTI telemetry event", exc_info=True)
-
-        if linkedin:
-            derived_tools = linkedin.get("skills", []) if isinstance(linkedin.get("skills"), list) else []
-            for tool in derived_tools:
-                candidate = str(tool).title()
-                if candidate not in profile["toolsets"]["selected"]:
-                    profile["toolsets"]["selected"].append(candidate)
-
-            derived_roles = linkedin.get("roles", []) if isinstance(linkedin.get("roles"), list) else []
-            if derived_roles and not profile["agent"].get("role"):
-                profile["agent"]["role"] = str(derived_roles[0]).title()
-
-        domain_selector_payload = _parse_json("domain_selector")
-        if isinstance(domain_selector_payload, Mapping):
-            profile["agent"]["domain_selector"] = dict(domain_selector_payload)
-            profile["domain_selector"] = dict(domain_selector_payload)
-
-        naics_code = _get("naics_code").strip()
-        naics_title = _get("naics_title").strip()
-        naics_level_raw = _get("naics_level").strip()
-        naics_lineage_payload = _parse_json("naics_lineage_json")
-        if naics_code:
-            try:
-                level_value = int(naics_level_raw) if naics_level_raw else None
-            except ValueError:
-                level_value = None
-            lineage: list[Any] = []
-            if isinstance(naics_lineage_payload, list):
-                for node in naics_lineage_payload:
-                    if isinstance(node, Mapping):
-                        lineage.append({
-                            "code": str(node.get("code", "")),
-                            "title": str(node.get("title", "")),
-                            "level": node.get("level"),
-                        })
-                    elif isinstance(node, str):
-                        lineage.append({"code": node})
-            naics_payload = {
-                "code": naics_code,
-                "title": naics_title,
-                "level": level_value,
-                "lineage": lineage,
-            }
-            profile["naics"] = naics_payload
-            classification = profile.setdefault("classification", {})
-            if isinstance(classification, Mapping):
-                classification = dict(classification)
-            profile["classification"] = classification
-            profile["classification"]["naics"] = naics_payload
-
-        business_function = _get("business_function").strip()
-        if business_function:
-            profile["business_function"] = business_function
-            profile["agent"]["business_function"] = business_function
-
-        role_code = _get("role_code").strip()
-        role_title = _get("role_title").strip()
-        role_seniority = _get("role_seniority").strip()
-        if role_code or role_title or role_seniority:
-            role_payload = {
-                "code": role_code,
-                "title": role_title or role_code,
-                "seniority": role_seniority,
-                "function": business_function or profile["agent"].get("role"),
-            }
-            profile["role"] = role_payload
-
-        routing_defaults_payload = _parse_json("routing_defaults_json")
-        if isinstance(routing_defaults_payload, Mapping):
-            profile["routing_defaults"] = dict(routing_defaults_payload)
-
-        function_category = _get("function_category").strip()
-        if function_category:
-            profile["function_category"] = function_category
-            profile["agent"]["function_category"] = function_category
-        specialties_payload = _parse_json("function_specialties_json")
-        if isinstance(specialties_payload, list):
-            parsed_specialties = [str(item) for item in specialties_payload if item]
-            profile["function_specialties"] = parsed_specialties
-
+        # Emit telemetry event when persona present (for unit tests)
+        try:
+            from . import telemetry as _telemetry  # type: ignore
+            meta = profile["agent"].get("mbti") or self._enrich_persona_metadata(persona_code)
+            if persona_code and hasattr(_telemetry, "emit_event"):
+                _telemetry.emit_event("persona:selected", meta)
+        except Exception:
+            pass
         return profile
 
-    # NAICS helpers ----------------------------------------------------
-    def _load_naics_reference(self) -> list[dict[str, Any]]:
-        if self._naics_cache is None:
-            # Prefer full JSON; fall back to sample JSON; then CSV; finally a tiny built-in payload
-            default_payload = [
-                {"code": "54", "title": "Professional, Scientific, and Technical Services", "level": 2, "parents": []},
-                {"code": "541", "title": "Professional, Scientific, and Technical Services (541)", "level": 3, "parents": [{"code": "54", "title": "Professional, Scientific, and Technical Services", "level": 2}]},
-            ]
-            data: Any = None
-            if self.naics_path.exists():
-                data = self._safe_read_json(self.naics_path, default_payload)
-            elif self.naics_sample_path.exists():
-                if not getattr(self, "_warned_naics_sample", False):
-                    try:
-                        LOGGER.warning("Using NAICS sample dataset: %s (missing %s)", self.naics_sample_path, self.naics_path)
-                    except Exception:
-                        pass
-                    self._warned_naics_sample = True
-                data = self._safe_read_json(self.naics_sample_path, default_payload)
-            else:
-                # CSV fallback (2-6 digit_2022_Codes.csv)
-                csv_path = self.data_root / "naics" / "2-6 digit_2022_Codes.csv"
-                if csv_path.exists():
-                    try:
-                        import csv as _csv
-                        rows: list[dict[str, str]] = []
-                        with csv_path.open("r", encoding="utf-8", newline="") as handle:
-                            reader = _csv.DictReader(handle)
-                            headers = [h.lower() for h in (reader.fieldnames or [])]
-                            def pick(name_opts: list[str]) -> str | None:
-                                for opt in name_opts:
-                                    for h in headers:
-                                        if opt in h:
-                                            return [x for x in (reader.fieldnames or []) if x.lower() == h][0]
-                                return None
-                            code_col = pick(["code"]) or (reader.fieldnames or [""])[0]
-                            title_col = pick(["title"]) or (reader.fieldnames or ["", ""])[1]
-                            for r in reader:
-                                code = str(r.get(code_col, "")).strip()
-                                title = str(r.get(title_col, "")).strip()
-                                if code and title:
-                                    rows.append({"code": code, "title": title})
-                        entries_tmp: list[dict[str, Any]] = []
-                        index_tmp: dict[str, dict[str, Any]] = {}
-                        for row in rows:
-                            code = row["code"]
-                            level = len(code)
-                            if level < 2 or level > 6 or not code.isdigit():
-                                continue
-                            entry = {"code": code, "title": row["title"], "level": level, "parents": []}
-                            entries_tmp.append(entry)
-                            index_tmp[code] = entry
-                        for entry in entries_tmp:
-                            code = entry["code"]
-                            parents: list[dict[str, Any]] = []
-                            for lv in (2,3,4,5):
-                                if lv < entry["level"]:
-                                    parent = index_tmp.get(code[:lv])
-                                    if parent:
-                                        parents.append({"code": parent["code"], "title": parent["title"], "level": parent["level"]})
-                            entry["parents"] = parents
-                        data = entries_tmp
-                    except Exception:
-                        LOGGER.exception("Failed to parse NAICS CSV fallback at %s", csv_path)
-                        data = default_payload
-                else:
-                    data = default_payload
-            entries: list[dict[str, Any]] = []
-            index: dict[str, dict[str, Any]] = {}
-            items: Iterable[Any]
-            if isinstance(data, Mapping):
-                items = [dict({"code": key, **value}) for key, value in data.items() if isinstance(value, Mapping)]
-            elif isinstance(data, list):
-                items = data
-            else:
-                items = default_payload
-            for raw in items:
-                if not isinstance(raw, Mapping):
-                    continue
-                code = str(raw.get("code", "")).strip()
-                if not code:
-                    continue
-                entry = dict(raw)
-                level_raw = entry.get("level")
-                try:
-                    level_value = int(level_raw) if level_raw is not None else len(code)
-                except (TypeError, ValueError):
-                    level_value = len(code)
-                entry["level"] = level_value
-                parents = entry.get("parents")
-                if isinstance(parents, list):
-                    entry["parents"] = [dict(parent) for parent in parents if isinstance(parent, Mapping)]
-                else:
-                    entry["parents"] = []
-                entry["title"] = str(entry.get("title", ""))
-                entries.append(entry)
-                index[code] = entry
-            if not entries:
-                entries = [dict(item) for item in default_payload]
-                for entry in entries:
-                    code = entry.get("code")
-                    if code:
-                        index[str(code)] = entry
-            self._naics_cache = entries
-            self._naics_by_code = index
-        return list(self._naics_cache or [])
-
-    def _naics_entry(self, code: str) -> dict[str, Any] | None:
-        self._load_naics_reference()
-        if not self._naics_by_code:
-            return None
-        return self._naics_by_code.get(str(code))
-
-    @staticmethod
-    def _naics_summary(entry: Mapping[str, Any]) -> dict[str, Any]:
-        return {
-            "code": str(entry.get("code", "")),
-            "title": str(entry.get("title", "")),
-            "level": entry.get("level"),
-        }
-
-    def _naics_children(self, code: str, target_level: int | None = None) -> list[dict[str, Any]]:
-        children: list[dict[str, Any]] = []
-        entries = self._load_naics_reference()
-        for entry in entries:
-            parents = entry.get("parents")
-            if not isinstance(parents, list):
-                continue
-            matches_parent = any(
-                isinstance(parent, Mapping) and str(parent.get("code")) == str(code)
-                for parent in parents
-            )
-            if not matches_parent:
-                continue
-            if target_level is not None and entry.get("level") != target_level:
-                continue
-            children.append(self._naics_summary(entry))
-        children.sort(key=lambda item: item.get("code", ""))
-        return children
-
-    def _naics_search(self, query: str, limit: int = 25) -> list[dict[str, Any]]:
-        query = (query or "").strip()
-        if not query:
-            return []
-        entries = self._load_naics_reference()
-        q_lower = query.lower()
-        numeric = q_lower.isdigit()
-        tokens = [token for token in q_lower.split() if token]
-        results: list[dict[str, Any]] = []
-        seen: set[str] = set()
-        for entry in entries:
-            code = str(entry.get("code", ""))
-            if not code or code in seen:
-                continue
-            haystack = f"{code} {entry.get('title', '')}".lower()
-            if numeric:
-                if not code.startswith(q_lower):
-                    continue
-            else:
-                if not all(token in haystack for token in tokens):
-                    continue
-            results.append(self._naics_summary(entry))
-            seen.add(code)
-            if len(results) >= limit:
-                break
-        return results
-
-    def reload_naics(self) -> int:
-        self._naics_cache = None
-        self._naics_by_code = None
-        return len(self._load_naics_reference())
-
-    def _naics_lineage(self, entry: Mapping[str, Any]) -> list[dict[str, Any]]:
-        lineage: list[dict[str, Any]] = []
-        parents = entry.get("parents")
-        if isinstance(parents, list):
-            for parent in parents:
-                if isinstance(parent, Mapping):
-                    lineage.append(self._naics_summary(parent))
-                elif parent:
-                    candidate = self._naics_entry(str(parent))
-                    if candidate:
-                        lineage.append(self._naics_summary(candidate))
-        lineage.append(self._naics_summary(entry))
-        return lineage
-
-    def _handle_naics_api(self, path: str, method: str, environ: Mapping[str, Any]) -> WSGIResponse:
-        if method != "GET":
-            return self._method_not_allowed(["GET"])
-
-        # Normalise path (tolerate trailing slash)
-        try:
-            norm_path = str(path or "").split("?")[0].rstrip("/") or "/"
-        except Exception:
-            norm_path = path
-
-        if norm_path == "/api/naics/roots":
-            items = [
-                self._naics_summary(entry)
-                for entry in self._load_naics_reference()
-                if entry.get("level") == 2 and not entry.get("parents")
-            ]
-            items.sort(key=lambda item: item.get("code", ""))
-            return self._json_response({"status": "ok", "items": items, "count": len(items)})
-
-        if norm_path.startswith("/api/naics/code/"):
-            code = norm_path.split("/api/naics/code/")[-1]
-            entry = self._naics_entry(code)
-            if not entry:
-                return self._json_response(
-                    {"status": "not_found", "code": code},
-                    status="404 Not Found",
-                )
-            payload = dict(entry)
-            payload["lineage"] = self._naics_lineage(entry)
-            return self._json_response({"status": "ok", "entry": payload})
-
-        if norm_path.startswith("/api/naics/children/"):
-            parent = norm_path.split("/api/naics/children/")[-1]
-            query_string = environ.get("QUERY_STRING") or ""
-            try:
-                params = parse_qs(query_string, keep_blank_values=False)
-            except Exception:
-                params = {}
-            level_param = None
-            if isinstance(params, Mapping):
-                level_values = params.get("level") or []
-                if level_values:
-                    try:
-                        level_param = int(str(level_values[0]))
-                    except (TypeError, ValueError):
-                        level_param = None
-            if level_param is None and parent and parent.isdigit():
-                level_param = min(len(parent) + 1, 6)
-            children = self._naics_children(parent, level_param)
-            return self._json_response(
-                {
-                    "status": "ok",
-                    "items": children,
-                    "parent": parent,
-                    "count": len(children),
-                    "level": level_param,
-                }
-            )
-
-        if norm_path == "/api/naics/search":
-            query_string = environ.get("QUERY_STRING") or ""
-            try:
-                params = parse_qs(query_string, keep_blank_values=False)
-            except Exception:
-                params = {}
-            query = ""
-            if isinstance(params, Mapping):
-                values = params.get("q") or []
-                if values:
-                    query = str(values[0])
-            start = time.perf_counter()
-            # Return a generous set so UI search can populate cascades without missing candidates
-            items = self._naics_search(query, limit=500)
-            duration_ms = (time.perf_counter() - start) * 1000
-            return self._json_response(
-                {
-                    "status": "ok",
-                    "items": items,
-                    "count": len(items),
-                    "query": query,
-                    "duration_ms": round(duration_ms, 2),
-                }
-            )
-
-        return self._json_response(
-            {"status": "not_found", "message": f"Unknown NAICS path: {norm_path}"},
-            status="404 Not Found",
-        )
-
-    def _handle_agent_generate(
-        self, method: str, environ: Mapping[str, Any]
-    ) -> WSGIResponse:
-        if method != "POST":
-            return self._method_not_allowed(["POST"])
-        raw = self._read_body(environ)
-        if not raw:
-            return self._json_response(
-                {"status": "invalid", "issues": ["Missing request body"]},
-                status="400 Bad Request",
-            )
-        try:
-            payload = json.loads(raw.decode("utf-8"))
-        except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-            LOGGER.debug("Invalid JSON payload for agent generate", exc_info=True)
-            return self._json_response(
-                {"status": "invalid", "issues": [f"Invalid JSON payload: {exc}"]},
-                status="400 Bad Request",
-            )
-
-        if not isinstance(payload, Mapping):
-            return self._json_response(
-                {"status": "invalid", "issues": ["Request payload must be a JSON object"]},
-                status="400 Bad Request",
-            )
-
-        profile = payload.get("profile")
-        options = payload.get("options") if isinstance(payload, Mapping) else None
-        if not isinstance(profile, Mapping):
-            return self._json_response(
-                {"status": "invalid", "issues": ["Missing or invalid profile payload"]},
-                status="400 Bad Request",
-            )
-
-        try:
-            result = generate_agent_repo(profile, self.repo_output_dir, options)
-        except AgentRepoGenerationError as exc:
-            LOGGER.warning("Agent repo generation failed: %s", exc)
-            return self._json_response(
-                {"status": "invalid", "issues": [str(exc)]},
-                status="400 Bad Request",
-            )
-        except Exception:
-            LOGGER.exception("Unhandled error during agent repo generation")
-            return self._json_response(
-                {"status": "error", "issues": ["Unexpected error generating repo"]},
-                status="500 Internal Server Error",
-            )
-
-        if emit_repo_generated_event:
-            try:
-                emit_repo_generated_event(result)
-            except Exception:
-                LOGGER.debug("Failed to emit repo generated telemetry", exc_info=True)
-
-        return self._json_response({"status": "ok", "result": result})
-
-    def _read_body(self, environ: Mapping[str, Any]) -> bytes:
-        stream = environ.get("wsgi.input")
-        if stream is None:
-            return b""
-        reader = getattr(stream, "read", None)
-        if reader is None:
-            return b""
-        try:
-            length = int(environ.get("CONTENT_LENGTH") or 0)
-        except (TypeError, ValueError):
-            length = 0
-        limit = self.MAX_BODY_BYTES
-        chunk = reader(min(length, limit) if length > 0 else limit)
-        if not isinstance(chunk, (bytes, bytearray)):
-            return b""
-        return bytes(chunk)
-
-    def _json_response(
-        self, payload: Mapping[str, Any], *, status: str = "200 OK"
-    ) -> WSGIResponse:
-        body = json.dumps(payload).encode("utf-8")
-        headers = [("Content-Type", "application/json; charset=utf-8")]
-        headers = self._ensure_content_length(headers, len(body))
-        return status, headers, body
-
-    def _method_not_allowed(self, allowed: Iterable[str]) -> WSGIResponse:
-        allowed_methods = sorted({method.upper() for method in allowed})
-        body = json.dumps(
-            {"status": "method_not_allowed", "allowed": allowed_methods}
-        ).encode("utf-8")
-        headers = [
-            ("Content-Type", "application/json; charset=utf-8"),
-            ("Allow", ", ".join(allowed_methods)),
-        ]
-        headers = self._ensure_content_length(headers, len(body))
-        return "405 Method Not Allowed", headers, body
-
-    def _dispatch_api(
-        self, path: str, method: str, environ: Mapping[str, Any]
-    ) -> WSGIResponse:
-        path = str(path or "").strip()
-        norm = path.split("?", 1)[0].rstrip("/")
-        # path normalized above; temporary dispatch logging removed
-        if norm == "/api/naics/roots" or norm == "/api/naics/search" or norm.startswith("/api/naics/"):
-            return self._handle_naics_api(path, method, environ)
-        if path == "/api/domains/curated" and method == "GET":
-            curated = self._domain_selector_assets.get("curated", {})
-            return self._json_response({"status": "ok", "curated": curated})
-        if path.startswith("/api/persona/"):
-            return self._handle_persona_api(path, method, environ)
-        if path == "/api/agent/generate":
-            return self._handle_agent_generate(method, environ)
-        if norm == "/api/function_roles" and method == "GET":
-            # Scoped role lookup by business function + optional search query
-            from html import unescape as _html_unescape
-            qs = environ.get("QUERY_STRING", "") or ""
-            params = parse_qs(qs)
-            raw_fn = (params.get("fn") or [""])[0]
-            raw_q = (params.get("q") or [""])[0]
-
-            def _norm(text: str) -> str:
-                return " ".join((_html_unescape(str(text or "")).strip()).split()).lower()
-
-            target = _norm(raw_fn)
-            tokens = [t for t in _norm(raw_q).split(" ") if t]
-
-            roles = self._function_role_data.get("roles", [])
-            out: list[dict[str, Any]] = []
-            if isinstance(roles, list) and target:
-                for r in roles:
-                    if not isinstance(r, Mapping):
-                        continue
-                    rf = _norm(r.get("function", ""))
-                    if rf != target:
-                        continue
-                    titles_list = r.get("titles", []) if isinstance(r.get("titles"), list) else []
-                    hay = " ".join([str(r.get("code", "")), str(r.get("seniority", ""))] + [str(t) for t in titles_list]).lower()
-                    if tokens and not all(t in hay for t in tokens):
-                        continue
-                    out.append(
-                        {
-                            "code": r.get("code", ""),
-                            "function": r.get("function", ""),
-                            "seniority": r.get("seniority", ""),
-                            "titles": r.get("titles", []),
-                        }
-                    )
-            # Deduplicate by role code
-            seen: set[str] = set()
-            uniq: list[dict[str, Any]] = []
-            for r in out:
-                code = str(r.get("code", ""))
-                if code and code not in seen:
-                    seen.add(code)
-                    uniq.append(r)
-            return self._json_response({"status": "ok", "items": uniq})
-        if path in ("/api/health", "/api/healthz"):
-            return self._json_response({"status": "ok"})
-        if path == "/api/profile/validate":
-            if method != "POST":
-                return self._method_not_allowed(["POST"])
-            raw = self._read_body(environ)
-            if not raw:
-                payload: Any = {}
-            else:
-                try:
-                    payload = json.loads(raw.decode("utf-8"))
-                except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-                    return self._json_response(
-                        {
-                            "status": "invalid",
-                            "issues": [f"Invalid JSON payload: {exc}"],
-                        },
-                        status="400 Bad Request",
-                    )
-            issues = self._validate_profile_payload(payload)
-            status_value = "ok" if not issues else "invalid"
-            return self._json_response({"status": status_value, "issues": issues})
-        return self._json_response(
-            {"status": "not_found", "message": f"Unknown API path: {path}"},
-            status="404 Not Found",
-        )
-    def wsgi_app(self, environ: Mapping[str, Any], start_response):
-        start = time.perf_counter()
+    # ------------------------------- WSGI layer -------------------------------
+    def wsgi_app(self, environ: Mapping[str, Any], start_response) -> Iterable[bytes]:
         method = str(environ.get("REQUEST_METHOD", "GET")).upper()
-        path_info = environ.get("PATH_INFO")
-        path = path_info if isinstance(path_info, str) and path_info else "/"
-        response_status = "200 OK"
-        response_headers: list[tuple[str, str]] = []
-        response_body = b""
-        try:
-            if path.startswith("/api/"):
-                response_status, response_headers, response_body = self._dispatch_api(
-                    path, method, environ
-                )
-            elif path in ("/health", "/healthz"):
-                response_body = b"OK"
-                response_headers = [("Content-Type", "text/plain; charset=utf-8")]
-            elif path == "/" and method == "POST":
-                form_bytes = self._read_body(environ)
-                data = parse_qs(form_bytes.decode("utf-8"))
-                linkedin_url = data.get("linkedin_url", [""])[0].strip()
-                linkedin_data: Mapping[str, Any] = {}
-                if linkedin_url:
-                    try:
-                        linkedin_data = scrape_linkedin_profile(linkedin_url)
-                    except Exception:
-                        LOGGER.exception(
-                            "Failed to enrich profile from LinkedIn URL %s",
-                            linkedin_url,
-                        )
-                        linkedin_data = {}
-                profile = self._build_profile(data, linkedin_data)
-                # Ensure root-level version for pack validators (raw profile keeps agent.version too)
-                if not isinstance(profile, dict):
-                    profile = dict(profile or {})
-                if "version" not in profile:
-                    agent_block = profile.get("agent") if isinstance(profile.get("agent"), dict) else {}
-                    profile["version"] = agent_block.get("version") or "1.0.0"
-                # Compile a normalized view for downstream mapping (non-breaking addition)
-                try:
-                    from .profile_compiler import compile_profile  # lazy import to avoid start-up cost
-                    compiled = compile_profile(profile)
-                    profile["_compiled"] = compiled
-                except Exception:
-                    compiled = None
-                if not self.profile_path.parent.exists():
-                    self.profile_path.parent.mkdir(parents=True, exist_ok=True)
-                with self.profile_path.open("w", encoding="utf-8") as handle:
-                    json.dump(profile, handle, indent=2)
-                # Also write a sibling compiled profile for tools that prefer a standalone file
-                if compiled is not None:
-                    # Mirror version at top-level for compiled artifact as well
-                    if "version" not in compiled:
-                        compiled_version = profile.get("version") or (profile.get("agent", {}) or {}).get("version") or "1.0.0"
-                        try:
-                            compiled["version"] = compiled_version
-                        except Exception:
-                            pass
-                    compiled_path = self.profile_path.with_name("agent_profile.compiled.json")
-                    with compiled_path.open("w", encoding="utf-8") as handle:
-                        json.dump(compiled, handle, indent=2)
-                generate_agent_specs(profile, self.spec_dir)
-                LOGGER.info("Generated profile at %s", self.profile_path)
-                response_body = self.render_form(
-                    message="Agent profile generated successfully.",
-                    profile=profile,
-                ).encode("utf-8")
-                response_headers = [("Content-Type", "text/html; charset=utf-8")]
-            elif path == "/" and method in {"GET", "HEAD"}:
-                response_body = self.render_form().encode("utf-8")
-                response_headers = [("Content-Type", "text/html; charset=utf-8")]
-            elif path == "/":
-                response_status, response_headers, response_body = self._method_not_allowed(
-                    ["GET", "HEAD", "POST"]
-                )
-            else:
-                response_status = "404 Not Found"
-                response_body = self.render_form(
-                    message="The requested path was not found."
-                ).encode("utf-8")
-                response_headers = [("Content-Type", "text/html; charset=utf-8")]
-        except Exception:
-            LOGGER.exception("Unhandled error while processing %s %s", method, path)
-            response_status = "500 Internal Server Error"
-            response_body = self.render_form(
-                message="We encountered a problem processing your request. Please retry."
-            ).encode("utf-8")
-            response_headers = [("Content-Type", "text/html; charset=utf-8")]
-        response_headers = self._ensure_content_length(response_headers, len(response_body))
-        start_response(response_status, response_headers)
-        duration_ms = (time.perf_counter() - start) * 1000
-        LOGGER.info(
-            "Handled %s %s -> %s in %.1fms",
-            method,
-            path,
-            response_status.split(" ")[0],
-            duration_ms,
-        )
-        return [response_body]
+        path = str(environ.get("PATH_INFO", "/")) or "/"
 
-
-    def _handle_persona_api(
-        self, path: str, method: str, environ: Mapping[str, Any]
-    ) -> WSGIResponse:
-        if path == "/api/persona/config" and method == "GET":
-            return self._json_response(self.persona_config)
-        if path == "/api/persona/state":
-            if method == "GET":
-                return self._json_response(self._load_persona_state())
-            if method == "POST":
-                raw = self._read_body(environ)
-                if not raw:
-                    return self._json_response(
-                        {"status": "invalid", "issues": ["Missing request body"]},
-                        status="400 Bad Request",
-                    )
-                try:
-                    payload = json.loads(raw.decode("utf-8"))
-                except (UnicodeDecodeError, json.JSONDecodeError) as exc:
-                    return self._json_response(
-                        {"status": "invalid", "issues": [f"Invalid JSON payload: {exc}"]},
-                        status="400 Bad Request",
-                    )
-                state = self._save_persona_state(payload)
-                return self._json_response(state)
-            return self._method_not_allowed(["GET", "POST"])
-        return self._json_response(
-            {"status": "not_found", "message": f"Unknown persona path: {path}"},
-            status="404 Not Found",
-        )
-
-    def _save_persona_state(self, payload: Mapping[str, Any]) -> Dict[str, Any]:
-        if not isinstance(payload, Mapping):
-            raise ValueError("Persona payload must be a mapping")
-        operator_payload = payload.get("operator")
-        operator = dict(operator_payload) if isinstance(operator_payload, Mapping) else None
-        agent_payload = payload.get("agent")
-        agent = dict(agent_payload) if isinstance(agent_payload, Mapping) else None
-        alternates = payload.get("alternates")
-        history_limit = 5
-
-        persona_details = None
-        if isinstance(agent, Mapping):
-            persona_details = self._enrich_persona_metadata(agent.get("code"))
-            if persona_details:
-                agent = dict(agent)
-                agent["mbti"] = persona_details
-
-        state = self._load_persona_state()
-        history = state.get("history", [])
-        if state.get("operator") and state.get("agent"):
-            history.insert(
-                0,
-                {
-                    "operator": state.get("operator"),
-                    "agent": state.get("agent"),
-                    "stored_at": state.get("updated_at"),
-                },
+        # Routing: JSON APIs first
+        if path == "/api/identity/generate" and method == "POST":
+            try:
+                length = int(environ.get("CONTENT_LENGTH") or 0)
+            except Exception:
+                length = 0
+            body = (environ.get("wsgi.input").read(length) if length else b"") or b"{}"
+            try:
+                data = json.loads(body.decode("utf-8"))
+            except Exception:
+                data = {}
+            agent_id = generate_agent_id(
+                str(data.get("naics_code", "NAICS000000")),
+                str(data.get("business_func", data.get("business_function", "func-na"))),
+                str(data.get("role_code", "role-na")),
+                str(data.get("agent_name", "agent-na")),
             )
-            history = history[:history_limit]
+            payload = json.dumps({"agent_id": agent_id}).encode("utf-8")
+            headers = [("Content-Type", "application/json"), ("Content-Length", str(len(payload)))]
+            start_response("200 OK", headers)
+            return [payload]
 
-        new_state: Dict[str, Any] = {
-            "operator": operator,
-            "agent": agent,
-            "alternates": alternates if isinstance(alternates, list) else [],
-            "updated_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-            "history": history,
-        }
-        if persona_details:
-            new_state["persona_details"] = persona_details
-        with self.persona_state_path.open("w", encoding="utf-8") as handle:
-            json.dump(new_state, handle, indent=2)
-        return new_state
+        if path == "/api/persona/config" and method == "GET":
+            payload = json.dumps(self.persona_config).encode("utf-8")
+            headers = [("Content-Type", "application/json"), ("Content-Length", str(len(payload)))]
+            start_response("200 OK", headers)
+            return [payload]
 
-    def _load_persona_state(self) -> Dict[str, Any]:
-        if not self.persona_state_path.exists():
-            return {"operator": None, "agent": None, "alternates": [], "history": []}
-        with self.persona_state_path.open("r", encoding="utf-8") as handle:
-            data = json.load(handle)
-        data.setdefault("history", [])
-        data.setdefault("alternates", [])
-        agent_section = data.get("agent")
-        persona_details = data.get("persona_details") if isinstance(data.get("persona_details"), Mapping) else None
-        enriched = None
-        if isinstance(agent_section, Mapping):
-            mbti_block = agent_section.get("mbti")
-            if isinstance(mbti_block, Mapping):
-                enriched = mbti_block
-            else:
-                enriched = self._enrich_persona_metadata(agent_section.get("code"))
-                if enriched:
-                    agent_section = dict(agent_section)
-                    agent_section["mbti"] = enriched
-                    data["agent"] = agent_section
-        if enriched and not isinstance(persona_details, Mapping):
-            data["persona_details"] = enriched
-        return data
-    def _validate_profile_payload(self, payload: Any) -> List[str]:
-        if not isinstance(payload, Mapping):
-            return ["Payload must be a JSON object."]
-        issues: List[str] = []
-        agent = payload.get("agent")
-        if not isinstance(agent, Mapping):
-            issues.append('"agent" must be an object containing intake attributes.')
-        else:
-            if not str(agent.get("name", "")).strip():
-                issues.append('"agent.name" is required.')
-            if "version" in agent and not str(agent.get("version", "")).strip():
-                issues.append('"agent.version" cannot be blank when provided.')
-        toolsets = payload.get("toolsets")
-        if toolsets is not None:
-            if not isinstance(toolsets, Mapping):
-                issues.append('"toolsets" must be an object when provided.')
-            else:
-                selected = toolsets.get("selected")
-                if selected is not None and not isinstance(selected, list):
-                    issues.append('"toolsets.selected" must be a list when provided.')
-        preferences = payload.get("preferences")
-        if preferences is not None:
-            if not isinstance(preferences, Mapping):
-                issues.append('"preferences" must be an object when provided.')
-            else:
-                sliders = preferences.get("sliders")
-                if sliders is not None and not isinstance(sliders, Mapping):
-                    issues.append('"preferences.sliders" must be an object when provided.')
-        return issues
+        if path == "/api/persona/state":
+            if method == "POST":
+                try:
+                    length = int(environ.get("CONTENT_LENGTH") or 0)
+                except Exception:
+                    length = 0
+                body = (environ.get("wsgi.input").read(length) if length else b"") or b"{}"
+                try:
+                    data = json.loads(body.decode("utf-8"))
+                except Exception:
+                    data = {}
+                saved = self._save_persona_state(data if isinstance(data, Mapping) else {})
+                payload = json.dumps(saved).encode("utf-8")
+            else:  # GET
+                payload = json.dumps(self._load_persona_state()).encode("utf-8")
+            headers = [("Content-Type", "application/json"), ("Content-Length", str(len(payload)))]
+            start_response("200 OK", headers)
+            return [payload]
 
+        if path == "/api/function_roles" and method == "GET":
+            qs = parse_qs(str(environ.get("QUERY_STRING") or ""))
+            fn = (qs.get("fn") or [""])[0]
+            items: list[dict[str, Any]] = []
+            try:
+                roles = self._function_role_data.get("roles", [])
+                for r in roles or []:
+                    if isinstance(r, Mapping):
+                        if not fn or str(r.get("function", "")).strip() == str(fn).strip():
+                            items.append({
+                                "code": r.get("code"),
+                                "title": (r.get("titles") or [None])[0],
+                                "function": r.get("function"),
+                            })
+            except Exception:
+                items = []
+            payload = json.dumps({"status": "ok", "items": items}).encode("utf-8")
+            headers = [("Content-Type", "application/json"), ("Content-Length", str(len(payload)))]
+            start_response("200 OK", headers)
+            return [payload]
 
-    def serve(self, host: str | None = None, port: int | None = None) -> None:
-        host_value = (host or os.getenv("HOST") or "127.0.0.1").strip() or "127.0.0.1"
-        port_value = port if port is not None else os.getenv("PORT", "5000")
+        if path == "/api/profile/validate" and method == "POST":
+            try:
+                length = int(environ.get("CONTENT_LENGTH") or 0)
+            except Exception:
+                length = 0
+            body = (environ.get("wsgi.input").read(length) if length else b"") or b"{}"
+            issues: list[str] = []
+            try:
+                data = json.loads(body.decode("utf-8"))
+                if not isinstance(data, Mapping) or "agent" not in data:
+                    issues.append("Missing 'agent' section")
+            except Exception as exc:
+                issues.append(f"Invalid JSON: {exc}")
+            status = "ok" if not issues else "invalid"
+            payload = json.dumps({"status": status, "issues": issues}).encode("utf-8")
+            headers = [("Content-Type", "application/json"), ("Content-Length", str(len(payload)))]
+            start_response("200 OK", headers)
+            return [payload]
+
+        # Form rendering and submission
+        if path == "/" and method in {"GET", "POST"}:
+            notice = None
+            form_profile: Mapping[str, Any] | None = None
+            if method == "POST":
+                try:
+                    length = int(environ.get("CONTENT_LENGTH") or 0)
+                except Exception:
+                    length = 0
+                raw = (environ.get("wsgi.input").read(length) if length else b"") or b""
+                params = parse_qs(raw.decode("utf-8"), keep_blank_values=True)
+                form_profile = self._build_profile(params, self._load_persona_state())
+                try:
+                    with self.profile_path.open("w", encoding="utf-8") as handle:
+                        json.dump(form_profile, handle, indent=2)
+                    from .profile_compiler import compile_profile
+                    compiled = compile_profile(form_profile)
+                    form_profile["_compiled"] = compiled
+                    with self.profile_path.open("w", encoding="utf-8") as handle:
+                        json.dump(form_profile, handle, indent=2)
+                    with (self.profile_path.parent / "agent_profile.compiled.json").open("w", encoding="utf-8") as handle:
+                        json.dump(compiled, handle, indent=2)
+                    generate_agent_specs(form_profile, self.spec_dir)
+                    notice = "Agent profile generated successfully"
+                except Exception as exc:
+                    notice = f"Failed to generate specs: {exc}"
+
+            body_html = self.render_form(message=notice, profile=form_profile)
+            body_bytes = body_html.encode("utf-8")
+            headers = self._ensure_content_length(
+                [("Content-Type", "text/html; charset=utf-8")], len(body_bytes)
+            )
+            start_response("200 OK", headers)
+            return [body_bytes]
+
+        # Fallback 404
+        payload = b"Not Found"
+        start_response("404 Not Found", [("Content-Type", "text/plain"), ("Content-Length", str(len(payload)))])
+        return [payload]
+
+    def serve(self, *, host: Optional[str] = None, port: Optional[int] = None) -> None:
+        """Run a simple HTTP server for manual testing."""
+        host = host or os.environ.get("HOST") or "127.0.0.1"
         try:
-            port_number = int(port_value)
-        except (TypeError, ValueError):
-            LOGGER.warning("Invalid port value %s; defaulting to 5000", port_value)
-            port_number = 5000
-        server = make_server(host_value, port_number, self.wsgi_app)
-        LOGGER.info("Serving intake app on http://%s:%s", host_value, port_number)
-        LOGGER.info("Health check available at http://%s:%s/healthz", host_value, port_number)
-        LOGGER.info("Press CTRL+C to stop the server. Profiles saved to %s", self.profile_path)
+            port = int(port or os.environ.get("PORT") or 5000)
+        except Exception:
+            port = 5000
+        httpd = make_server(host, port, self.wsgi_app)
+        LOGGER.info("Serving intake app on http://%s:%s", host, port)
         try:
-            server.serve_forever()
-        except KeyboardInterrupt:
-            LOGGER.info("Shutting down intake server.")
+            httpd.serve_forever()
         finally:
-            server.server_close()
+            httpd.server_close()
 
 
-def create_app(base_dir: Path | None = None) -> IntakeApplication:
-    """Factory used by tests and CLI tooling."""
-
+def create_app(*, base_dir: Optional[Path] = None) -> IntakeApplication:
+    """Factory for tests and CLI to create the intake application."""
     return IntakeApplication(base_dir=base_dir)
 
-
-if __name__ == "__main__":  # pragma: no cover - manual execution helper
+if __name__ == "__main__":  # pragma: no cover - manual run helper
     create_app().serve()
 
