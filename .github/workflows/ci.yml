@@ -21,7 +21,9 @@ jobs:
           pip install pytest
       - name: Run Python tests
         env:
-          PYTHONPATH: ${{ github.workspace }}/src
+          # Ensure tests can import both top-level packages (neo_build, adapters)
+          # and code under src/ used by the app.
+          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/src
         run: |
           pytest -q
 
@@ -41,4 +43,3 @@ jobs:
           NAICS_BASE_URL: http://127.0.0.1:5000
         run: |
           npx vitest run --reporter=dot
-
