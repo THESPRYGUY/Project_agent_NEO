@@ -1,0 +1,169 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "$id": "intake_form_v3.json",
+  "title": "Project NEO Intake Form v3",
+  "type": "object",
+  "description": "Consolidated legacy + updated intake fields for deterministic 20-pack population.",
+  "properties": {
+    "meta": {
+      "type": "object",
+      "properties": {
+        "version": { "const": "v3-intake" },
+        "purpose": { "type": "string" }
+      },
+      "required": ["version"]
+    },
+    "agent_profile": {
+      "type": "object",
+      "properties": {
+        "name": { "type": "string" },
+        "version": { "type": "string", "pattern": "^\\d+\\.\\d+\\.\\d+$" }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "properties": {
+        "agent_id": { "type": "string" },
+        "display_name": { "type": "string" },
+        "owners": { "type": "array", "items": { "type": "string" } },
+        "no_impersonation": { "type": "boolean", "default": true }
+      }
+    },
+    "governance": {
+      "type": "object",
+      "properties": {
+        "rbac": {
+          "type": "object",
+          "properties": {
+            "roles": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "policy": {
+          "type": "object",
+          "properties": {
+            "no_impersonation": { "type": "boolean", "default": true },
+            "classification_default": {
+              "type": "string",
+              "enum": ["public", "internal", "confidential", "restricted"],
+              "default": "confidential"
+            }
+          }
+        }
+      }
+    },
+    "role": {
+      "type": "object",
+      "properties": {
+        "primary": { "type": "object", "properties": { "code": { "type": "string" } } },
+        "title": { "type": "string" },
+        "recipe_ref": { "type": "string" },
+        "objectives": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "domain": {
+      "type": "object",
+      "properties": {
+        "naics": { "type": "object", "properties": { "code": { "type": "string" } } },
+        "region": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "persona": {
+      "type": "object",
+      "properties": {
+        "mbti": {
+          "type": "string",
+          "enum": ["INTJ","INTP","ENTJ","ENTP","INFJ","INFP","ENFJ","ENFP","ISTJ","ISFJ","ESTJ","ESFJ","ISTP","ISFP","ESTP","ESFP"],
+          "default": "ENTJ"
+        },
+        "tone": { "type": "string", "default": "crisp, analytical, executive" },
+        "collaboration_mode": { "type": "string", "enum": ["Solo","Pair","Squad"], "default": "Solo" }
+      }
+    },
+    "tools": {
+      "type": "object",
+      "properties": {
+        "connectors": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "name": { "type": "string" },
+              "enabled": { "type": "boolean", "default": false },
+              "scopes": { "type": "array", "items": { "type": "string" } },
+              "secret_ref": { "type": "string", "default": "SET_ME" }
+            },
+            "required": ["name"]
+          }
+        },
+        "human_gate_actions": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "memory": {
+      "type": "object",
+      "properties": {
+        "scopes": { "type": "array", "items": { "type": "string" } },
+        "packs": {
+          "type": "object",
+          "properties": {
+            "initial": { "type": "array", "items": { "type": "string" } },
+            "optional": { "type": "array", "items": { "type": "string" } }
+          }
+        },
+        "sync": { "type": "object", "properties": { "allowed_sources": { "type": "array", "items": { "type": "string" } } } }
+      }
+    },
+    "compliance": {
+      "type": "object",
+      "properties": {
+        "risk_tier": { "type": "string", "enum": ["low","medium","high"] },
+        "regulators": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "privacy": {
+      "type": "object",
+      "properties": {
+        "pii_flags": { "type": "array", "items": { "type": "string" } },
+        "classification_default": {
+          "type": "string",
+          "enum": ["public","internal","confidential","restricted"],
+          "default": "confidential"
+        }
+      }
+    },
+    "lifecycle": {
+      "type": "object",
+      "properties": { "stage": { "type": "string", "enum": ["dev","staging","prod"], "default": "dev" } }
+    },
+    "kpi": {
+      "type": "object",
+      "properties": {
+        "targets": {
+          "type": "object",
+          "properties": {
+            "PRI_min": { "type": "number" },
+            "HAL_max": { "type": "number" },
+            "AUD_min": { "type": "number" }
+          }
+        }
+      }
+    },
+    "telemetry": {
+      "type": "object",
+      "properties": {
+        "sampling": { "type": "object", "properties": { "rate": { "type": "number", "default": 1.0 } } },
+        "sinks": { "type": "array", "items": { "type": "string" } },
+        "pii_redaction": { "type": "object", "properties": { "strategy": { "type": "string", "enum": ["hash+mask","mask"], "default": "mask" } } }
+      }
+    },
+    "legacy": {
+      "type": "object",
+      "x-deprecated": true,
+      "description": "Deprecated legacy fields container (will be removed)."
+    },
+    "legacy_industry": { "type": "string", "x-deprecated": true },
+    "legacy_tool_toggles": { "type": "object", "x-deprecated": true },
+    "manual_log_level": { "type": "string", "x-deprecated": true }
+  },
+  "additionalProperties": true
+}
+

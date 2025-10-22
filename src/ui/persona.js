@@ -1,4 +1,4 @@
-(function () {
+﻿(function () {
   const root = document.querySelector('[data-persona-tabs]');
   if (!root) {
     return;
@@ -164,11 +164,8 @@ function initialiseTooltips(types) {
     const panels = root.querySelectorAll('.persona-panel');
 
     tabs.forEach((tab) => {
-      tab.addEventListener('click', (event) => {
-        // Prevent default form submission if these buttons live inside a <form>
-        if (event) { try { event.preventDefault(); event.stopPropagation(); } catch (_) {} }
-        activateTab(tab.dataset.tabTarget);
-      });
+
+      tab.addEventListener('click', (ev) => { ev.preventDefault(); ev.stopPropagation(); withScrollPreserved(() => activateTab(tab.dataset.tabTarget)); });
       tab.addEventListener('keydown', (event) => {
         if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) {
           return;
@@ -186,8 +183,8 @@ function initialiseTooltips(types) {
         } else if (event.key === 'End') {
           nextIndex = ordered.length - 1;
         }
-        activateTab(ordered[nextIndex].dataset.tabTarget);
-        ordered[nextIndex].focus();
+        withScrollPreserved(() => activateTab(ordered[nextIndex].dataset.tabTarget));
+        try { ordered[nextIndex].focus({ preventScroll: true }); } catch { ordered[nextIndex].focus(); }
       });
     });
 
@@ -256,6 +253,11 @@ function initialiseTooltips(types) {
     });
   }
 
+  function withScrollPreserved(fn) {
+    const x = window.scrollX, y = window.scrollY;
+    try { fn(); } finally { requestAnimationFrame(() => window.scrollTo(x, y)); }
+  }
+
   function renderOperatorButtons(types) {
     operatorGrid.innerHTML = '';
 
@@ -267,14 +269,14 @@ function initialiseTooltips(types) {
       button.setAttribute('data-mbti-code', entry.code);
       button.setAttribute('aria-pressed', 'false');
       button.innerHTML = `<strong>${entry.code}</strong><span>${entry.nickname}</span>`;
-      button.addEventListener('click', () => selectOperator(entry));
+      button.addEventListener('click', (ev) => { ev.preventDefault(); ev.stopPropagation(); withScrollPreserved(() => selectOperator(entry)); });
       button.addEventListener('keydown', (event) => handleOperatorKeydown(event, entry));
       operatorGrid.appendChild(button);
     });
 
     updatePersonaGating();
-    suggestButton.addEventListener('click', handleSuggestPersona);
-    acceptButton.addEventListener('click', persistPersonaSelection);
+    suggestButton.addEventListener('click', (ev) => { ev.preventDefault(); ev.stopPropagation(); withScrollPreserved(handleSuggestPersona); });
+    acceptButton.addEventListener('click', (ev) => { ev.preventDefault(); ev.stopPropagation(); withScrollPreserved(persistPersonaSelection); });
     initialiseTooltips(types);
   }
 
@@ -283,10 +285,12 @@ function initialiseTooltips(types) {
     const currentIndex = buttons.findIndex((item) => item.dataset.code === entry.code);
     if (['ArrowRight', 'ArrowDown'].includes(event.key)) {
       event.preventDefault();
-      buttons[(currentIndex + 1) % buttons.length].focus();
+      const nxt = buttons[(currentIndex + 1) % buttons.length];
+      try { nxt.focus({ preventScroll: true }); } catch { nxt.focus(); }
     } else if (['ArrowLeft', 'ArrowUp'].includes(event.key)) {
       event.preventDefault();
-      buttons[(currentIndex - 1 + buttons.length) % buttons.length].focus();
+      const prv = buttons[(currentIndex - 1 + buttons.length) % buttons.length];
+      try { prv.focus({ preventScroll: true }); } catch { prv.focus(); }
     }
   }
 
@@ -632,3 +636,4 @@ function initialiseTooltips(types) {
     return Math.max(lower, Math.min(upper, value));
   }
 })();
+

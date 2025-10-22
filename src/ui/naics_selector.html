@@ -191,7 +191,17 @@
         }
       });
 
-      loadRoots();
+      // Initialize picker and hydrate from hidden inputs when available
+      (async function init(){
+        await loadRoots();
+        try {
+          const code = (hCode && hCode.value) ? String(hCode.value) : '';
+          if (code) {
+            await applySelection(code);
+            enableConfirmIfReady();
+          }
+        } catch (e) { /* ignore hydration errors */ }
+      })();
     })();
   </script>
 </section>

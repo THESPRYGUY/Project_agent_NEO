@@ -22,3 +22,7 @@ src/neo_agent_pycache_/
 generated_specs/
 generated_repos/
 data/naics/*.xlsx
+
+# local build artifacts
+agent_profile.compiled.json
+snapshots/

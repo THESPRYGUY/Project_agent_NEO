@@ -103,6 +103,77 @@
     const linkedinUrl = get('linkedin_url');
     if (linkedinUrl) { profile.linkedin = { url: linkedinUrl }; }
 
+    // v1.2 additions
+    profile.identity = {
+      agent_id: get('identity.agent_id'),
+      display_name: get('identity.display_name'),
+      owners: (get('identity.owners')||'').split(',').map(s=>s.trim()).filter(Boolean),
+      no_impersonation: !!(form.querySelector('[name="identity.no_impersonation"]')?.checked)
+    };
+    profile.role_profile = {
+      archetype: get('role_profile.archetype'),
+      role_title: get('role_profile.role_title'),
+      role_recipe_ref: get('role_profile.role_recipe_ref'),
+      objectives: (get('role_profile.objectives')||'').split(',').map(s=>s.trim()).filter(Boolean)
+    };
+    profile.sector_profile = {
+      sector: get('sector_profile.sector'),
+      industry: get('sector_profile.industry'),
+      region: (get('sector_profile.region')||'').split(',').map(s=>s.trim()).filter(Boolean),
+      languages: (get('sector_profile.languages')||'').split(',').map(s=>s.trim()).filter(Boolean),
+      domain_tags: (get('sector_profile.domain_tags')||'').split(',').map(s=>s.trim()).filter(Boolean),
+      risk_tier: get('sector_profile.risk_tier'),
+      regulatory: (get('sector_profile.regulatory')||'').split(',').map(s=>s.trim()).filter(Boolean)
+    };
+    let connectors = parseJsonSafe(get('capabilities_tools.tool_connectors_json'));
+    if (!Array.isArray(connectors)) connectors = [];
+    profile.capabilities_tools = {
+      tool_connectors: connectors,
+      human_gate: { actions: (get('capabilities_tools.human_gate.actions')||'').split(',').map(s=>s.trim()).filter(Boolean) }
+    };
+    profile.memory = {
+      memory_scopes: (get('memory.memory_scopes')||'').split(',').map(s=>s.trim()).filter(Boolean),
+      initial_memory_packs: (get('memory.initial_memory_packs')||'').split(',').map(s=>s.trim()).filter(Boolean),
+      optional_packs: (get('memory.optional_packs')||'').split(',').map(s=>s.trim()).filter(Boolean),
+      data_sources: (get('memory.data_sources')||'').split(',').map(s=>s.trim()).filter(Boolean),
+    };
+    profile.governance_eval = {
+      risk_register_tags: (get('governance_eval.risk_register_tags')||'').split(',').map(s=>s.trim()).filter(Boolean),
+      pii_flags: (get('governance_eval.pii_flags')||'').split(',').map(s=>s.trim()).filter(Boolean),
+      classification_default: get('governance_eval.classification_default') || 'confidential',
+    };
+    // v3 governance / rbac
+    profile.governance = {
+      rbac: { roles: (get('governance.rbac.roles')||'').split(',').map(s=>s.trim()).filter(Boolean) },
+      policy: {
+        no_impersonation: !!(form.querySelector('[name="identity.no_impersonation"]')?.checked),
+        classification_default: get('governance_eval.classification_default') || 'confidential',
+      }
+    };
+    // v3 persona extras
+    profile.persona = Object.assign({}, profile.persona || {}, {
+      tone: get('persona.tone') || 'crisp, analytical, executive',
+      collaboration_mode: get('persona.collaboration_mode') || 'Solo'
+    });
+    // Lifecycle & telemetry (v3)
+    profile.lifecycle = { stage: get('lifecycle.stage') || 'dev' };
+    const rate = parseFloat(get('telemetry.sampling.rate')||'1.0');
+    profile.telemetry = {
+      sampling: { rate: isNaN(rate) ? 1.0 : rate },
+      sinks: (get('telemetry.sinks')||'').split(',').map(s=>s.trim()).filter(Boolean),
+      pii_redaction: { strategy: get('telemetry.pii_redaction.strategy') || 'mask' }
+    };
+    const adv = parseJsonSafe(get('advanced_overrides'));
+    if (adv && typeof adv === 'object') {
+      profile.advanced_overrides = adv;
+      // Shallow merge for now (server will deep-merge defensively)
+      for (const [k, v] of Object.entries(adv)) {
+        if (profile[k] === undefined) profile[k] = v;
+      }
+    } else {
+      profile.advanced_overrides = {};
+    }
+
     return profile;
   }
 
