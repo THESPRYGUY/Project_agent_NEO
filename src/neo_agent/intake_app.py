@@ -2004,7 +2004,6 @@ window.addEventListener('DOMContentLoaded', function () {
                         form_profile = fp
                 except Exception:
                     pass
-
                 try:
                     with self.profile_path.open("w", encoding="utf-8") as handle:
                         json.dump(form_profile, handle, indent=2)
@@ -2103,5 +2102,3 @@ def create_app(*, base_dir: Optional[Path] = None) -> IntakeApplication:
 
 if __name__ == "__main__":  # pragma: no cover - manual run helper
     create_app().serve()
-
-
