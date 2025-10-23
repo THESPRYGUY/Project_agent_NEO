@@ -1419,7 +1419,6 @@ window.addEventListener('DOMContentLoaded', function () {
         if path.startswith("/api/naics/children/") and method == "GET":
             parent = path.split("/api/naics/children/")[-1]
             try:
-                from urllib.parse import parse_qs
                 qs = parse_qs(str(environ.get("QUERY_STRING") or ""))
                 level = int((qs.get("level") or [0])[0] or 0)
             except Exception:
