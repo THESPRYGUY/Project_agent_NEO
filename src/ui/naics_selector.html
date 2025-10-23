@@ -150,17 +150,23 @@
       let timer = null;
       let lastResults = [];
       async function handleSearchInput() {
-        const q = String(searchBox.value || '').trim();
         if (timer) { clearTimeout(timer); }
         timer = setTimeout(async () => {
           clearResults();
-          if (!q) return;
-          const res = await api(`/api/naics/search?q=${encodeURIComponent(q)}`);
-          if (res && Array.isArray(res.items) && res.items.length) {
-            lastResults = res.items;
-            renderResults(lastResults);
-          }
-        }, 250);
+          const qNow = String(searchBox.value || '').trim();
+          if (!qNow || qNow.length < 1) { lastResults = []; return; }
+          const res = await api(`/api/naics/search?q=${encodeURIComponent(qNow)}`);
+          const items = (res && Array.isArray(res.items)) ? res.items : [];
+          // Defensive client-side filter to guard against any stale server data or routing mishaps
+          const ql = qNow.toLowerCase();
+          const filtered = items.filter(it => {
+            const c = String((it && it.code) || '').toLowerCase();
+            const t = String((it && it.title) || '').toLowerCase();
+            return c.startsWith(ql) || t.includes(ql);
+          });
+          lastResults = filtered;
+          if (lastResults.length) { renderResults(lastResults); }
+        }, 200);
       }
 
       async function handleConfirm() {

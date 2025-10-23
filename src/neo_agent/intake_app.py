@@ -1173,6 +1173,143 @@ window.addEventListener('DOMContentLoaded', function () {
         )
         return page
 
+    # ------------------------------- NAICS data -------------------------------
+    def _ensure_naics_loaded(self) -> list[dict]:
+        """Load NAICS reference data if not already cached.
+
+        Preferred source: JSON at data/naics/naics_2022.json (array of
+        {code,title}). Fallback: CSV built from the official workbook at
+        data/naics/2-6 digit_2022_Codes.csv.
+        """
+        if isinstance(self._naics_cache, list) and self._naics_cache:
+            return self._naics_cache  # type: ignore[return-value]
+
+        entries: list[dict] = []
+
+        # Try JSON first
+        try:
+            if self.naics_path.exists():
+                raw = self.naics_path.read_text(encoding="utf-8")
+                data = json.loads(raw)
+                if isinstance(data, list):
+                    for item in data:
+                        if not isinstance(item, Mapping):
+                            continue
+                        code = str(item.get("code", "")).strip()
+                        title = str(item.get("title", "")).strip()
+                        if not code or not title:
+                            continue
+                        level = len("".join(ch for ch in code if ch.isdigit()))
+                        if level < 2 or level > 6:
+                            continue
+                        entries.append({"code": code, "title": title, "level": level})
+        except Exception:
+            # fall through to CSV
+            pass
+
+        # Fallback to CSV (present in repo by default)
+        if not entries:
+            csv_path = self.data_root / "naics" / "2-6 digit_2022_Codes.csv"
+            try:
+                if csv_path.exists():
+                    with csv_path.open("r", encoding="utf-8", newline="") as fh:
+                        reader = csv.DictReader(fh)
+                        for row in reader:
+                            code = str((row or {}).get("code") or "").strip()
+                            title = str((row or {}).get("title") or "").strip()
+                            if not code or not title:
+                                continue
+                            # Codes may include ranges already expanded by builder script.
+                            code_digits = "".join(ch for ch in code if ch.isdigit())
+                            level = len(code_digits)
+                            if level < 2 or level > 6:
+                                continue
+                            entries.append({"code": code_digits, "title": title, "level": level})
+            except Exception:
+                LOGGER.exception("Failed to load NAICS CSV")
+
+        # Deduplicate and sort for stable responses
+        seen: set[str] = set()
+        dedup: list[dict] = []
+        for e in entries:
+            c = str(e.get("code") or "")
+            if not c or c in seen:
+                continue
+            seen.add(c)
+            dedup.append({"code": c, "title": str(e.get("title") or ""), "level": int(e.get("level") or len(c))})
+        dedup.sort(key=lambda d: (int(d.get("level", 0)), str(d.get("code", ""))))
+
+        # Build index by code for fast lookup
+        by_code: dict[str, dict] = {}
+        for e in dedup:
+            by_code[str(e["code"])]=e
+
+        self._naics_cache = dedup
+        self._naics_by_code = by_code
+        LOGGER.info("NAICS loaded: %d entries", len(dedup))
+        return dedup
+
+    def reload_naics(self) -> int:
+        """Force reload of NAICS reference data. Returns number of entries."""
+        self._naics_cache = None
+        self._naics_by_code = None
+        return len(self._ensure_naics_loaded())
+
+    # Compatibility for scripts/tests that looked for the old helper name
+    def _load_naics_reference(self) -> list[dict]:
+        return self._ensure_naics_loaded()
+
+    def _naics_children(self, parent: str, level: Optional[int]) -> list[dict]:
+        entries = self._ensure_naics_loaded()
+        parent = str(parent or "").strip()
+        lvl = int(level) if level else 0
+        out: list[dict] = []
+        for e in entries:
+            code = str(e.get("code") or "")
+            if lvl and int(e.get("level", 0)) != lvl:
+                continue
+            if parent and not code.startswith(parent):
+                continue
+            if lvl and len(code) != lvl:
+                continue
+            out.append({"code": code, "title": e.get("title")})
+        out.sort(key=lambda d: d["code"])  # stable order
+        return out
+
+    def _naics_search(self, q: str) -> list[dict]:
+        q = str(q or "").strip().lower()
+        if not q:
+            return []
+        entries = self._ensure_naics_loaded()
+        results: list[dict] = []
+        for e in entries:
+            code = str(e.get("code") or "")
+            title = str(e.get("title") or "")
+            if code.startswith(q) or q in title.lower():
+                results.append({"code": code, "title": title})
+        results.sort(key=lambda d: (len(d["code"]), d["code"]))
+        return results[:100]
+
+    def _naics_detail(self, code: str) -> dict | None:
+        by_code = self._naics_by_code or {}
+        if not by_code:
+            self._ensure_naics_loaded()
+            by_code = self._naics_by_code or {}
+        c = str(code or "").strip()
+        e = by_code.get(c)
+        if not e:
+            return None
+        lineage: list[dict] = []
+        try:
+            for i in range(2, min(6, len(c)) + 1):
+                prefix = c[:i]
+                pe = by_code.get(prefix)
+                if pe:
+                    lineage.append({"code": pe["code"], "title": pe["title"], "level": pe.get("level", i)})
+        except Exception:
+            pass
+        return {"code": e.get("code"), "title": e.get("title"), "level": e.get("level", len(c)), "lineage": lineage}
+
     # ------------------------------ Persistence ------------------------------
     def _save_persona_state(self, state: Mapping[str, Any]) -> Mapping[str, Any]:
         """Persist persona selection state enriched with MBTI details.
@@ -1271,6 +1408,46 @@ window.addEventListener('DOMContentLoaded', function () {
         path = str(environ.get("PATH_INFO", "/")) or "/"
 
         # Routing: JSON APIs first
+        # --- NAICS endpoints ---
+        if path == "/api/naics/roots" and method == "GET":
+            items = [e for e in self._naics_children("", 2)]
+            payload = json.dumps({"status": "ok", "items": items}).encode("utf-8")
+            headers = [("Content-Type", "application/json"), ("Content-Length", str(len(payload)))]
+            start_response("200 OK", headers)
+            return [payload]
+
+        if path.startswith("/api/naics/children/") and method == "GET":
+            parent = path.split("/api/naics/children/")[-1]
+            try:
+                qs = parse_qs(str(environ.get("QUERY_STRING") or ""))
+                level = int((qs.get("level") or [0])[0] or 0)
+            except Exception:
+                level = 0
+            items = self._naics_children(parent, level if level else None)
+            payload = json.dumps({"status": "ok", "items": items}).encode("utf-8")
+            headers = [("Content-Type", "application/json"), ("Content-Length", str(len(payload)))]
+            start_response("200 OK", headers)
+            return [payload]
+
+        if path == "/api/naics/search" and method == "GET":
+            try:
+                qs = parse_qs(str(environ.get("QUERY_STRING") or ""))
+                q = (qs.get("q") or [""])[0]
+            except Exception:
+                q = ""
+            items = self._naics_search(q)
+            payload = json.dumps({"status": "ok", "items": items}).encode("utf-8")
+            headers = [("Content-Type", "application/json"), ("Content-Length", str(len(payload)))]
+            start_response("200 OK", headers)
+            return [payload]
+
+        if path.startswith("/api/naics/code/") and method == "GET":
+            code = path.split("/api/naics/code/")[-1]
+            entry = self._naics_detail(code)
+            payload = json.dumps({"status": "ok", "entry": entry}).encode("utf-8")
+            headers = [("Content-Type", "application/json"), ("Content-Length", str(len(payload)))]
+            start_response("200 OK", headers)
+            return [payload]
         if path == "/api/identity/generate" and method == "POST":
             try:
                 length = int(environ.get("CONTENT_LENGTH") or 0)
@@ -1418,4 +1595,3 @@ def create_app(*, base_dir: Optional[Path] = None) -> IntakeApplication:
 
 if __name__ == "__main__":  # pragma: no cover - manual run helper
     create_app().serve()
-
