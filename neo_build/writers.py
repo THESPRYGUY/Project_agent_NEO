@@ -93,6 +93,8 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
         "references": {"reasoning_schema": "16_Reasoning-Footprints_Schema_v1.json", "memory_schema": "08_Memory-Schema_v2.json"},
         "effective_autonomy": eff_autonomy,
         "store_raw_cot": False,
+        # Sprint-1: carry derived regulators into 02 for downstream parity checks
+        "safety": {"regulatory": list(_get(sector_profile, "regulatory", []) or [])},
     }
     packs["02_Global-Instructions_v2.json"] = gi
     json_write(out_dir / "02_Global-Instructions_v2.json", gi)
@@ -140,6 +142,7 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
     json_write(out_dir / "05_Safety+Privacy_Guardrails_v2.json", sp)
 
     # 06 Role Recipes Index
+    primary_role_code = str(_dget(profile, "role.primary.code", _get(role_profile, "archetype", "")))
     rri = {
         "version": 2,
         "role_recipe_ref": str(_get(role_profile, "role_recipe_ref", "")),
@@ -148,10 +151,14 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
         "archetype": str(_get(role_profile, "archetype", "")),
         # v3 targets
         "mapping": {
-            "primary_role_code": str(_dget(profile, "role.primary.code", "")),
+            "primary_role_code": primary_role_code,
             "agent_id": str(_get(identity, "agent_id", "")),
         },
-        "roles_index": [{"title": str(_dget(profile, "role.title", _get(role_profile, "role_title", "")))}],
+        "roles_index": [{
+            "code": str(_get(role_profile, "archetype", "")) or primary_role_code,
+            "title": str(_dget(profile, "role.title", _get(role_profile, "role_title", ""))),
+            "objectives": list(_get(role_profile, "objectives", []) or []),
+        }],
     }
     packs["06_Role-Recipes_Index_v2.json"] = rri
     json_write(out_dir / "06_Role-Recipes_Index_v2.json", rri)
@@ -300,6 +307,12 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
         "region": list(_get(sector_profile, "region", []) or []),
         "regulators": list(_get(sector_profile, "regulatory", []) or []),
         "naics": naics,
+        # Sprint-1: add refs block for canonical consumption
+        "refs": {
+            "sector": _get(sector_profile, "sector", ""),
+            "region": list(_get(sector_profile, "region", []) or []),
+            "regulators": list(_get(sector_profile, "regulatory", []) or []),
+        },
     }
     packs["19_Overlay-Pack_SME-Domain_v1.json"] = od
     json_write(out_dir / "19_Overlay-Pack_SME-Domain_v1.json", od)

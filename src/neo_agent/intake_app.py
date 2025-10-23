@@ -17,6 +17,7 @@ from wsgiref.simple_server import make_server
 from .linkedin import scrape_linkedin_profile
 from .logging import get_logger
 from .repo_generator import AgentRepoGenerationError, generate_agent_repo
+from .adapters.normalize_v3 import normalize_context_role
 from .spec_generator import generate_agent_specs
 from .services.identity_utils import generate_agent_id
 
@@ -232,21 +233,7 @@ $extra_styles
                 <p class="notice">ID regenerates when NAICS, Function, Role or Name changes.</p>
             </fieldset>
 
-            <fieldset>
-                <legend>Role Profile</legend>
-                <label>Archetype
-                    <input type="text" name="role_profile.archetype" value="">
-                </label>
-                <label>Role Title
-                    <input type="text" name="role_profile.role_title" value="">
-                </label>
-                <label>Role Recipe Ref
-                    <input type="text" name="role_profile.role_recipe_ref" value="">
-                </label>
-                <label>Objectives (comma separated)
-                    <input type="text" name="role_profile.objectives" value="">
-                </label>
-            </fieldset>
+            
 
             <fieldset>
                 <legend>Business Context</legend>
@@ -328,30 +315,7 @@ $extra_styles
                 </label>
             </fieldset>
 
-            <fieldset>
-                <legend>Sector Profile</legend>
-                <label>Sector
-                    <input type="text" name="sector_profile.sector" value="">
-                </label>
-                <label>Industry
-                    <input type="text" name="sector_profile.industry" value="">
-                </label>
-                <label>Region (comma separated)
-                    <input type="text" name="sector_profile.region" value="">
-                </label>
-                <label>Languages (comma separated)
-                    <input type="text" name="sector_profile.languages" value="">
-                </label>
-                <label>Domain Tags (comma separated)
-                    <input type="text" name="sector_profile.domain_tags" value="">
-                </label>
-                <label>Risk Tier
-                    <input type="text" name="sector_profile.risk_tier" value="">
-                </label>
-                <label>Regulatory (comma separated)
-                    <input type="text" name="sector_profile.regulatory" value="">
-                </label>
-            </fieldset>
+            
 
             <fieldset>
                 <legend>Capabilities & Tools</legend>
@@ -1546,6 +1510,63 @@ window.addEventListener('DOMContentLoaded', function () {
                 raw = (environ.get("wsgi.input").read(length) if length else b"") or b""
                 params = parse_qs(raw.decode("utf-8"), keep_blank_values=True)
                 form_profile = self._build_profile(params, self._load_persona_state())
+
+                # Sprint-1: Build v3 context/role payload from submitted fields,
+                # then normalize to builder-compatible keys and merge into intake.
+                try:
+                    def _p(key: str) -> str:
+                        v = params.get(key)
+                        if isinstance(v, list):
+                            return str(v[0]) if v else ""
+                        return str(v) if isinstance(v, str) else ""
+
+                    naics_code = _p("naics_code")
+                    naics_title = _p("naics_title")
+                    naics_level = _p("naics_level")
+                    naics_lineage_json = _p("naics_lineage_json")
+                    naics_lineage = []
+                    if naics_lineage_json:
+                        try:
+                            naics_lineage = json.loads(naics_lineage_json)
+                            if not isinstance(naics_lineage, list):
+                                naics_lineage = []
+                        except Exception:
+                            naics_lineage = []
+
+                    # Region: prefer any explicit multi-value param; else default inside normalizer
+                    region_vals = params.get("context.region") or params.get("sector_profile.region") or []
+                    region = [str(x) for x in region_vals if x]
+
+                    v3_payload = {
+                        "context": {
+                            "naics": {
+                                "code": naics_code,
+                                "title": naics_title,
+                                "level": int(naics_level) if str(naics_level).isdigit() else naics_level,
+                                "lineage": naics_lineage,
+                            },
+                            "region": region,
+                        },
+                        "role": {
+                            "function_code": _p("business_function"),
+                            "role_code": _p("role_code") or _p("role_profile.archetype"),
+                            "role_title": _p("role_title") or _p("role_profile.role_title"),
+                            "objectives": [],
+                        },
+                    }
+
+                    normalized = normalize_context_role(v3_payload)
+                    # Merge normalized keys into the form profile
+                    fp = dict(form_profile)
+                    fp.update(normalized)
+                    # Ensure NAICS is present under classification for the builder
+                    classification = dict(fp.get("classification") or {})
+                    classification["naics"] = v3_payload["context"]["naics"]
+                    fp["classification"] = classification
+                    form_profile = fp
+                except Exception:
+                    # Non-fatal: if normalization fails, continue with raw profile
+                    pass
                 try:
                     with self.profile_path.open("w", encoding="utf-8") as handle:
                         json.dump(form_profile, handle, indent=2)
@@ -1595,3 +1616,4 @@ def create_app(*, base_dir: Optional[Path] = None) -> IntakeApplication:
 
 if __name__ == "__main__":  # pragma: no cover - manual run helper
     create_app().serve()
+
