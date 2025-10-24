@@ -13,6 +13,7 @@ from typing import Any, Dict, Iterable, List, Mapping, Optional
 from urllib.parse import parse_qs
 import io
 import zipfile
+import tempfile
 
 from wsgiref.simple_server import make_server
 
@@ -1615,18 +1616,30 @@ window.addEventListener('DOMContentLoaded', function () {
                 return [payload]
 
             # Prepare archive name
-            try:
-                from neo_build.utils import slugify
-            except Exception:
-                def slugify(s: str) -> str:  # type: ignore[no-redef]
-                    return (s or "").strip().replace(" ", "-")
-            parent = candidate.parent.name or "repo"
-            name = candidate.name or "repo"
-            arch = f"{slugify(parent)}_{slugify(name)}.zip"
+            def _sanitize_name(text: str) -> str:
+                allowed = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-"
+                cleaned = "".join(ch for ch in (text or "") if ch in allowed)
+                return cleaned or "repo"
+            arch = f"{_sanitize_name(candidate.name)}.zip"
 
-            # Collect files; estimate size and count
+            # Collect files; estimate size and count; filter excluded
             from neo_build.contracts import CANONICAL_PACK_FILENAMES as _NAMES
-            files = [p for p in candidate.rglob("*") if p.is_file()]
+            excluded_names = {"_last_build.json", ".DS_Store"}
+            excluded_dirs = {"__pycache__", ".pytest_cache", ".git"}
+            files: list[Path] = []
+            for p in candidate.rglob("*"):
+                if not p.is_file():
+                    continue
+                rel = p.relative_to(candidate)
+                parts = rel.parts
+                # Exclude hidden entries and excluded dirs
+                if any(part.startswith(".") for part in parts):
+                    continue
+                if any(part in excluded_dirs for part in parts):
+                    continue
+                if rel.name in excluded_names:
+                    continue
+                files.append(p)
             try:
                 size_est = sum(int(p.stat().st_size) for p in files)
             except Exception:
@@ -1653,16 +1666,23 @@ window.addEventListener('DOMContentLoaded', function () {
                 except Exception:
                     pass
 
-            # Build zip in-memory (repo is small) and stream as one chunk
-            buf = io.BytesIO()
-            with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            # Build zip into spooled temp (spill to disk > 8MB), then stream chunks
+            spooled = tempfile.SpooledTemporaryFile(max_size=8 * 1024 * 1024)
+            with zipfile.ZipFile(spooled, "w", zipfile.ZIP_DEFLATED) as zf:
                 for p in files:
                     try:
                         zf.write(p, arcname=str(p.relative_to(candidate)))
                     except Exception:
                         continue
-            data = buf.getvalue()
-            headers = _std_headers("application/zip", len(data), extra=[
+            # Finalize and compute size
+            try:
+                spooled.flush()
+            except Exception:
+                pass
+            spooled.seek(0, os.SEEK_END)
+            total = spooled.tell()
+            spooled.seek(0)
+            headers = _std_headers("application/zip", total, extra=[
                 ("Content-Disposition", f"attachment; filename=\"{arch}\""),
             ])
             try:
@@ -1677,7 +1697,19 @@ window.addEventListener('DOMContentLoaded', function () {
             except Exception:
                 pass
             start_response("200 OK", headers)
-            return [data]
+            def _stream() -> Iterable[bytes]:
+                try:
+                    while True:
+                        chunk = spooled.read(8192)
+                        if not chunk:
+                            break
+                        yield chunk
+                finally:
+                    try:
+                        spooled.close()
+                    except Exception:
+                        pass
+            return _stream()
         # Save v3 intake profile (JSON) with schema validation and normalization
         if path == "/save" and method == "POST":
             try:

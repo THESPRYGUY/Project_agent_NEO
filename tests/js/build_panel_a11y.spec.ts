@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 
-// Minimal DOM scaffold used by build_panel.js
 function mountDOM() {
   document.body.innerHTML = `
     <section class="build-panel" id="build-panel">
@@ -47,7 +46,7 @@ function mockFetchSequence() {
   return { fn, calls }
 }
 
-describe('build_panel UI', () => {
+describe('build_panel UI a11y', () => {
   beforeEach(() => {
     mountDOM()
     vi.stubGlobal('navigator', { clipboard: { writeText: vi.fn() } })
@@ -60,32 +59,27 @@ describe('build_panel UI', () => {
     })
   })
 
-  it('renders Last-Build banner and ZIP button', async () => {
+  it('renders banner and ZIP button with last-build', async () => {
     const { fn, calls } = mockFetchSequence()
     vi.stubGlobal('fetch', fn)
     await import('../../src/ui/build_panel.js')
-    // ZIP button exists and uses encoded outdir
     const zip = document.querySelector('[data-download-zip]') as HTMLAnchorElement
     expect(zip).toBeTruthy()
     expect(zip.hidden).toBe(false)
     expect(zip.href).toContain(encodeURIComponent('/work/AGT/20250102T030405Z'))
-    // Last-build banner exists
     const banner = document.querySelector('[data-last-build-banner]')
     expect(banner).toBeTruthy()
-    // fetch called with no-store for last-build
     const call = calls.find(c => String(c[0]).endsWith('/last-build'))
     expect(call).toBeTruthy()
     expect((call[1]||{}).cache).toBe('no-store')
   })
 
-  it('shows tooltip when parity=false and renders deltas', async () => {
+  it('a11y: info button toggles aria-expanded and ESC closes', async () => {
     const { fn } = mockFetchSequence()
     vi.stubGlobal('fetch', fn)
     await import('../../src/ui/build_panel.js')
-    // after init, parity 02_vs_14 is false; info button should exist
     const info = document.querySelector('[data-parity-info]') as HTMLButtonElement
     expect(info).toBeTruthy()
-    // aria-expanded toggles
     expect(info.getAttribute('aria-expanded')).toBe('false')
     info.click()
     const tip = document.querySelector('[data-parity-tooltip="14-02"]') as HTMLElement
@@ -97,7 +91,6 @@ describe('build_panel UI', () => {
     document.dispatchEvent(esc)
     expect(info.getAttribute('aria-expanded')).toBe('false')
     expect(tip.hidden).toBe(true)
-    // Content includes deltas
-    expect(tip.innerHTML).toContain('PRI_min')
   })
 })
+

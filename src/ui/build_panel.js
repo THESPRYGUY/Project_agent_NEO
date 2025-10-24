@@ -174,6 +174,8 @@ function renderParityTooltips(data) {
     info.className = 'info-btn';
     info.setAttribute('aria-label', 'Show parity deltas');
     info.setAttribute('data-parity-info', '1');
+    info.setAttribute('role', 'button');
+    info.setAttribute('aria-expanded', 'false');
     info.tabIndex = 0;
     const pack = map[k].pack;
     const relevant = deltas.filter(d => String(d.pack) === String(pack));
@@ -181,10 +183,21 @@ function renderParityTooltips(data) {
     tooltip.className = 'tooltip';
     tooltip.setAttribute('role', 'tooltip');
     tooltip.hidden = true;
+    const tipId = 'parity-tip-' + pack;
+    tooltip.setAttribute('id', tipId);
     tooltip.setAttribute('data-parity-tooltip', pack + '-02');
     tooltip.innerHTML = relevant.map(d => `${pack} ${d.key} — ${Number(d.got).toFixed(3)} → ${Number(d.expected).toFixed(3)}`).join('<br>');
-    info.addEventListener('click', () => { tooltip.hidden = !tooltip.hidden; });
-    info.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tooltip.hidden = !tooltip.hidden; } });
+    info.setAttribute('aria-controls', tipId);
+    function setOpen(open) {
+      tooltip.hidden = !open;
+      info.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+    info.addEventListener('click', () => { setOpen(tooltip.hidden); });
+    info.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(tooltip.hidden); }
+      if (e.key === 'Escape') { e.preventDefault(); setOpen(false); }
+    });
+    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { setOpen(false); } });
     const parent = target.parentElement || target;
     parent.appendChild(info);
     parent.appendChild(tooltip);
