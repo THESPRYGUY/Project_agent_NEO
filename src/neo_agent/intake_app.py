@@ -11,6 +11,9 @@ import csv
 from string import Template
 from typing import Any, Dict, Iterable, List, Mapping, Optional
 from urllib.parse import parse_qs
+import io
+import zipfile
+import tempfile
 
 from wsgiref.simple_server import make_server
 
@@ -607,6 +610,25 @@ class IntakeApplication:
             self.base_dir,
             self.persona_state_path,
         )
+
+    # --------------------------- Security helpers ----------------------------
+    @staticmethod
+    def _is_safe_subpath(root: Path, candidate: Path) -> bool:
+        """Return True if candidate is the same as root or a descendant of root.
+
+        Uses resolve() to avoid traversal via symlinks/../ components.
+        """
+        try:
+            root_r = root.resolve()
+            cand_r = candidate.resolve()
+        except Exception:
+            return False
+        if root_r == cand_r:
+            return True
+        try:
+            return root_r in cand_r.parents
+        except Exception:
+            return str(cand_r).startswith(str(root_r))
 
     @staticmethod
     def _resolve_base_dir(base_dir: Path | None) -> Path:
@@ -1552,6 +1574,144 @@ window.addEventListener('DOMContentLoaded', function () {
             raw = json.dumps(payload).encode("utf-8")
             start_response("200 OK", _std_headers("application/json", len(raw)))
             return [raw]
+        # Last build: compact JSON summary saved by /build
+        if path == "/last-build" and method == "GET":
+            out_root_env = os.environ.get("NEO_REPO_OUTDIR") or str((self.base_dir / "_generated").resolve())
+            out_root = Path(out_root_env)
+            last_path = out_root / "_last_build.json"
+            if not last_path.exists():
+                start_response("204 No Content", _std_headers("application/json", 0))
+                return [b""]
+            try:
+                raw = last_path.read_bytes()
+                if emit_event:
+                    try:
+                        emit_event("last_build_read", {"path": str(last_path)})
+                    except Exception:
+                        pass
+                start_response("200 OK", _std_headers("application/json", len(raw)))
+                return [raw]
+            except Exception as exc:
+                payload = json.dumps({"status": "error", "issues": [str(exc)]}).encode("utf-8")
+                start_response("500 Internal Server Error", _std_headers("application/json", len(payload)))
+                return [payload]
+        # Build ZIP download (validated subpath under out root)
+        if path == "/build/zip" and method == "GET":
+            qs = parse_qs(str(environ.get("QUERY_STRING") or ""))
+            outdir_q = (qs.get("outdir") or [""])[0]
+            if not outdir_q:
+                payload = json.dumps({"status": "invalid", "errors": ["missing outdir"]}).encode("utf-8")
+                start_response("400 Bad Request", _std_headers("application/json", len(payload)))
+                return [payload]
+            out_root_env = os.environ.get("NEO_REPO_OUTDIR") or str((self.base_dir / "_generated").resolve())
+            out_root = Path(out_root_env)
+            candidate = Path(outdir_q)
+            if not self._is_safe_subpath(out_root, candidate):
+                payload = json.dumps({"status": "invalid", "errors": ["outdir outside allowed root"]}).encode("utf-8")
+                start_response("400 Bad Request", _std_headers("application/json", len(payload)))
+                return [payload]
+            if not candidate.exists() or not candidate.is_dir():
+                payload = json.dumps({"status": "not_found"}).encode("utf-8")
+                start_response("404 Not Found", _std_headers("application/json", len(payload)))
+                return [payload]
+
+            # Prepare archive name
+            def _sanitize_name(text: str) -> str:
+                allowed = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-"
+                cleaned = "".join(ch for ch in (text or "") if ch in allowed)
+                return cleaned or "repo"
+            arch = f"{_sanitize_name(candidate.name)}.zip"
+
+            # Collect files; estimate size and count; filter excluded
+            from neo_build.contracts import CANONICAL_PACK_FILENAMES as _NAMES
+            excluded_names = {"_last_build.json", ".DS_Store"}
+            excluded_dirs = {"__pycache__", ".pytest_cache", ".git"}
+            files: list[Path] = []
+            for p in candidate.rglob("*"):
+                if not p.is_file():
+                    continue
+                rel = p.relative_to(candidate)
+                parts = rel.parts
+                # Exclude hidden entries and excluded dirs
+                if any(part.startswith(".") for part in parts):
+                    continue
+                if any(part in excluded_dirs for part in parts):
+                    continue
+                if rel.name in excluded_names:
+                    continue
+                files.append(p)
+            try:
+                size_est = sum(int(p.stat().st_size) for p in files)
+            except Exception:
+                size_est = 0
+            file_count = sum(1 for n in _NAMES if (candidate / n).exists())
+
+            # Try recover agent_id for telemetry
+            agent_id = None
+            try:
+                p06 = candidate / "06_Role-Recipes_Index_v2.json"
+                if p06.exists():
+                    o6 = json.loads(p06.read_text(encoding="utf-8"))
+                    agent_id = (o6.get("mapping") or {}).get("agent_id")
+            except Exception:
+                pass
+            if not agent_id:
+                try:
+                    p09 = candidate / "09_Agent-Manifests_Catalog_v2.json"
+                    if p09.exists():
+                        o9 = json.loads(p09.read_text(encoding="utf-8"))
+                        ags = o9.get("agents") or []
+                        if isinstance(ags, list) and ags:
+                            agent_id = (ags[0] or {}).get("agent_id")
+                except Exception:
+                    pass
+
+            # Build zip into spooled temp (spill to disk > 8MB), then stream chunks
+            spooled = tempfile.SpooledTemporaryFile(max_size=8 * 1024 * 1024)
+            with zipfile.ZipFile(spooled, "w", zipfile.ZIP_DEFLATED) as zf:
+                # Deterministic ordering by relative path
+                rels = sorted((p.relative_to(candidate) for p in files), key=lambda r: str(r))
+                for rel in rels:
+                    try:
+                        zf.write(candidate / rel, arcname=str(rel))
+                    except Exception:
+                        continue
+            # Finalize and compute size
+            try:
+                spooled.flush()
+            except Exception:
+                pass
+            spooled.seek(0, os.SEEK_END)
+            total = spooled.tell()
+            spooled.seek(0)
+            headers = _std_headers("application/zip", total, extra=[
+                ("Content-Disposition", f"attachment; filename=\"{arch}\""),
+            ])
+            try:
+                if emit_event:
+                    emit_event("zip_download", {
+                        "agent_id": agent_id or "",
+                        "outdir": str(candidate),
+                        "file_count": int(file_count),
+                        "size_bytes_est": int(size_est),
+                        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                    })
+            except Exception:
+                pass
+            start_response("200 OK", headers)
+            def _stream() -> Iterable[bytes]:
+                try:
+                    while True:
+                        chunk = spooled.read(8192)
+                        if not chunk:
+                            break
+                        yield chunk
+                finally:
+                    try:
+                        spooled.close()
+                    except Exception:
+                        pass
+            return _stream()
         # Save v3 intake profile (JSON) with schema validation and normalization
         if path == "/save" and method == "POST":
             try:
@@ -1965,6 +2125,38 @@ window.addEventListener('DOMContentLoaded', function () {
                         resp["overlays_applied"] = False
                 except Exception as overlay_exc:
                     warnings.append(f"overlays_apply_failed: {overlay_exc}")
+                # Persist last-build summary at out_root for quick UI retrieval
+                try:
+                    out_root_last = out_root / "_last_build.json"
+                    def _deltas_list(d: Mapping[str, Any] | None) -> list[dict]:
+                        items: list[dict] = []
+                        if not isinstance(d, Mapping):
+                            return items
+                        for pack_key, diffs in d.items():
+                            try:
+                                for k, tup in (diffs or {}).items():
+                                    got, expected = (tup[0], tup[1]) if isinstance(tup, (list, tuple)) and len(tup) == 2 else (None, None)
+                                    items.append({
+                                        "pack": str(pack_key),
+                                        "key": str(k),
+                                        "got": got,
+                                        "expected": expected,
+                                    })
+                            except Exception:
+                                continue
+                        return items
+                    last_payload = {
+                        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                        "outdir": resp.get("outdir"),
+                        "file_count": int(resp.get("file_count") or 0),
+                        "parity": dict(resp.get("parity") or {}),
+                        "integrity_errors": list(resp.get("integrity_errors") or []),
+                        "overlays_applied": bool(resp.get("overlays_applied")),
+                        "parity_deltas": _deltas_list(resp.get("parity_deltas") if isinstance(resp, Mapping) else {}),
+                    }
+                    out_root_last.write_text(json.dumps(last_payload, indent=2), encoding="utf-8")
+                except Exception:
+                    pass
                 # Telemetry: parity checked summary
                 if emit_event:
                     try:

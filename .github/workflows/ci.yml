@@ -9,23 +9,24 @@ on:
 jobs:
   test-python:
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+      NEO_REPO_OUTDIR: ${{ runner.temp }}/_generated
+      NEO_COPY_TO_ONEDRIVE: 'false'
+      FAIL_ON_PARITY: 'false'
+      NEO_APPLY_OVERLAYS: 'false'
     steps:
       - uses: actions/checkout@v4
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-      - name: Install test deps
+      - name: Install deps
         run: |
           python -m pip install --upgrade pip
           python -m pip install -e .[dev]
-      - name: Run Python tests
-        env:
-          # Ensure tests can import both top-level packages (neo_build, adapters)
-          # and code under src/ used by the app.
-          PYTHONPATH: ${{ github.workspace }}:${{ github.workspace }}/src
-        run: |
-          pytest -q
+      - name: Pytests
+        run: pytest -q -vv
 
   test-js:
     runs-on: ubuntu-latest

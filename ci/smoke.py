@@ -74,10 +74,14 @@ def main() -> int:
         print(f"Failed to read fixture: {exc}", file=sys.stderr)
         return 2
 
-    # Isolated work root for generated repos; avoid OneDrive
-    work_root = root / ".pytest-tmp" / "smoke"
+    # Work root for generated repos. Respect env if provided.
+    env_out = os.environ.get("NEO_REPO_OUTDIR")
+    if env_out:
+        work_root = Path(env_out)
+    else:
+        work_root = root / ".pytest-tmp" / "smoke"
+        os.environ["NEO_REPO_OUTDIR"] = str(work_root.resolve())
     work_root.mkdir(parents=True, exist_ok=True)
-    os.environ["NEO_REPO_OUTDIR"] = str(work_root.resolve())
 
     app = create_app(base_dir=work_root)
 
@@ -125,8 +129,10 @@ def main() -> int:
     # Zip the repo
     zip_path = artifacts / "repo.zip"
     with zipfile.ZipFile(zip_path, "w", zipfile.ZIP_DEFLATED) as zf:
-        for p in outdir.rglob("*"):
-            zf.write(p, arcname=str(p.relative_to(outdir)))
+        # Deterministic ordering
+        rels = sorted((p.relative_to(outdir) for p in outdir.rglob("*")), key=lambda r: str(r))
+        for rel in rels:
+            zf.write(outdir / rel, arcname=str(rel))
 
     # Emit build summary JSON for CI
     build_json = {
@@ -145,9 +151,8 @@ def main() -> int:
         )
         return 1
 
-    print(
-        f"SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0 | outdir={build_json['outdir']}"
-    )
+    # Print single-line status for CI logs
+    print("SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0")
     return 0
 
 

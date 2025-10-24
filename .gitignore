@@ -26,3 +26,8 @@ data/naics/*.xlsx
 # local build artifacts
 agent_profile.compiled.json
 snapshots/
+
+# test and smoke artifacts
+.pytest-tmp/
+_artifacts/
+.pytest_cache/
