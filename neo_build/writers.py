@@ -9,6 +9,7 @@ from __future__ import annotations
 
 import uuid
 from pathlib import Path
+import json
 from typing import Any, Dict, List, Mapping, Tuple
 
 from .contracts import (
@@ -106,13 +107,40 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
 
     # 03 Operating Rules
     hg = human_gate_actions(_get(_get(capabilities_tools, "human_gate", {}), "actions", []))
+    # Sprint-3.1: RBAC owners propagation (additive) when identity.owners present
+    base_roles = list(_dget(profile, "governance.rbac.roles", []) or [])
+    owners_from_identity = list((_get(identity, "owners") or [])) if isinstance(identity, Mapping) else []
+    if owners_from_identity:
+        # Canonical deterministic order: defaults triad first, then owners sorted (casefold), unique
+        defaults = _owners()
+        triad_cf = {d.casefold() for d in defaults}
+        # unique owners by casefold
+        seen: set[str] = set()
+        uniq_owners: List[str] = []
+        for o in owners_from_identity:
+            s = str(o)
+            k = s.casefold()
+            if s and k not in seen:
+                seen.add(k)
+                uniq_owners.append(s)
+        sorted_owners = sorted([o for o in uniq_owners if o.casefold() not in triad_cf], key=str.casefold)
+        roles_out: List[str] = list(defaults) + sorted_owners
+    else:
+        # leave defaults unchanged
+        roles_out = base_roles
+
     orules = {
         "version": 2,
         "human_gate": {"actions": hg},
-        "rbac": {"roles": list(_dget(profile, "governance.rbac.roles", []) or [])},
+        "rbac": {"roles": roles_out},
     }
     packs["03_Operating-Rules_v2.json"] = orules
-    json_write(out_dir / "03_Operating-Rules_v2.json", orules)
+    # Preserve canonical list ordering for RBAC roles (do not deep-sort lists)
+    (out_dir / "03_Operating-Rules_v2.json").write_text(
+        json.dumps(orules, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
+        encoding="utf-8",
+        newline="\n",
+    )
 
     # 04 Governance + Risk Register
     gro = {
@@ -195,6 +223,17 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
     # 09 Agent Manifests Catalog
     owners_from_identity = list((_get(identity, "owners") or [])) if isinstance(identity, Mapping) else []
     owners = owners_from_identity or _owners()
+    # Selected role title precedence: role.role_title -> role_profile.role_title -> first_non_empty(06.roles_index[*].title)
+    selected_role_title = str(_dget(profile, "role.role_title", "")).strip()
+    if not selected_role_title:
+        selected_role_title = str(_get(role_profile, "role_title", "")).strip()
+    if not selected_role_title:
+        try:
+            titles = [str(x.get("title", "")).strip() for x in (rri.get("roles_index") or [])]
+            selected_role_title = next((t for t in titles if t), "")
+        except Exception:
+            selected_role_title = ""
+
     amc = {
         "version": 2,
         "owners": owners,
@@ -211,6 +250,7 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
                 "display_name": str(_get(identity, "display_name", _get(_get(profile, "agent", {}), "name", ""))),
                 "owners": owners,
                 "agent_id": str(_get(identity, "agent_id", "")),
+                "role_title": selected_role_title,
             }
         ],
     }
