@@ -12,3 +12,8 @@ Endpoints used:
 - `GET /last-build` — compact JSON summary of the last build.
 - `GET /build/zip?outdir=<path>` — secure download of the built repo as a zip; requires `outdir` to be a subpath of `NEO_REPO_OUTDIR`.
 
+
+Overlay summary triage:
+- When NEO_APPLY_OVERLAYS=true, the server persists overlay_summary in _last_build.json.
+- From the Last-Build banner, click "View overlays" to inspect the table (Name, Version, Status, Allowlisted, Notes).
+- If a build fails parity, validate allowlist/status/notes in the overlay modal, then re-run smoke or rollback as needed.

@@ -128,6 +128,17 @@ Safety and integrity:
 Project NEO Agent is released under the MIT License. See `LICENSE` for details.
 
 
+### Overlay summary
+
+When overlays are applied during a build (feature flag `NEO_APPLY_OVERLAYS=true`), the server persists an extended `_last_build.json` that includes `overlay_summary`:
+
+- `applied`: boolean, whether overlays ran and were retained (not rolled back).
+- `items[]`: Name, Version, Status, Allowlisted, Notes for each applied overlay action.
+- `rollback`: `{ supported: true, last_action: 'none'|'rollback', ts: 'ISO8601' }`.
+
+In the UI, a “View overlays” button appears on the Last-Build banner when `items.length > 0`. Clicking opens an accessible modal (keyboard/ESC/focus-trap) with a table of overlay items and a “Copy overlay JSON” action. `/last-build` response headers remain strict: `Cache-Control: no-store`, `X-NEO-Intake-Version: v3.0`.
+
+
 ### Run the intake app locally
 
 To launch the intake form from a terminal on Windows, macOS, or Linux:

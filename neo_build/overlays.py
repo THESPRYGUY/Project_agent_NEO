@@ -410,6 +410,14 @@ def apply_overlays(outdir: Path, cfg: Dict[str, Any]) -> Dict[str, Any]:
         rollback_reason = "parity_failed_or_errors"
         _write_packs(outdir, original)
         packs = original
+        # Defensive: ensure ephemeral overlay-only fields are absent post-rollback
+        try:
+            wf = packs.get("11_Workflow-Pack_v2.json")
+            if isinstance(wf, dict) and "approvals" in wf:
+                wf.pop("approvals", None)
+                _write_json(outdir / "11_Workflow-Pack_v2.json", wf)
+        except Exception:
+            pass
         report = integrity_report({}, packs)  # recompute after rollback
 
     # Summary

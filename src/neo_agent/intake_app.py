@@ -2145,6 +2145,46 @@ window.addEventListener('DOMContentLoaded', function () {
                             except Exception:
                                 continue
                         return items
+                    # Build overlay_summary structure for last-build consumers
+                    try:
+                        overlay_summary = resp.get("overlay_summary") if isinstance(resp, Mapping) else None
+                    except Exception:
+                        overlay_summary = None
+                    def _now_iso():
+                        try:
+                            return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
+                        except Exception:
+                            return ""
+                    def _overlay_items_from_summary(s: Mapping[str, Any] | None) -> list[dict]:
+                        items: list[dict] = []
+                        try:
+                            applied_steps = list((s or {}).get("applied") or [])
+                            rolled_back = bool((s or {}).get("rolled_back"))
+                            for idx, step in enumerate(applied_steps, start=1):
+                                items.append({
+                                    "id": f"ovl-{idx:03d}",
+                                    "name": str(step),
+                                    "version": "v1.0",
+                                    "source": "allowlist",
+                                    "allowlisted": True,
+                                    "status": "rolled_back" if rolled_back else "applied",
+                                    "notes": (s or {}).get("reason") or "ok",
+                                    "actions": [f"apply:{step}"]
+                                })
+                        except Exception:
+                            pass
+                        return items
+                    def _overlay_block() -> dict:
+                        # Backward-compatible default when overlays disabled
+                        if not isinstance(overlay_summary, Mapping):
+                            return {"applied": False, "items": [], "rollback": {"supported": True, "last_action": "none", "ts": _now_iso()}}
+                        items = _overlay_items_from_summary(overlay_summary)
+                        rb = "rollback" if bool(overlay_summary.get("rolled_back")) else "none"
+                        return {
+                            "applied": bool(items),
+                            "items": items,
+                            "rollback": {"supported": True, "last_action": rb, "ts": _now_iso()}
+                        }
                     last_payload = {
                         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                         "outdir": resp.get("outdir"),
@@ -2152,6 +2192,7 @@ window.addEventListener('DOMContentLoaded', function () {
                         "parity": dict(resp.get("parity") or {}),
                         "integrity_errors": list(resp.get("integrity_errors") or []),
                         "overlays_applied": bool(resp.get("overlays_applied")),
+                        "overlay_summary": _overlay_block(),
                         "parity_deltas": _deltas_list(resp.get("parity_deltas") if isinstance(resp, Mapping) else {}),
                     }
                     out_root_last.write_text(json.dumps(last_payload, indent=2), encoding="utf-8")
