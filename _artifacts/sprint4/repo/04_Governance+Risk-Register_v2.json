@@ -1,0 +1,14 @@
+{
+  "classification_default": "confidential",
+  "frameworks": {
+    "regulators": []
+  },
+  "pii_flags": [],
+  "policy": {
+    "classification_default": "confidential",
+    "no_impersonation": true
+  },
+  "regulators": [],
+  "risk_register_tags": [],
+  "version": 2
+}

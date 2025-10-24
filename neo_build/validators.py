@@ -116,8 +116,22 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
         "17_vs_02": (p17.get("PRI_min") == p02.get("PRI_min") and p17.get("HAL_max") == p02.get("HAL_max") and p17.get("AUD_min") == p02.get("AUD_min")),
     }
 
+    def _r(v: Any) -> Any:
+        try:
+            if isinstance(v, (int, float)):
+                return round(float(v), 4)
+        except Exception:
+            return v
+        return v
+
     def _deltas(p: Mapping[str, Any], src: Mapping[str, Any]):
-        return {k: (p.get(k), src.get(k)) for k in ("PRI_min","HAL_max","AUD_min") if p.get(k) != src.get(k)}
+        out: Dict[str, Any] = {}
+        for k in ("PRI_min", "HAL_max", "AUD_min"):
+            pv = p.get(k)
+            sv = src.get(k)
+            if pv != sv:
+                out[k] = (_r(pv), _r(sv))
+        return out
 
     parity_deltas = {
         "03": _deltas(p03, p02),

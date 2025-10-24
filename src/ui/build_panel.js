@@ -74,6 +74,22 @@ export function applyBuildToDom(data) {
   const p1102 = document.querySelector('[data-parity-11-02]');
   const p0302 = document.querySelector('[data-parity-03-02]');
   const p1702 = document.querySelector('[data-parity-17-02]');
+  // Ensure new parity badges exist in DOM for 03↔02 and 17↔02
+  try {
+    const card = document.getElementById('parity-card');
+    if (card) {
+      if (!p0302) {
+        const d = document.createElement('div');
+        d.innerHTML = '03 ↔ 02: <strong data-parity-03-02 title="03 activation vs 02 targets">-</strong>';
+        card.appendChild(d);
+      }
+      if (!p1702) {
+        const d2 = document.createElement('div');
+        d2.innerHTML = '17 ↔ 02: <strong data-parity-17-02 title="17 activation vs 02 targets">-</strong>';
+        card.appendChild(d2);
+      }
+    }
+  } catch {}
   if (outdirInput) outdirInput.value = data?.outdir || '';
   setText('[data-file-count]', data?.file_count || 0);
   setBoolBadge(p0214, Boolean(data?.parity?.['02_vs_14']));

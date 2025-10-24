@@ -1,0 +1,18 @@
+{
+  "archetype": "",
+  "mapping": {
+    "agent_id": "sprint4-smoke",
+    "primary_role_code": ""
+  },
+  "objectives": [],
+  "role_recipe_ref": "",
+  "role_title": "",
+  "roles_index": [
+    {
+      "code": "",
+      "objectives": [],
+      "title": ""
+    }
+  ],
+  "version": 2
+}
