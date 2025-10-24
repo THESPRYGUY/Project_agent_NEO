@@ -17,6 +17,9 @@ from wsgiref.simple_server import make_server
 from .linkedin import scrape_linkedin_profile
 from .logging import get_logger
 from .repo_generator import AgentRepoGenerationError, generate_agent_repo
+from neo_build.writers import write_repo_files
+from neo_build.validators import integrity_report
+from .adapters.normalize_v3 import normalize_context_role
 from .spec_generator import generate_agent_specs
 from .services.identity_utils import generate_agent_id
 
@@ -32,6 +35,34 @@ except Exception:  # pragma: no cover - fall back gracefully when telemetry unav
     emit_repo_generated_event = None
 
 LOGGER = get_logger("intake")
+# Build tag to help operators confirm the running code version via headers and /health
+# For Intake v3 stabilization phase, expose the intake version constant in headers
+INTAKE_BUILD_TAG = "v3.0"
+
+def _read_app_version(project_root: Path) -> str:
+    try:
+        pyproj = project_root / "pyproject.toml"
+        if pyproj.exists():
+            txt = pyproj.read_text(encoding="utf-8")
+            for line in txt.splitlines():
+                if line.strip().startswith("version"):
+                    parts = line.split("=")
+                    if len(parts) >= 2:
+                        return parts[1].strip().strip('"')
+    except Exception:
+        pass
+    return "0.0.0"
+
+def _std_headers(content_type: str, size: int, *, extra: Optional[list[tuple[str,str]]] = None) -> list[tuple[str,str]]:
+    base = [
+        ("Content-Type", content_type),
+        ("Cache-Control", "no-store, must-revalidate"),
+        ("X-NEO-Intake-Version", INTAKE_BUILD_TAG),
+        ("Content-Length", str(size)),
+    ]
+    if extra:
+        base.extend(extra)
+    return base
 
 WSGIResponse = tuple[str, list[tuple[str, str]], bytes]
 
@@ -217,7 +248,7 @@ $extra_styles
                     <input type="text" name="identity.display_name" placeholder="Display name" value="$agent_name" readonly data-identity-display-name>
                 </label>
                 <label>Agent ID
-                    <input type="text" name="identity.agent_id" placeholder="auto-generated" value="" readonly data-identity-agent-id>
+                    <input type="text" name="identity.agent_id" placeholder="auto-generated" value="$agent_id" readonly data-identity-agent-id>
                 </label>
                 <label>Owners (comma separated)
                     <input type="text" name="identity.owners" placeholder="CAIO, CPA, TeamLead" value="">
@@ -232,21 +263,7 @@ $extra_styles
                 <p class="notice">ID regenerates when NAICS, Function, Role or Name changes.</p>
             </fieldset>
 
-            <fieldset>
-                <legend>Role Profile</legend>
-                <label>Archetype
-                    <input type="text" name="role_profile.archetype" value="">
-                </label>
-                <label>Role Title
-                    <input type="text" name="role_profile.role_title" value="">
-                </label>
-                <label>Role Recipe Ref
-                    <input type="text" name="role_profile.role_recipe_ref" value="">
-                </label>
-                <label>Objectives (comma separated)
-                    <input type="text" name="role_profile.objectives" value="">
-                </label>
-            </fieldset>
+            
 
             <fieldset>
                 <legend>Business Context</legend>
@@ -328,30 +345,7 @@ $extra_styles
                 </label>
             </fieldset>
 
-            <fieldset>
-                <legend>Sector Profile</legend>
-                <label>Sector
-                    <input type="text" name="sector_profile.sector" value="">
-                </label>
-                <label>Industry
-                    <input type="text" name="sector_profile.industry" value="">
-                </label>
-                <label>Region (comma separated)
-                    <input type="text" name="sector_profile.region" value="">
-                </label>
-                <label>Languages (comma separated)
-                    <input type="text" name="sector_profile.languages" value="">
-                </label>
-                <label>Domain Tags (comma separated)
-                    <input type="text" name="sector_profile.domain_tags" value="">
-                </label>
-                <label>Risk Tier
-                    <input type="text" name="sector_profile.risk_tier" value="">
-                </label>
-                <label>Regulatory (comma separated)
-                    <input type="text" name="sector_profile.regulatory" value="">
-                </label>
-            </fieldset>
+            
 
             <fieldset>
                 <legend>Capabilities & Tools</legend>
@@ -510,6 +504,9 @@ class IntakeApplication:
         self.spec_dir.mkdir(parents=True, exist_ok=True)
         self.repo_output_dir = self.base_dir / "generated_repos"
         self.repo_output_dir.mkdir(parents=True, exist_ok=True)
+        # New: dedicated location to store versioned agent profiles
+        self.profile_output_dir = self.base_dir / "generated_profiles"
+        self.profile_output_dir.mkdir(parents=True, exist_ok=True)
         self.persona_state_path = self.base_dir / "persona_state.json"
         self.persona_assets = self._load_persona_assets()
         self.persona_config = self._load_persona_config()
@@ -1132,6 +1129,16 @@ window.addEventListener('DOMContentLoaded', function () {
         safe_level     = html.escape(naics_level)
         safe_lineage   = html.escape(naics_lineage)
 
+        # Identity persistence (agent_id)
+        agent_id_value = ""
+        try:
+            if isinstance(profile, Mapping):
+                ident = profile.get("identity")
+                if isinstance(ident, Mapping):
+                    agent_id_value = _str(ident.get("agent_id") or "")
+        except Exception:
+            agent_id_value = ""
+
         # Final page assembly
         page = FORM_TEMPLATE.substitute(
             persona_styles=persona_style_block or "",
@@ -1143,6 +1150,7 @@ window.addEventListener('DOMContentLoaded', function () {
             summary=summary_html or "",
             agent_name=html.escape(agent_name, quote=True),
             agent_version=html.escape(agent_version, quote=True),
+            agent_id=html.escape(agent_id_value or "", quote=True),
             notes=html.escape(notes_value or "", quote=True),
             communication_options=communication_options,
             collaboration_options=collaboration_options,
@@ -1368,6 +1376,28 @@ window.addEventListener('DOMContentLoaded', function () {
         }
 
         persona_code = _get("agent_persona")
+        # Business function & role (persist to keep selections on re-render)
+        business_function_value = _get("business_function")
+        role_code_value = _get("role_code")
+        role_title_value = _get("role_title")
+        role_seniority_value = _get("role_seniority")
+
+        # NAICS payload from hidden inputs
+        naics_code = _get("naics_code")
+        naics_title = _get("naics_title")
+        naics_level_raw = _get("naics_level")
+        try:
+            naics_level = int(naics_level_raw) if naics_level_raw else None
+        except Exception:
+            naics_level = None
+        try:
+            lineage_text = _get("naics_lineage_json")
+            naics_lineage = json.loads(lineage_text) if lineage_text else []
+            if not isinstance(naics_lineage, list):
+                naics_lineage = []
+        except Exception:
+            naics_lineage = []
+
         profile: Dict[str, Any] = {
             "agent": {
                 "name": _get("agent_name"),
@@ -1376,7 +1406,26 @@ window.addEventListener('DOMContentLoaded', function () {
                 "mbti": self._enrich_persona_metadata(persona_code),
                 "domain": _get("domain"),
                 "role": _get("role"),
+                "business_function": business_function_value,
             },
+            # Persist identity so Agent ID survives form re-render
+            "identity": {
+                "agent_id": _get("identity.agent_id"),
+                "display_name": _get("identity.display_name"),
+                "owners": [s for s in _get("identity.owners").split(",") if s.strip()],
+                "no_impersonation": bool(_get("identity.no_impersonation") or "true"),
+            },
+            # Function/role selections
+            "business_function": business_function_value,
+            "role": {
+                "code": role_code_value,
+                "title": role_title_value or role_code_value,
+                "seniority": role_seniority_value,
+                "function": business_function_value,
+            },
+            # Persist NAICS
+            "naics": {"code": naics_code, "title": naics_title, "level": naics_level, "lineage": naics_lineage},
+            "classification": {"naics": {"code": naics_code, "title": naics_title, "level": naics_level, "lineage": naics_lineage}},
             "toolsets": {"selected": _get_list("toolsets"), "custom": _get("toolsets_custom")},
             "attributes": {"selected": _get_list("attributes"), "custom": _get("attributes_custom")},
             "preferences": {
@@ -1406,13 +1455,136 @@ window.addEventListener('DOMContentLoaded', function () {
     def wsgi_app(self, environ: Mapping[str, Any], start_response) -> Iterable[bytes]:
         method = str(environ.get("REQUEST_METHOD", "GET")).upper()
         path = str(environ.get("PATH_INFO", "/")) or "/"
+        try:
+            LOGGER.info("req %s %s", method, path)
+        except Exception:
+            pass
 
         # Routing: JSON APIs first
+        if path == "/health" and method == "GET":
+            payload = {
+                "status": "ok",
+                "build_tag": INTAKE_BUILD_TAG,
+                "app_version": _read_app_version(self.project_root),
+                "pid": os.getpid(),
+                "repo_output_dir": str(self.repo_output_dir),
+                "profile_output_dir": str(self.profile_output_dir),
+                "has_api_generate": True,
+                "build_on_post": True,
+            }
+            raw = json.dumps(payload).encode("utf-8")
+            start_response("200 OK", _std_headers("application/json", len(raw)))
+            return [raw]
+        # Save v3 intake profile (JSON) with schema validation and normalization
+        if path == "/save" and method == "POST":
+            try:
+                length = int(environ.get("CONTENT_LENGTH") or 0)
+            except Exception:
+                length = 0
+            body = (environ.get("wsgi.input").read(length) if length else b"") or b"{}"
+            errors: list[str] = []
+            try:
+                data = json.loads(body.decode("utf-8"))
+            except Exception as exc:
+                data = None
+                errors.append(f"Invalid JSON: {exc}")
+
+            # Minimal validation against intake_v3 schema (selected required fields and legacy guards)
+            def _require(path: list[str], obj: Any) -> None:
+                cur = obj
+                for p in path:
+                    if not isinstance(cur, Mapping) or p not in cur:
+                        errors.append(f"Missing field: {'.'.join(path)}")
+                        return
+                    cur = cur[p]
+                if isinstance(cur, str) and not cur.strip():
+                    errors.append(f"Empty field: {'.'.join(path)}")
+                if isinstance(cur, list) and len(cur) == 0:
+                    errors.append(f"Empty list: {'.'.join(path)}")
+
+            legacy_keys = ("legacy", "legacy_industry", "legacy_tool_toggles", "manual_log_level", "meta", "agent_profile", "governance", "privacy")
+            if isinstance(data, Mapping):
+                if str(data.get("intake_version")) != "v3.0":
+                    errors.append("intake_version must equal 'v3.0'")
+                _require(["identity", "agent_id"], data)
+                _require(["identity", "display_name"], data)
+                _require(["identity", "owners"], data)
+                _require(["context", "naics", "code"], data)
+                _require(["role", "function_code"], data)
+                _require(["role", "role_code"], data)
+                _require(["governance_eval", "gates", "PRI_min"], data)
+                _require(["governance_eval", "gates", "hallucination_max"], data)
+                _require(["governance_eval", "gates", "audit_min"], data)
+                for k in legacy_keys:
+                    if k in data:
+                        errors.append(f"Legacy field not allowed in v3: {k}")
+            else:
+                if not errors:
+                    errors.append("Payload must be a JSON object")
+
+            if errors:
+                payload = json.dumps({"status": "invalid", "errors": errors}).encode("utf-8")
+                start_response("400 Bad Request", _std_headers("application/json", len(payload)))
+                return [payload]
+
+            # Normalize to builder-compatible keys
+            try:
+                normalized = normalize_context_role(data)
+                profile = dict(data)
+                profile.update(normalized)
+                ge = dict(profile.get("governance_eval") or {})
+                gates = dict(ge.get("gates") or {})
+                gates.setdefault("PRI_min", 0.95)
+                gates.setdefault("hallucination_max", 0.02)
+                gates.setdefault("audit_min", 0.90)
+                ge["gates"] = gates
+                profile["governance_eval"] = ge
+            except Exception as exc:
+                LOGGER.warning("Normalization failed on /save: %s", exc)
+                profile = data if isinstance(data, Mapping) else {}
+
+            # Persist and respond
+            try:
+                self.profile_path.write_text(json.dumps(profile, indent=2), encoding="utf-8")
+                # Also write a versioned copy under generated_profiles/<slug>/agent_profile.json
+                try:
+                    import re
+                    agent_section = profile.get("agent") if isinstance(profile, Mapping) else {}
+                    if not isinstance(agent_section, Mapping):
+                        agent_section = {}
+                    identity_section = profile.get("identity") if isinstance(profile, Mapping) else {}
+                    if not isinstance(identity_section, Mapping):
+                        identity_section = {}
+                    agent_name = str((identity_section.get("display_name") or agent_section.get("name") or "agent"))
+                    agent_version = str(agent_section.get("version", "1.0.0")).replace(".", "-")
+                    slug_base = re.sub(r"[^a-z0-9\-]+", "-", agent_name.lower().strip()).strip("-") or "agent"
+                    slug = f"{slug_base}-{agent_version}"
+                    prof_dir = self.profile_output_dir / slug
+                    prof_dir.mkdir(parents=True, exist_ok=True)
+                    (prof_dir / "agent_profile.json").write_text(json.dumps(profile, indent=2), encoding="utf-8")
+                except Exception:
+                    # Non-fatal; legacy path still saved
+                    pass
+                agent_id = str(((profile.get("identity") or {}).get("agent_id") or "")).strip()
+                naics_code = str((((profile.get("context") or {}).get("naics") or {}).get("code") or "")).strip()
+                role_code = str(((profile.get("role") or {}).get("role_code") or "")).strip()
+                LOGGER.info("/save agent_id=%s naics=%s role=%s", agent_id, naics_code, role_code)
+                payload = json.dumps({"status": "ok", "path": str(self.profile_path), "agent_id": agent_id}).encode("utf-8")
+                start_response("200 OK", _std_headers("application/json", len(payload)))
+                return [payload]
+            except Exception as exc:
+                payload = json.dumps({"status": "error", "errors": [str(exc)]}).encode("utf-8")
+                start_response("500 Internal Server Error", _std_headers("application/json", len(payload)))
+                return [payload]
+
         # --- NAICS endpoints ---
         if path == "/api/naics/roots" and method == "GET":
             items = [e for e in self._naics_children("", 2)]
             payload = json.dumps({"status": "ok", "items": items}).encode("utf-8")
-            headers = [("Content-Type", "application/json"), ("Content-Length", str(len(payload)))]
+            headers = [("Content-Type", "application/json"),
+                       ("X-NEO-Intake-Version", INTAKE_BUILD_TAG),
+                       ("Cache-Control", "no-store, must-revalidate"),
+                       ("Content-Length", str(len(payload)))]
             start_response("200 OK", headers)
             return [payload]
 
@@ -1425,7 +1597,10 @@ window.addEventListener('DOMContentLoaded', function () {
                 level = 0
             items = self._naics_children(parent, level if level else None)
             payload = json.dumps({"status": "ok", "items": items}).encode("utf-8")
-            headers = [("Content-Type", "application/json"), ("Content-Length", str(len(payload)))]
+            headers = [("Content-Type", "application/json"),
+                       ("X-NEO-Intake-Version", INTAKE_BUILD_TAG),
+                       ("Cache-Control", "no-store, must-revalidate"),
+                       ("Content-Length", str(len(payload)))]
             start_response("200 OK", headers)
             return [payload]
 
@@ -1494,6 +1669,192 @@ window.addEventListener('DOMContentLoaded', function () {
             start_response("200 OK", headers)
             return [payload]
 
+        # Generate deterministic 20-pack repo from submitted profile (v3-aware)
+        if path == "/api/agent/generate" and method == "POST":
+            try:
+                length = int(environ.get("CONTENT_LENGTH") or 0)
+            except Exception:
+                length = 0
+            body = (environ.get("wsgi.input").read(length) if length else b"") or b"{}"
+            try:
+                data = json.loads(body.decode("utf-8"))
+            except Exception:
+                data = {}
+            profile = data.get("profile") if isinstance(data, dict) else None
+            if not isinstance(profile, dict):
+                payload = json.dumps({"status": "error", "issues": ["Missing profile in payload."]}).encode("utf-8")
+                headers = [("Content-Type", "application/json"), ("Content-Length", str(len(payload)))]
+                start_response("400 Bad Request", headers)
+                return [payload]
+
+            # Normalize NAICS + Function/Role → role_profile/sector_profile
+            try:
+                # Extract region from multiple possible sources
+                region_vals = []
+                if isinstance(profile.get("context"), dict):
+                    region_vals = profile["context"].get("region", [])
+                if not region_vals and isinstance(profile.get("sector_profile"), dict):
+                    region_vals = profile["sector_profile"].get("region", [])
+                if not isinstance(region_vals, list):
+                    region_vals = []
+                
+                naics_data = (profile.get("classification") or {}).get("naics") or profile.get("naics") or {}
+                
+                v3 = {
+                    "context": {
+                        "naics": naics_data,
+                        "region": region_vals if region_vals else ["CA"],  # Default to CA if empty
+                    },
+                    "role": {
+                        "function_code": str(profile.get("business_function", "")),
+                        "role_code": str(((profile.get("role") or {}).get("code") or "")),
+                        "role_title": str(((profile.get("role") or {}).get("title") or "")),
+                        "objectives": list(((profile.get("role") or {}).get("objectives") or [])),
+                    },
+                }
+                normalized = normalize_context_role(v3)
+                merged = dict(profile)
+                merged.update(normalized)
+                # Ensure classification.naics present for writers
+                classification = dict(merged.get("classification") or {})
+                classification["naics"] = naics_data
+                merged["classification"] = classification
+            except Exception as norm_exc:
+                LOGGER.warning("Normalization failed in API: %s", norm_exc)
+                merged = profile
+
+            # Write repo to generated_repos/{slug}
+            try:
+                # Create unique repo subdirectory based on agent identity
+                agent_section = merged.get("agent") if isinstance(merged, Mapping) else {}
+                if not isinstance(agent_section, Mapping):
+                    agent_section = {}
+                identity_section = merged.get("identity") if isinstance(merged, Mapping) else {}
+                if not isinstance(identity_section, Mapping):
+                    identity_section = {}
+                agent_name = str((identity_section.get("display_name") or agent_section.get("name") or "agent"))
+                agent_version = str(agent_section.get("version", "1-0-0")).replace(".", "-")
+                
+                # Slugify agent name
+                import re
+                slug_base = re.sub(r"[^a-z0-9\-]+", "-", agent_name.lower().strip()).strip("-") or "agent"
+                slug = f"{slug_base}-{agent_version}"
+                
+                # Find next available directory
+                repo_dir = self.repo_output_dir / slug
+                counter = 2
+                while repo_dir.exists():
+                    repo_dir = self.repo_output_dir / f"{slug}-{counter}"
+                    counter += 1
+                
+                # Write repo files to the unique subdirectory
+                packs = write_repo_files(merged, repo_dir)
+                # Generate and write integrity report
+                report = integrity_report(merged, packs)
+                integrity_path = repo_dir / "INTEGRITY_REPORT.json"
+                with integrity_path.open("w", encoding="utf-8") as handle:
+                    json.dump(report, handle, indent=2, ensure_ascii=False)
+                    handle.write("\n")
+                
+                out = {
+                    "status": "ok",
+                    "out_dir": str(repo_dir),
+                    "checks": report.get("checks", {}),
+                }
+                payload = json.dumps(out).encode("utf-8")
+                headers = _std_headers("application/json", len(payload))
+                start_response("200 OK", headers)
+                return [payload]
+            except Exception as exc:
+                LOGGER.exception("Failed to generate repo")
+                payload = json.dumps({"status": "error", "issues": [str(exc)]}).encode("utf-8")
+                headers = _std_headers("application/json", len(payload))
+                start_response("500 Internal Server Error", headers)
+                return [payload]
+
+        # Deterministic build route for PR-B
+        if path == "/build" and method == "POST":
+            warnings: list[str] = []
+            # Load only the validated agent_profile.json from disk
+            if not self.profile_path.exists():
+                payload = json.dumps({"status": "error", "issues": ["agent_profile.json not found. Save a v3 profile first via /save."]}).encode("utf-8")
+                start_response("400 Bad Request", _std_headers("application/json", len(payload)))
+                return [payload]
+            try:
+                profile = json.loads(self.profile_path.read_text(encoding="utf-8"))
+            except Exception as exc:
+                payload = json.dumps({"status": "error", "issues": [f"Failed to read agent_profile.json: {exc}"]}).encode("utf-8")
+                start_response("500 Internal Server Error", _std_headers("application/json", len(payload)))
+                return [payload]
+
+            # Normalize v3 payload for builder compatibility (role_profile/sector_profile)
+            try:
+                normalized = normalize_context_role(profile)
+                profile.update(normalized)
+            except Exception as exc:
+                warnings.append(f"normalize_failed: {exc}")
+
+            # Choose outdir: respect NEO_REPO_OUTDIR, ensure not OneDrive
+            out_root_env = os.environ.get("NEO_REPO_OUTDIR") or str((self.base_dir / "_generated").resolve())
+            out_root = Path(out_root_env)
+            if "onedrive" in str(out_root).lower():
+                warnings.append("selected_outdir_is_onedrive; using local _generated instead")
+                out_root = (self.base_dir / "_generated").resolve()
+            out_root.mkdir(parents=True, exist_ok=True)
+
+            # Compute agent_id and timestamped path
+            ident = profile.get("identity") if isinstance(profile, Mapping) else {}
+            if not isinstance(ident, Mapping):
+                ident = {}
+            agent_id = str(ident.get("agent_id") or generate_agent_id()).strip()
+            ts = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+            out_dir = out_root / agent_id / ts
+
+            # Build files
+            try:
+                if emit_event:
+                    emit_event("build:requested", {"agent_id": agent_id, "out_root": str(out_root)})
+                packs = write_repo_files(profile, out_dir)
+                # integrity report
+                report = integrity_report(profile, packs)
+                (out_dir / "INTEGRITY_REPORT.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+
+                # Gate parity summary
+                kpi_02 = ((packs.get("02_Global-Instructions_v2.json") or {}).get("observability") or {}).get("kpi_targets", {})
+                kpi_14 = (packs.get("14_KPI+Evaluation-Framework_v2.json") or {}).get("targets", {})
+                gates_11_all = (packs.get("11_Workflow-Pack_v2.json") or {}).get("gates", {})
+                kpi_11 = gates_11_all.get("kpi_targets", {}) if isinstance(gates_11_all, Mapping) else {}
+                parity_02_14 = bool(kpi_02 == kpi_14)
+                parity_11_02 = bool(kpi_11 == kpi_02)
+
+                # Optional copy to OneDrive
+                try:
+                    copy_flag = str(os.environ.get("NEO_COPY_TO_ONEDRIVE") or "false").lower() in ("1", "true", "yes")
+                    if copy_flag:
+                        import shutil
+                        dest = self.repo_output_dir / agent_id / ts
+                        shutil.copytree(out_dir, dest, dirs_exist_ok=True)
+                except Exception as exc:
+                    warnings.append(f"copy_to_onedrive_failed: {exc}")
+
+                resp = {
+                    "outdir": str(out_dir),
+                    "file_count": len(list(out_dir.glob("*.json"))) + len(list(out_dir.glob("*.md"))),
+                    "parity": {"02_vs_14": parity_02_14, "11_vs_02": parity_11_02},
+                    "integrity_errors": report.get("errors", []) if isinstance(report, Mapping) else [],
+                    "warnings": warnings,
+                }
+                if emit_event:
+                    emit_event("build:completed", {"agent_id": agent_id, "outdir": resp["outdir"], "parity": resp["parity"]})
+                    emit_repo_generated_event({"outdir": resp["outdir"]})
+                payload = json.dumps(resp).encode("utf-8")
+                start_response("200 OK", _std_headers("application/json", len(payload)))
+                return [payload]
+            except Exception as exc:
+                payload = json.dumps({"status": "error", "issues": [str(exc)]}).encode("utf-8")
+                start_response("500 Internal Server Error", _std_headers("application/json", len(payload)))
+                return [payload]
+
         if path == "/api/function_roles" and method == "GET":
             qs = parse_qs(str(environ.get("QUERY_STRING") or ""))
             fn = (qs.get("fn") or [""])[0]
@@ -1511,7 +1872,7 @@ window.addEventListener('DOMContentLoaded', function () {
             except Exception:
                 items = []
             payload = json.dumps({"status": "ok", "items": items}).encode("utf-8")
-            headers = [("Content-Type", "application/json"), ("Content-Length", str(len(payload)))]
+            headers = _std_headers("application/json", len(payload))
             start_response("200 OK", headers)
             return [payload]
 
@@ -1530,7 +1891,7 @@ window.addEventListener('DOMContentLoaded', function () {
                 issues.append(f"Invalid JSON: {exc}")
             status = "ok" if not issues else "invalid"
             payload = json.dumps({"status": status, "issues": issues}).encode("utf-8")
-            headers = [("Content-Type", "application/json"), ("Content-Length", str(len(payload)))]
+            headers = _std_headers("application/json", len(payload))
             start_response("200 OK", headers)
             return [payload]
 
@@ -1546,6 +1907,104 @@ window.addEventListener('DOMContentLoaded', function () {
                 raw = (environ.get("wsgi.input").read(length) if length else b"") or b""
                 params = parse_qs(raw.decode("utf-8"), keep_blank_values=True)
                 form_profile = self._build_profile(params, self._load_persona_state())
+
+                # Sprint-1: Normalize v3 context/role into builder keys and build repo immediately
+                try:
+                    def _p(key: str) -> str:
+                        v = params.get(key)
+                        if isinstance(v, list):
+                            return str(v[0]) if v else ""
+                        return str(v) if isinstance(v, str) else ""
+
+                    naics_code = _p("naics_code")
+                    naics_title = _p("naics_title")
+                    naics_level = _p("naics_level")
+                    naics_lineage_json = _p("naics_lineage_json")
+                    naics_lineage = []
+                    if naics_lineage_json:
+                        try:
+                            naics_lineage = json.loads(naics_lineage_json)
+                            if not isinstance(naics_lineage, list):
+                                naics_lineage = []
+                        except Exception:
+                            naics_lineage = []
+
+                    # Region: prefer explicit; else default inside normalizer
+                    region_vals = params.get("context.region") or params.get("sector_profile.region") or []
+                    region = [str(x) for x in region_vals if x]
+
+                    v3_payload = {
+                        "context": {
+                            "naics": {
+                                "code": naics_code,
+                                "title": naics_title,
+                                "level": int(naics_level) if str(naics_level).isdigit() else naics_level,
+                                "lineage": naics_lineage,
+                            },
+                            "region": region,
+                        },
+                        "role": {
+                            "function_code": _p("business_function"),
+                            "role_code": _p("role_code") or _p("role_profile.archetype"),
+                            "role_title": _p("role_title") or _p("role_profile.role_title"),
+                            "objectives": [],
+                        },
+                    }
+
+                    normalized = normalize_context_role(v3_payload)
+                    # Merge normalized keys into the form profile
+                    fp = dict(form_profile)
+                    fp.update(normalized)
+                    # Ensure NAICS is present under classification for the builder
+                    classification = dict(fp.get("classification") or {})
+                    classification["naics"] = v3_payload["context"]["naics"]
+                    fp["classification"] = classification
+                    form_profile = fp
+                except Exception:
+                    # Non-fatal: if normalization fails, continue with raw profile
+                    pass
+                # Merge with last-saved profile to preserve missing agent_id/NAICS/function/role
+                try:
+                    last_saved = self._safe_read_json(self.profile_path, {})
+                    if isinstance(last_saved, Mapping):
+                        fp = dict(form_profile)
+                        ident = dict(fp.get("identity") or {})
+                        if not str(ident.get("agent_id") or "").strip():
+                            ls_id = (last_saved.get("identity") or {}).get("agent_id")
+                            if ls_id:
+                                ident["agent_id"] = ls_id
+                        fp["identity"] = ident
+                        # classification.naics + top-level naics
+                        cls = dict(fp.get("classification") or {})
+                        if not isinstance(cls.get("naics"), Mapping) or not cls.get("naics"):
+                            ls_na = ((last_saved.get("classification") or {}).get("naics")
+                                     or last_saved.get("naics") or {})
+                            if isinstance(ls_na, Mapping) and ls_na:
+                                cls["naics"] = ls_na
+                        fp["classification"] = cls
+                        if not isinstance(fp.get("naics"), Mapping) or not fp.get("naics"):
+                            if isinstance(cls.get("naics"), Mapping) and cls.get("naics"):
+                                fp["naics"] = cls["naics"]
+                        # business function / role
+                        if not str(fp.get("business_function") or "").strip():
+                            bf = last_saved.get("business_function")
+                            if bf:
+                                fp["business_function"] = bf
+                        role_cur = fp.get("role") if isinstance(fp.get("role"), Mapping) else {}
+                        if not role_cur:
+                            ls_role = last_saved.get("role") if isinstance(last_saved.get("role"), Mapping) else {}
+                            if ls_role:
+                                fp["role"] = ls_role
+                        else:
+                            ls_role = last_saved.get("role") if isinstance(last_saved.get("role"), Mapping) else {}
+                            for k in ("code", "title", "seniority", "function"):
+                                if not str(role_cur.get(k) or "").strip() and str((ls_role or {}).get(k) or "").strip():
+                                    role_cur[k] = ls_role[k]
+                            fp["role"] = role_cur
+                        form_profile = fp
+                except Exception:
+                    pass
+
                 try:
                     with self.profile_path.open("w", encoding="utf-8") as handle:
                         json.dump(form_profile, handle, indent=2)
@@ -1557,21 +2016,70 @@ window.addEventListener('DOMContentLoaded', function () {
                     with (self.profile_path.parent / "agent_profile.compiled.json").open("w", encoding="utf-8") as handle:
                         json.dump(compiled, handle, indent=2)
                     generate_agent_specs(form_profile, self.spec_dir)
-                    notice = "Agent profile generated successfully"
+                    # Also build and write the 20-pack repo deterministically
+                    repo_built = False
+                    try:
+                        # Create unique repo subdirectory based on agent identity
+                        from .services.identity_utils import generate_agent_id
+                        agent_section = form_profile.get("agent") if isinstance(form_profile, Mapping) else {}
+                        if not isinstance(agent_section, Mapping):
+                            agent_section = {}
+                        identity_section = form_profile.get("identity") if isinstance(form_profile, Mapping) else {}
+                        if not isinstance(identity_section, Mapping):
+                            identity_section = {}
+                        agent_name = str((identity_section.get("display_name") or agent_section.get("name") or "agent"))
+                        agent_version = str(agent_section.get("version", "1-0-0")).replace(".", "-")
+                        
+                        # Slugify agent name
+                        import re
+                        slug_base = re.sub(r"[^a-z0-9\-]+", "-", agent_name.lower().strip()).strip("-") or "agent"
+                        slug = f"{slug_base}-{agent_version}"
+                        
+                        # Find next available directory
+                        repo_dir = self.repo_output_dir / slug
+                        counter = 2
+                        while repo_dir.exists():
+                            repo_dir = self.repo_output_dir / f"{slug}-{counter}"
+                            counter += 1
+                        
+                        # Write repo files to the unique subdirectory
+                        packs = write_repo_files(form_profile, repo_dir)
+                        # Generate and write integrity report
+                        report = integrity_report(form_profile, packs)
+                        integrity_path = repo_dir / "INTEGRITY_REPORT.json"
+                        with integrity_path.open("w", encoding="utf-8") as handle:
+                            json.dump(report, handle, indent=2, ensure_ascii=False)
+                            handle.write("\n")
+                        
+                        checks = report.get("checks", {})
+                        repo_built = True
+                        notice = f"Agent profile generated successfully (repo generated at {repo_dir.name})"
+                        # Optionally append quick parity status to the notice
+                        if checks:
+                            notice += f" (kpi_sync={checks.get('kpi_sync', False)})"
+                    except Exception as repo_exc:
+                        # If repo build fails, keep profile generation success message
+                        LOGGER.warning("Repo build failed: %s", repo_exc)
+                        notice = "Agent profile generated successfully"
                 except Exception as exc:
                     notice = f"Failed to generate specs: {exc}"
 
             body_html = self.render_form(message=notice, profile=form_profile)
             body_bytes = body_html.encode("utf-8")
             headers = self._ensure_content_length(
-                [("Content-Type", "text/html; charset=utf-8")], len(body_bytes)
+                [("Content-Type", "text/html; charset=utf-8"),
+                 ("Cache-Control", "no-store, must-revalidate"),
+                 ("Pragma", "no-cache"),
+                 ("Expires", "0"),
+                 ("X-NEO-Intake-Version", INTAKE_BUILD_TAG)],
+                len(body_bytes)
             )
             start_response("200 OK", headers)
             return [body_bytes]
 
         # Fallback 404
         payload = b"Not Found"
-        start_response("404 Not Found", [("Content-Type", "text/plain"), ("Content-Length", str(len(payload)))])
+        start_response("404 Not Found", [("Content-Type", "text/plain"), ("X-NEO-Intake-Version", INTAKE_BUILD_TAG), ("Cache-Control", "no-store, must-revalidate"), ("Content-Length", str(len(payload)))])
         return [payload]
 
     def serve(self, *, host: Optional[str] = None, port: Optional[int] = None) -> None:
@@ -1595,3 +2103,5 @@ def create_app(*, base_dir: Optional[Path] = None) -> IntakeApplication:
 
 if __name__ == "__main__":  # pragma: no cover - manual run helper
     create_app().serve()
+
+
