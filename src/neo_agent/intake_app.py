@@ -1669,9 +1669,11 @@ window.addEventListener('DOMContentLoaded', function () {
             # Build zip into spooled temp (spill to disk > 8MB), then stream chunks
             spooled = tempfile.SpooledTemporaryFile(max_size=8 * 1024 * 1024)
             with zipfile.ZipFile(spooled, "w", zipfile.ZIP_DEFLATED) as zf:
-                for p in files:
+                # Deterministic ordering by relative path
+                rels = sorted((p.relative_to(candidate) for p in files), key=lambda r: str(r))
+                for rel in rels:
                     try:
-                        zf.write(p, arcname=str(p.relative_to(candidate)))
+                        zf.write(candidate / rel, arcname=str(rel))
                     except Exception:
                         continue
             # Finalize and compute size
@@ -2113,15 +2115,11 @@ window.addEventListener('DOMContentLoaded', function () {
                         }
                         resp["parity_deltas"] = (report2 or {}).get("parity_deltas", {}) if isinstance(report2, Mapping) else {}
                         resp["integrity_errors"] = (report2 or {}).get("errors", []) if isinstance(report2, Mapping) else []
-<<<<<<< HEAD
                         resp["overlays_applied"] = not bool(summary.get("rolled_back"))
                         if summary.get("rolled_back"):
                             resp["rolled_back"] = True
                             if summary.get("reason"):
                                 resp["overlay_failure_reason"] = summary.get("reason")
-=======
-                        resp["overlays_applied"] = True
->>>>>>> fb9cd1e (feat(overlays): optional auto-apply 19/20 + persistence/adaptiveness with integrity/parity re-check)
                         resp["overlay_summary"] = summary
                     else:
                         resp["overlays_applied"] = False

@@ -9,6 +9,12 @@ on:
 jobs:
   smoke:
     runs-on: ubuntu-latest
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+      NEO_REPO_OUTDIR: ${{ runner.temp }}/_generated
+      NEO_COPY_TO_ONEDRIVE: 'false'
+      FAIL_ON_PARITY: 'false'
+      NEO_APPLY_OVERLAYS: 'false'
     steps:
       - uses: actions/checkout@v4
 
@@ -32,7 +38,8 @@ jobs:
           npm i --no-fund --no-audit
 
       - name: Run smoke
-        run: make smoke
+        run: |
+          python ci/smoke.py
 
       - name: Upload smoke artifacts
         uses: actions/upload-artifact@v4
@@ -62,4 +69,3 @@ jobs:
           if fc != 20 or not all_true or len(errs) > 0:
               sys.exit(1)
           PY
-
