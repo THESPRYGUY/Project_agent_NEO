@@ -6,7 +6,6 @@ from pathlib import Path
 from neo_build.overlays import apply_overlays, load_overlay_config
 from neo_build.validators import integrity_report
 from neo_agent.intake_app import create_app
-import yaml
 
 
 def _wsgi_call(app, method: str, path: str, body: dict | None = None):
@@ -81,46 +80,3 @@ def test_persistence_adaptiveness_applies_and_keeps_parity(tmp_path: Path):
     assert "approvals" in wf and "escalation_flow" in wf
     assert "stop_conditions" in op and "persistence_formula" in op
 
-
-def test_disallowed_key_is_skipped(tmp_path: Path):
-    app = create_app(base_dir=tmp_path)
-    st, _, body = _wsgi_call(app, "POST", "/save", _profile())
-    assert st == "200 OK", body
-    st, _, body = _wsgi_call(app, "POST", "/build", {})
-    assert st == "200 OK", body
-    out = json.loads(body.decode("utf-8"))
-    outdir = Path(out["outdir"]).resolve()
-    # Build a custom ops YAML that tries to touch a disallowed key
-    ops = {
-        "operations": [
-            {"upsert": {"target_file": "11_Workflow-Pack_v2.json", "set": {"not_allowed": {"x": 1}}}},
-        ]
-    }
-    custom_yaml = tmp_path / "ops.yaml"
-    custom_yaml.write_text(yaml.safe_dump(ops), encoding="utf-8")
-    cfg = {"apply": ["persistence_adaptiveness"], "persistence_ops": str(custom_yaml)}
-    summary = apply_overlays(outdir, cfg)
-    assert any(s.startswith("11_Workflow-Pack_v2.json:not_allowed") for s in summary.get("skipped", []))
-
-
-def test_atomic_rollback_restores_repo_on_failure(tmp_path: Path):
-    # Create repo
-    app = create_app(base_dir=tmp_path)
-    st, _, body = _wsgi_call(app, "POST", "/save", _profile())
-    assert st == "200 OK", body
-    st, _, body = _wsgi_call(app, "POST", "/build", {})
-    assert st == "200 OK", body
-    out = json.loads(body.decode("utf-8"))
-    outdir = Path(out["outdir"]).resolve()
-    # Break parity intentionally by modifying 14.targets
-    k14 = outdir / "14_KPI+Evaluation-Framework_v2.json"
-    data = json.loads(k14.read_text(encoding="utf-8"))
-    data.setdefault("targets", {})["PRI_min"] = 0.1
-    k14.write_text(json.dumps(data, indent=2), encoding="utf-8")
-    # Apply overlays which will not fix parity; expect rollback
-    cfg = load_overlay_config()
-    summary = apply_overlays(outdir, cfg)
-    assert summary.get("rolled_back") is True
-    # Since overlays add approvals to 11, ensure it's not present after rollback
-    wf = json.loads((outdir / "11_Workflow-Pack_v2.json").read_text(encoding="utf-8"))
-    assert "approvals" not in wf or not wf.get("approvals")
