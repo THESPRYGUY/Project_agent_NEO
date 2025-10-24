@@ -71,6 +71,25 @@ Node UI utils use `vitest` for lightweight tests:
 npm test
 ```
 
+## Smoke Test
+
+Run the end-to-end smoke locally (builds a canonical 20-pack repo, emits artifacts):
+
+```bash
+make smoke
+```
+
+Artifacts are written to `_artifacts/smoke/`:
+- `repo.zip` — zipped generated repo
+- `INTEGRITY_REPORT.json` — integrity + parity summary
+- `build.json` — CI-parsed summary with `file_count`, `parity`, `integrity_errors`
+
+The command prints a one-line status, for example:
+
+```
+SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0 | outdir=<path>
+```
+
 ## Build & Verify Panel
 
 - Save Profile → click Build Repo to POST `/build` and write the 20 canonical files.

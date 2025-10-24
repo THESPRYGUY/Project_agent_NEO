@@ -1,0 +1,23 @@
+{
+  "intake_version": "v3.0",
+  "identity": {
+    "agent_id": "AGT-541512-AIA-P-aaaaaaaa",
+    "display_name": "Smoke Agent",
+    "owners": ["Owner One"],
+    "no_impersonation": true
+  },
+  "context": {
+    "naics": { "code": "541512", "title": "Computer Systems Design" },
+    "region": ["CA"]
+  },
+  "role": {
+    "function_code": "it_ops",
+    "role_code": "AIA-P",
+    "role_title": "IT Ops Lead",
+    "objectives": ["Ship reliably"]
+  },
+  "governance_eval": {
+    "gates": { "PRI_min": 0.95, "hallucination_max": 0.02, "audit_min": 0.9 }
+  }
+}
+
