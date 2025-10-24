@@ -96,6 +96,11 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
         # Sprint-1: carry derived regulators into 02 for downstream parity checks
         "safety": {"regulatory": list(_get(sector_profile, "regulatory", []) or [])},
     }
+    # Add observability.kpi_targets for explicit 02↔14 parity checks
+    try:
+        gi["observability"] = {"kpi_targets": kpi_targets_sync()}
+    except Exception:
+        gi["observability"] = {"kpi_targets": {}}
     packs["02_Global-Instructions_v2.json"] = gi
     json_write(out_dir / "02_Global-Instructions_v2.json", gi)
 
