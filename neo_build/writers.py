@@ -133,6 +133,14 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
         "version": 2,
         "human_gate": {"actions": hg},
         "rbac": {"roles": roles_out},
+        # Sprint-4: include activation gate strings for explicit parity checks
+        "gates": {
+            "activation": [
+                f"PRI>={KPI_TARGETS.get('PRI_min')}",
+                f"HAL<={KPI_TARGETS.get('HAL_max')}",
+                f"AUD>={KPI_TARGETS.get('AUD_min')}",
+            ]
+        },
     }
     packs["03_Operating-Rules_v2.json"] = orules
     # Preserve canonical list ordering for RBAC roles (do not deep-sort lists)
@@ -329,7 +337,20 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
     json_write(out_dir / "16_Reasoning-Footprints_Schema_v1.json", rf)
 
     # 17 Lifecycle Pack
-    lc = {"version": 2, "gates": {"kpi_targets": kpi_targets_sync(), "rollback": True, "effective_autonomy": eff_autonomy}, "stages": [str(_dget(profile, "lifecycle.stage", "dev"))]}
+    lc = {
+        "version": 2,
+        "gates": {
+            "kpi_targets": kpi_targets_sync(),
+            "activation": [
+                f"PRI>={KPI_TARGETS.get('PRI_min')}",
+                f"HAL<={KPI_TARGETS.get('HAL_max')}",
+                f"AUD>={KPI_TARGETS.get('AUD_min')}",
+            ],
+            "rollback": True,
+            "effective_autonomy": eff_autonomy,
+        },
+        "stages": [str(_dget(profile, "lifecycle.stage", "dev"))],
+    }
     packs["17_Lifecycle-Pack_v2.json"] = lc
     json_write(out_dir / "17_Lifecycle-Pack_v2.json", lc)
 

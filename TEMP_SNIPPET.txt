@@ -1,0 +1,121 @@
+                <legend>Custom Notes</legend>
+                <label>Engagement Notes
+                    <textarea name="notes" rows="4" placeholder="Outline constraints, knowledge packs, or workflow context.">$notes</textarea>
+                </label>
+            </fieldset>
+
+            <fieldset>
+                <legend>Advanced Overrides (JSON)</legend>
+                <label>Overrides
+                    <textarea name="advanced_overrides" rows="6" placeholder='{ }'></textarea>
+                </label>
+            </fieldset>
+
+            <button type="submit">Generate Agent Profile</button>
+        </form>
+
+        $summary
+        <section class="build-panel" id="build-panel" aria-labelledby="build-panel-title">
+          <div class="build-panel__header">
+            <div class="build-panel__title" id="build-panel-title">Build & Verify</div>
+            <div class="build-panel__actions">
+              <button type="button" class="build-panel__btn" data-build-repo>Build Repo</button>
+            </div>
+          </div>
+          <div class="build-grid">
+            <div class="card" id="health-card">
+              <h3>Health</h3>
+              <div class="health-chip" data-health-chip>
+                <span>Schema</span>
+                <strong class="mono" data-intake-schema>v3.0</strong>
+                <span>• App</span>
+                <strong class="mono" data-app-version>0.0.0</strong>
+              </div>
+              <div style="margin-top: 0.5rem; font-size: 0.85rem;">
+                <div>pid: <span class="mono" data-pid>?</span></div>
+                <div>output: <span class="mono" data-repo-output-dir>…</span></div>
+              </div>
+            </div>
+            <div class="card" id="parity-card">
+              <h3>Parity</h3>
+              <div>02 ? 14: <strong data-parity-02-14 title="02_Global-Instructions vs 14_KPI targets parity">–</strong></div>
+              <div>11 ? 02: <strong data-parity-11-02 title="11_Workflow gates vs 02 targets parity">–</strong></div>
+            </div>
+            <div class="card" id="integrity-card">
+              <h3>Integrity</h3>
+              <div>Files: <strong data-file-count>0</strong></div>
+              <details class="build-errors" data-errors-details>
+                <summary>Errors <span data-errors-count>(0)</span></summary>
+                <ul data-errors-list></ul>
+              </details>
+              <details class="build-errors" data-warnings-details>
+                <summary>Warnings <span data-warnings-count>(0)</span></summary>
+                <ul data-warnings-list></ul>
+              </details>
+            </div>
+            <div class="card" id="output-card">
+              <h3>Output</h3>
+              <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap: wrap;">
+                <input type="text" readonly class="mono" style="flex:1; min-width:260px; padding:0.35rem;" data-outdir value="" placeholder="Run Build to populate path">
+                <a href="#" data-open-outdir style="text-decoration: underline; font-size: 0.9rem;">Open</a>
+                <button type="button" class="build-panel__btn" data-copy-outdir>Copy Path</button>
+              </div>
+            </div>
+          </div>
+        </section>
+        <script type="module">
+$persona_script
+        </script>
+        <script>
+$function_role_bootstrap
+        </script>
+        <script>
+$domain_bundle_script
+        </script>
+        <script>
+$function_role_script
+        </script>
+        <script>
+$identity_script
+        </script>
+        <script>
+$generate_agent_script
+        </script>
+        <script type="module">
+$build_panel_script
+        </script>
+    </body>
+</html>
+"""
+)
+
+
+def _notice(message: str | None) -> str:
+    if not message:
+        return ""
+    return f'<div class="notice"><p>{message}</p></div>'
+
+
+def _summary_block(profile: Mapping[str, Any] | None, profile_path: str, spec_path: str) -> str:
+    if not profile:
+        return ""
+    encoded = json.dumps(profile, indent=2)
+    return (
+        "<div class=\"summary\">"
+        f"<h2>Generated Agent Profile</h2><p>Profile saved to <code>{profile_path}</code></p>"
+        f"<p>Specs generated in <code>{spec_path}</code></p><pre>{encoded}</pre></div>"
+    )
+
+
+
+class IntakeApplication:
+    """Minimal WSGI application serving the intake workflow."""
+
+    MAX_BODY_BYTES = 1_048_576
+
+    def __init__(self, base_dir: Path | None = None) -> None:
+        self.project_root = Path(__file__).resolve().parents[2]
+        self.assets_root = self.project_root / "src"
+        self.ui_dir = self.assets_root / "ui"
+        self.persona_dir = self.assets_root / "persona"
+        self.static_dir = self.assets_root / "neo_agent" / "static"

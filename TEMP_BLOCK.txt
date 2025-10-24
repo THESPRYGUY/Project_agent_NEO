@@ -1,0 +1,7 @@
+              <div>02 ? 14: <strong data-parity-02-14 title="02_Global-Instructions vs 14_KPI targets parity">–</strong></div>
+              <div>11 ? 02: <strong data-parity-11-02 title="11_Workflow gates vs 02 targets parity">–</strong></div>
+            </div>
+            <div class="card" id="integrity-card">
+              <h3>Integrity</h3>
+              <div>Files: <strong data-file-count>0</strong></div>
+              <details class="build-errors" data-errors-details>

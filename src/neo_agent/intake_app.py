@@ -1913,13 +1913,33 @@ window.addEventListener('DOMContentLoaded', function () {
                 except Exception as exc:
                     warnings.append(f"copy_to_onedrive_failed: {exc}")
 
+                # Include sprint-4 parity map and deltas from integrity report
+                parity_map = (report or {}).get("parity", {}) if isinstance(report, Mapping) else {}
+                parity_deltas = (report or {}).get("parity_deltas", {}) if isinstance(report, Mapping) else {}
                 resp = {
                     "outdir": str(out_dir),
                     "file_count": len(list(out_dir.glob("*.json"))) + len(list(out_dir.glob("*.md"))),
-                    "parity": {"02_vs_14": parity_02_14, "11_vs_02": parity_11_02},
+                    "parity": {
+                        "02_vs_14": bool(parity_map.get("02_vs_14", parity_02_14)),
+                        "11_vs_02": bool(parity_map.get("11_vs_02", parity_11_02)),
+                        "03_vs_02": bool(parity_map.get("03_vs_02", True)),
+                        "17_vs_02": bool(parity_map.get("17_vs_02", True)),
+                    },
+                    "parity_deltas": parity_deltas,
                     "integrity_errors": report.get("errors", []) if isinstance(report, Mapping) else [],
                     "warnings": warnings,
                 }
+                # Telemetry: parity checked summary
+                if emit_event:
+                    try:
+                        vals = list(resp["parity"].values())
+                        emit_event("gate_parity_checked", {
+                            "true_count": int(sum(1 for v in vals if v)),
+                            "false_count": int(sum(1 for v in vals if not v)),
+                            "deviated": [k for k, ok in resp["parity"].items() if not ok],
+                        })
+                    except Exception:
+                        pass
                 if emit_event:
                     emit_event("build:completed", {"agent_id": agent_id, "outdir": resp["outdir"], "parity": resp["parity"]})
                     emit_repo_generated_event({"outdir": resp["outdir"]})
