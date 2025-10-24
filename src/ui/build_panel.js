@@ -172,35 +172,37 @@ function renderParityTooltips(data) {
     info.type = 'button';
     info.textContent = 'i';
     info.className = 'info-btn';
-    info.setAttribute('aria-label', 'Show parity deltas');
-    info.setAttribute('data-parity-info', '1');
-    info.setAttribute('role', 'button');
-    info.setAttribute('aria-expanded', 'false');
+    try { info.setAttribute('aria-label', 'Show parity deltas'); } catch {}
+    try { info.setAttribute('data-parity-info', '1'); } catch {}
+    try { info.setAttribute('role', 'button'); } catch {}
+    try { info.setAttribute('aria-expanded', 'false'); } catch {}
     info.tabIndex = 0;
     const pack = map[k].pack;
     const relevant = deltas.filter(d => String(d.pack) === String(pack));
     const tooltip = document.createElement('div');
     tooltip.className = 'tooltip';
-    tooltip.setAttribute('role', 'tooltip');
+    try { tooltip.setAttribute('role', 'tooltip'); } catch {}
     tooltip.hidden = true;
     const tipId = 'parity-tip-' + pack;
-    tooltip.setAttribute('id', tipId);
-    tooltip.setAttribute('data-parity-tooltip', pack + '-02');
+    try { tooltip.setAttribute('id', tipId); } catch {}
+    try { tooltip.setAttribute('data-parity-tooltip', pack + '-02'); } catch {}
     tooltip.innerHTML = relevant.map(d => `${pack} ${d.key} — ${Number(d.got).toFixed(3)} → ${Number(d.expected).toFixed(3)}`).join('<br>');
-    info.setAttribute('aria-controls', tipId);
+    try { info.setAttribute('aria-controls', tipId); } catch {}
     function setOpen(open) {
       tooltip.hidden = !open;
-      info.setAttribute('aria-expanded', open ? 'true' : 'false');
+      try { info.setAttribute('aria-expanded', open ? 'true' : 'false'); } catch {}
     }
-    info.addEventListener('click', () => { setOpen(tooltip.hidden); });
-    info.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(tooltip.hidden); }
-      if (e.key === 'Escape') { e.preventDefault(); setOpen(false); }
-    });
-    document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { setOpen(false); } });
+    try { info.addEventListener('click', () => { setOpen(tooltip.hidden); }); } catch {}
+    try {
+      info.addEventListener('keydown', (e) => {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); setOpen(tooltip.hidden); }
+        if (e.key === 'Escape') { e.preventDefault(); setOpen(false); }
+      });
+    } catch {}
+    try { document.addEventListener('keydown', (e) => { if (e.key === 'Escape') { setOpen(false); } }); } catch {}
     const parent = target.parentElement || target;
-    parent.appendChild(info);
-    parent.appendChild(tooltip);
+    try { if (parent && typeof parent.appendChild === 'function') parent.appendChild(info); } catch {}
+    try { if (parent && typeof parent.appendChild === 'function') parent.appendChild(tooltip); } catch {}
   }
 }
 

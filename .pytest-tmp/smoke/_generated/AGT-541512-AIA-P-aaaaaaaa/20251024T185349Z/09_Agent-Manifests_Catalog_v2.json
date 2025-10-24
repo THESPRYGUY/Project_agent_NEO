@@ -1,0 +1,34 @@
+{
+  "agents": [
+    {
+      "agent_id": "AGT-541512-AIA-P-aaaaaaaa",
+      "display_name": "Smoke Agent",
+      "owners": [
+        "Owner One"
+      ],
+      "role_title": "IT Ops Lead"
+    }
+  ],
+  "owners": [
+    "Owner One"
+  ],
+  "summary": {
+    "languages": [],
+    "naics": {
+      "code": "",
+      "level": null,
+      "lineage": [],
+      "title": ""
+    },
+    "region": [
+      "CA"
+    ],
+    "regulators": [
+      "ISO_IEC_42001",
+      "NIST_AI_RMF",
+      "PIPEDA"
+    ],
+    "sector": "Computer Systems Design"
+  },
+  "version": 2
+}
