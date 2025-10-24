@@ -72,10 +72,30 @@ export function applyBuildToDom(data) {
   const outdirInput = document.querySelector('[data-outdir]');
   const p0214 = document.querySelector('[data-parity-02-14]');
   const p1102 = document.querySelector('[data-parity-11-02]');
+  const p0302 = document.querySelector('[data-parity-03-02]');
+  const p1702 = document.querySelector('[data-parity-17-02]');
+  // Ensure new parity badges exist in DOM for 03↔02 and 17↔02
+  try {
+    const card = document.getElementById('parity-card');
+    if (card) {
+      if (!p0302) {
+        const d = document.createElement('div');
+        d.innerHTML = '03 ↔ 02: <strong data-parity-03-02 title="03 activation vs 02 targets">-</strong>';
+        card.appendChild(d);
+      }
+      if (!p1702) {
+        const d2 = document.createElement('div');
+        d2.innerHTML = '17 ↔ 02: <strong data-parity-17-02 title="17 activation vs 02 targets">-</strong>';
+        card.appendChild(d2);
+      }
+    }
+  } catch {}
   if (outdirInput) outdirInput.value = data?.outdir || '';
   setText('[data-file-count]', data?.file_count || 0);
   setBoolBadge(p0214, Boolean(data?.parity?.['02_vs_14']));
   setBoolBadge(p1102, Boolean(data?.parity?.['11_vs_02']));
+  setBoolBadge(p0302, Boolean(data?.parity?.['03_vs_02']));
+  setBoolBadge(p1702, Boolean(data?.parity?.['17_vs_02']));
   renderIntegrity('[data-errors-list]', '[data-errors-count]', data?.integrity_errors || []);
   renderIntegrity('[data-warnings-list]', '[data-warnings-count]', data?.warnings || []);
 }
@@ -86,6 +106,8 @@ function bindPanel() {
   const openLink = document.querySelector('[data-open-outdir]');
   const p0214 = document.querySelector('[data-parity-02-14]');
   const p1102 = document.querySelector('[data-parity-11-02]');
+  const p0302 = document.querySelector('[data-parity-03-02]');
+  const p1702 = document.querySelector('[data-parity-17-02]');
 
   if (copyBtn) {
     copyBtn.addEventListener('click', () => {
@@ -138,11 +160,15 @@ async function init() {
     if (last) {
       const p0214 = document.querySelector('[data-parity-02-14]');
       const p1102 = document.querySelector('[data-parity-11-02]');
+      const p0302 = document.querySelector('[data-parity-03-02]');
+      const p1702 = document.querySelector('[data-parity-17-02]');
       const outdirInput = document.querySelector('[data-outdir]');
       if (outdirInput) outdirInput.value = last.outdir || '';
       setText('[data-file-count]', last.file_count || 0);
       setBoolBadge(p0214, Boolean(last?.parity?.['02_vs_14']));
       setBoolBadge(p1102, Boolean(last?.parity?.['11_vs_02']));
+      setBoolBadge(p0302, Boolean(last?.parity?.['03_vs_02']));
+      setBoolBadge(p1702, Boolean(last?.parity?.['17_vs_02']));
       renderIntegrity('[data-errors-list]', '[data-errors-count]', last.integrity_errors || []);
       renderIntegrity('[data-warnings-list]', '[data-warnings-count]', last.warnings || []);
     }

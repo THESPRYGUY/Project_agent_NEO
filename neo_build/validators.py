@@ -3,6 +3,9 @@
 from __future__ import annotations
 
 from typing import Any, Dict, Mapping
+import os
+
+from .gates import parse_activation_strings
 
 from .contracts import KPI_TARGETS, REQUIRED_ALERTS, REQUIRED_EVENTS, REQUIRED_HUMAN_GATE_ACTIONS
 
@@ -83,4 +86,69 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
     agents = ((packs.get("09_Agent-Manifests_Catalog_v2.json") or {}).get("agents") or [])
     agent_id_09 = agents[0].get("agent_id") if isinstance(agents, list) and agents else None
     out["checks"]["agent_id_consistent"] = bool(agent_id_06) and agent_id_06 == agent_id_09
+    # KPI Parity hardening (Sprint-4): 02/14/11 plus 03/17 activation strings
+    p02 = ((packs.get("02_Global-Instructions_v2.json") or {}).get("observability") or {}).get("kpi_targets", {})
+    p14 = (packs.get("14_KPI+Evaluation-Framework_v2.json") or {}).get("targets", {})
+    g11 = (packs.get("11_Workflow-Pack_v2.json") or {}).get("gates", {})
+    if not isinstance(g11, dict):
+        g11 = {}
+    p11 = dict(g11.get("kpi_targets", {}) or {})
+    # p11 synonyms to compare with p02
+    if "HAL_max" not in p11 and "hallucination_max" in p11:
+        p11["HAL_max"] = p11.get("hallucination_max")
+    if "AUD_min" not in p11 and "audit_min" in p11:
+        p11["AUD_min"] = p11.get("audit_min")
+    if "PRI_min" not in p11 and "PRI_min" in p14:
+        p11["PRI_min"] = p11.get("PRI_min")
+
+    act03 = (((packs.get("03_Operating-Rules_v2.json") or {}).get("gates") or {}).get("activation") or [])
+    act17 = (((packs.get("17_Lifecycle-Pack_v2.json") or {}).get("gates") or {}).get("activation") or [])
+    p03 = parse_activation_strings(act03)
+    p17 = parse_activation_strings(act17)
+
+    def _eq(a: Mapping[str, Any] | None, b: Mapping[str, Any] | None) -> bool:
+        return bool((a or {}).get("PRI_min") == (b or {}).get("PRI_min") and (a or {}).get("HAL_max") == (b or {}).get("HAL_max") and (a or {}).get("AUD_min") == (b or {}).get("AUD_min"))
+
+    parity = {
+        "02_vs_14": _eq(p02, p14),
+        "11_vs_02": (p11.get("PRI_min") == p02.get("PRI_min") and p11.get("HAL_max") == p02.get("HAL_max") and p11.get("AUD_min") == p02.get("AUD_min")),
+        "03_vs_02": (p03.get("PRI_min") == p02.get("PRI_min") and p03.get("HAL_max") == p02.get("HAL_max") and p03.get("AUD_min") == p02.get("AUD_min")),
+        "17_vs_02": (p17.get("PRI_min") == p02.get("PRI_min") and p17.get("HAL_max") == p02.get("HAL_max") and p17.get("AUD_min") == p02.get("AUD_min")),
+    }
+
+    def _r(v: Any) -> Any:
+        try:
+            if isinstance(v, (int, float)):
+                return round(float(v), 4)
+        except Exception:
+            return v
+        return v
+
+    def _deltas(p: Mapping[str, Any], src: Mapping[str, Any]):
+        out: Dict[str, Any] = {}
+        for k in ("PRI_min", "HAL_max", "AUD_min"):
+            pv = p.get(k)
+            sv = src.get(k)
+            if pv != sv:
+                out[k] = (_r(pv), _r(sv))
+        return out
+
+    parity_deltas = {
+        "03": _deltas(p03, p02),
+        "17": _deltas(p17, p02),
+        "11": _deltas(p11, p02),
+        "14": _deltas(p14, p02),
+    }
+
+    out["parity"] = parity
+    out["parity_deltas"] = parity_deltas
+
+    # Optional failure gate via env
+    try:
+        fail_on_parity = str(os.environ.get("FAIL_ON_PARITY", "false")).lower() in ("1","true","yes")
+        if fail_on_parity and not all(parity.values()):
+            out.setdefault("errors", []).append("parity_failed")
+    except Exception:
+        pass
+
     return out
