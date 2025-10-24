@@ -83,6 +83,7 @@ export function applyBuildToDom(data) {
 function bindPanel() {
   const buildBtn = document.querySelector('[data-build-repo]');
   const copyBtn = document.querySelector('[data-copy-outdir]');
+  const openLink = document.querySelector('[data-open-outdir]');
   const p0214 = document.querySelector('[data-parity-02-14]');
   const p1102 = document.querySelector('[data-parity-11-02]');
 
@@ -90,6 +91,17 @@ function bindPanel() {
     copyBtn.addEventListener('click', () => {
       const outdirInput = document.querySelector('[data-outdir]');
       if (outdirInput && outdirInput.value) copyToClipboard(outdirInput.value);
+    });
+  }
+  if (openLink) {
+    openLink.addEventListener('click', (e) => {
+      e.preventDefault();
+      const outdirInput = document.querySelector('[data-outdir]');
+      const p = outdirInput && outdirInput.value;
+      if (p) {
+        // Browsers typically block file:// but keep link visible with tooltip
+        try { openLink.href = 'file://' + p; openLink.title = p; window.open(openLink.href, '_blank'); } catch { /* noop */ }
+      }
     });
   }
 

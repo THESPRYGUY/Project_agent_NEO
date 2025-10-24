@@ -495,8 +495,9 @@ $build_panel_styles
             </div>
             <div class="card" id="output-card">
               <h3>Output</h3>
-              <div style="display:flex; align-items:center; gap:0.5rem;">
-                <input type="text" readonly class="mono" style="flex:1; padding:0.35rem;" data-outdir value="" placeholder="Run Build to populate path">
+              <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap: wrap;">
+                <input type="text" readonly class="mono" style="flex:1; min-width:260px; padding:0.35rem;" data-outdir value="" placeholder="Run Build to populate path">
+                <a href="#" data-open-outdir style="text-decoration: underline; font-size: 0.9rem;">Open</a>
                 <button type="button" class="build-panel__btn" data-copy-outdir>Copy Path</button>
               </div>
             </div>
