@@ -115,6 +115,13 @@ Safety and integrity:
   - Output path: copyable filesystem path to the generated repo.
   - Health chip: GET `/health` to display app_version, pid, and repo_output_dir.
 
+## Reviewing Builds in the UI
+
+- Last-Build banner: on load the UI fetches `/last-build` and displays the most recent build with timestamp, output path, aggregate parity badge, and whether overlays were applied.
+- Download ZIP: after a build completes or from the Last-Build banner, click “Download ZIP” to retrieve a zipped copy of the repo via `/build/zip?outdir=<path>`.
+- Parity-deltas tooltips: when any parity check is false, an info icon appears next to the parity card. Activate it (click or keyboard) to see the exact key deltas, e.g. `03 PRI_min — 0.940 → 0.950`.
+
+
 
 ## License
 

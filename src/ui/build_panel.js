@@ -11,6 +11,15 @@ export async function getHealth() {
   return data;
 }
 
+export async function getLastBuild() {
+  try {
+    const res = await fetch('/last-build', { method: 'GET', cache: 'no-store' });
+    if (res.status === 204) return null;
+    const text = await res.text();
+    return JSON.parse(text);
+  } catch { return null; }
+}
+
 export function persistLastBuild(summary) {
   try { sessionStorage.setItem('NEO_LAST_BUILD', JSON.stringify(summary)); } catch {}
 }
@@ -70,6 +79,7 @@ function copyToClipboard(text) {
 
 export function applyBuildToDom(data) {
   const outdirInput = document.querySelector('[data-outdir]');
+  const zipBtn = ensureZipButton();
   const p0214 = document.querySelector('[data-parity-02-14]');
   const p1102 = document.querySelector('[data-parity-11-02]');
   const p0302 = document.querySelector('[data-parity-03-02]');
@@ -91,6 +101,10 @@ export function applyBuildToDom(data) {
     }
   } catch {}
   if (outdirInput) outdirInput.value = data?.outdir || '';
+  if (zipBtn) {
+    zipBtn.href = data?.outdir ? ('/build/zip?outdir=' + encodeURIComponent(data.outdir)) : '#';
+    zipBtn.hidden = !Boolean(data?.outdir);
+  }
   setText('[data-file-count]', data?.file_count || 0);
   setBoolBadge(p0214, Boolean(data?.parity?.['02_vs_14']));
   setBoolBadge(p1102, Boolean(data?.parity?.['11_vs_02']));
@@ -98,6 +112,83 @@ export function applyBuildToDom(data) {
   setBoolBadge(p1702, Boolean(data?.parity?.['17_vs_02']));
   renderIntegrity('[data-errors-list]', '[data-errors-count]', data?.integrity_errors || []);
   renderIntegrity('[data-warnings-list]', '[data-warnings-count]', data?.warnings || []);
+  renderParityTooltips(data);
+}
+
+function ensureZipButton() {
+  let btn = document.querySelector('[data-download-zip]');
+  if (!btn) {
+    const card = document.getElementById('output-card');
+    if (card) {
+      btn = document.createElement('a');
+      btn.textContent = 'Download ZIP';
+      btn.href = '#';
+      btn.setAttribute('data-download-zip', '1');
+      btn.setAttribute('download', 'repo.zip');
+      btn.className = 'build-panel__btn';
+      btn.hidden = true;
+      const container = card.querySelector('div');
+      (container || card).appendChild(btn);
+    }
+  }
+  return btn;
+}
+
+function deltasToList(deltas) {
+  const items = [];
+  if (!deltas) return items;
+  if (Array.isArray(deltas)) return deltas.map(x => ({ pack: String(x.pack||''), key: String(x.key||''), got: x.got, expected: x.expected }));
+  try {
+    for (const pack of Object.keys(deltas)) {
+      const kv = deltas[pack] || {};
+      for (const k of Object.keys(kv)) {
+        const pair = kv[k];
+        const got = Array.isArray(pair) ? pair[0] : (pair && pair.got);
+        const expected = Array.isArray(pair) ? pair[1] : (pair && pair.expected);
+        items.push({ pack, key: k, got, expected });
+      }
+    }
+  } catch {}
+  return items;
+}
+
+function renderParityTooltips(data) {
+  const parity = (data && data.parity) || {};
+  const deltas = deltasToList(data && data.parity_deltas);
+  const map = {
+    '02_vs_14': { el: document.querySelector('[data-parity-02-14]'), pack: '14' },
+    '11_vs_02': { el: document.querySelector('[data-parity-11-02]'), pack: '11' },
+    '03_vs_02': { el: document.querySelector('[data-parity-03-02]'), pack: '03' },
+    '17_vs_02': { el: document.querySelector('[data-parity-17-02]'), pack: '17' },
+  };
+  for (const k of Object.keys(map)) {
+    const ok = Boolean(parity[k]);
+    const target = map[k].el;
+    if (!target) continue;
+    const old = target.parentElement && target.parentElement.querySelector('[data-parity-info]');
+    if (old) old.remove();
+    if (ok) continue;
+    const info = document.createElement('button');
+    info.type = 'button';
+    info.textContent = 'i';
+    info.className = 'info-btn';
+    info.setAttribute('aria-label', 'Show parity deltas');
+    info.setAttribute('data-parity-info', '1');
+    info.tabIndex = 0;
+    const pack = map[k].pack;
+    const relevant = deltas.filter(d => String(d.pack) === String(pack));
+    const tooltip = document.createElement('div');
+    tooltip.className = 'tooltip';
+    tooltip.setAttribute('role', 'tooltip');
+    tooltip.hidden = true;
+    tooltip.setAttribute('data-parity-tooltip', pack + '-02');
+    tooltip.innerHTML = relevant.map(d => `${pack} ${d.key} — ${Number(d.got).toFixed(3)} → ${Number(d.expected).toFixed(3)}`).join('<br>');
+    info.addEventListener('click', () => { tooltip.hidden = !tooltip.hidden; });
+    info.addEventListener('keydown', (e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); tooltip.hidden = !tooltip.hidden; } });
+    const parent = target.parentElement || target;
+    parent.appendChild(info);
+    parent.appendChild(tooltip);
+  }
 }
 
 function bindPanel() {
@@ -164,6 +255,9 @@ async function init() {
       const p1702 = document.querySelector('[data-parity-17-02]');
       const outdirInput = document.querySelector('[data-outdir]');
       if (outdirInput) outdirInput.value = last.outdir || '';
+      ensureZipButton();
+      const zipBtn = document.querySelector('[data-download-zip]');
+      if (zipBtn) { zipBtn.href = last?.outdir ? ('/build/zip?outdir=' + encodeURIComponent(last.outdir)) : '#'; zipBtn.hidden = !Boolean(last?.outdir); }
       setText('[data-file-count]', last.file_count || 0);
       setBoolBadge(p0214, Boolean(last?.parity?.['02_vs_14']));
       setBoolBadge(p1102, Boolean(last?.parity?.['11_vs_02']));
@@ -171,6 +265,14 @@ async function init() {
       setBoolBadge(p1702, Boolean(last?.parity?.['17_vs_02']));
       renderIntegrity('[data-errors-list]', '[data-errors-count]', last.integrity_errors || []);
       renderIntegrity('[data-warnings-list]', '[data-warnings-count]', last.warnings || []);
+      renderParityBanner(last);
+      renderParityTooltips(last);
+    }
+    const fresh = await getLastBuild();
+    if (fresh) {
+      persistLastBuild(fresh);
+      applyBuildToDom(fresh);
+      renderParityBanner(fresh);
     }
   } catch {}
   bindPanel();
@@ -179,4 +281,35 @@ async function init() {
 // Auto-init when included in the page
 if (typeof document !== 'undefined' && typeof window !== 'undefined') {
   try { init(); } catch {}
+}
+
+export function renderParityBanner(summary) {
+  try {
+    let banner = document.querySelector('[data-last-build-banner]');
+    if (!banner) {
+      const panel = document.getElementById('build-panel');
+      banner = document.createElement('div');
+      banner.setAttribute('data-last-build-banner', '1');
+      banner.className = 'last-build-banner';
+      if (panel && panel.parentElement) {
+        panel.parentElement.insertBefore(banner, panel);
+      }
+    }
+    const ts = String(summary.timestamp || '').replace('T', ' ').replace('Z','Z');
+    const allTrue = ['02_vs_14','11_vs_02','03_vs_02','17_vs_02'].every(k => Boolean(summary?.parity?.[k]));
+    const outdir = String(summary.outdir || '');
+    banner.innerHTML = '' +
+      `<div class="banner-row">` +
+        `<span class="badge ${allTrue ? 'ok' : 'warn'}" aria-label="Aggregate parity">${allTrue ? 'ALL TRUE' : 'NEEDS REVIEW'}</span>` +
+        `<span class="ts">${ts}</span>` +
+        `<span class="path mono" title="${outdir}">${outdir}</span>` +
+        `<span class="ovl">Overlays: ${summary.overlays_applied ? 'yes' : 'no'}</span>` +
+        `<button type="button" class="build-panel__btn" data-copy-last>Copy Path</button>` +
+        `<a class="build-panel__btn" data-last-zip href="${outdir ? ('/build/zip?outdir=' + encodeURIComponent(outdir)) : '#'}" ${outdir ? '' : 'hidden'}>Download ZIP</a>` +
+      `</div>`;
+    const copy = banner.querySelector('[data-copy-last]');
+    const a = banner.querySelector('[data-last-zip]');
+    if (copy) copy.addEventListener('click', () => outdir && copyToClipboard(outdir));
+    if (a) a.hidden = !Boolean(outdir);
+  } catch {}
 }

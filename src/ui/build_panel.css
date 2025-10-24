@@ -1,2 +1,20 @@
 /* Placeholder for additional build panel styling (optional). */
 
+.last-build-banner {
+  margin: 0.5rem 0 0.75rem 0;
+  padding: 0.5rem 0.75rem;
+  background: #f6f7fb;
+  border: 1px solid #e1e3ee;
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+}
+.last-build-banner .banner-row { display:flex; gap:0.5rem; align-items:center; flex-wrap:wrap; }
+.last-build-banner .badge { padding: 0.15rem 0.5rem; border-radius: 4px; font-weight: 600; }
+.last-build-banner .badge.ok { background:#e7f7ec; color:#156f3d; border:1px solid #bde8c9; }
+.last-build-banner .badge.warn { background:#fff4e5; color:#8a5a1e; border:1px solid #ffe0b2; }
+.last-build-banner .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+
+.info-btn { margin-left: 0.35rem; padding: 0 0.35rem; border: 1px solid #d0d3df; background: #fff; border-radius: 3px; cursor: pointer; }
+.info-btn:focus { outline: 2px solid #6aa0ff; outline-offset: 1px; }
+.tooltip { margin-top: 0.25rem; background: #fff; border: 1px solid #d0d3df; padding: 0.35rem 0.5rem; border-radius: 4px; font-size: 0.85rem; max-width: 420px; }
