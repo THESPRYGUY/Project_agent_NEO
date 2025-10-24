@@ -1955,7 +1955,11 @@ window.addEventListener('DOMContentLoaded', function () {
                         }
                         resp["parity_deltas"] = (report2 or {}).get("parity_deltas", {}) if isinstance(report2, Mapping) else {}
                         resp["integrity_errors"] = (report2 or {}).get("errors", []) if isinstance(report2, Mapping) else []
-                        resp["overlays_applied"] = True
+                        resp["overlays_applied"] = not bool(summary.get("rolled_back"))
+                        if summary.get("rolled_back"):
+                            resp["rolled_back"] = True
+                            if summary.get("reason"):
+                                resp["overlay_failure_reason"] = summary.get("reason")
                         resp["overlay_summary"] = summary
                     else:
                         resp["overlays_applied"] = False

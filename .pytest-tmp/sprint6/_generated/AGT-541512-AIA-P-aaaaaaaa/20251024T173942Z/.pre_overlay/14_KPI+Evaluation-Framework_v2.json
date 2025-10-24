@@ -1,0 +1,8 @@
+{
+  "targets": {
+    "AUD_min": 0.9,
+    "HAL_max": 0.02,
+    "PRI_min": 0.95
+  },
+  "version": 2
+}

@@ -1,0 +1,14 @@
+{
+  "no_impersonation": true,
+  "pii_mask_on_ingest": true,
+  "privacy_policies": {
+    "pii_flags": []
+  },
+  "version": 2,
+  "human_in_loop_triggers": [
+    "finance_actions",
+    "personal_data",
+    "protected_categories",
+    "policy_risk>=medium"
+  ]
+}
