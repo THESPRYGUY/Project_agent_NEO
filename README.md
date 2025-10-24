@@ -65,6 +65,22 @@ The repository relies on `pytest` for test execution:
 pytest
 ```
 
+Node UI utils use `vitest` for lightweight tests:
+
+```bash
+npm test
+```
+
+## Build & Verify Panel
+
+- Save Profile → click Build Repo to POST `/build` and write the 20 canonical files.
+- Status cards show:
+  - Parity: 02↔14 and 11↔02 with checkmarks.
+  - Integrity: file_count, errors, warnings (expandable).
+  - Output path: copyable filesystem path to the generated repo.
+  - Health chip: GET `/health` to display app_version, pid, and repo_output_dir.
+
+
 ## License
 
 Project NEO Agent is released under the MIT License. See `LICENSE` for details.

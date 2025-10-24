@@ -5,9 +5,9 @@
   function ready(){
     const name = (hidden('agent_name')||{}).value || '';
     const nc = (hidden('naics_code')||{}).value || '';
-    const fn = (hidden('business_function')||{}).value || '';
-    const rc = (hidden('role_code')||{}).value || '';
-    const rt = (hidden('role_title')||{}).value || '';
+    const fn = (hidden('business_function')||{}).value || (document.querySelector('[data-function-select]')?.value || '');
+    const rc = (hidden('role_code')||{}).value || (document.querySelector('[data-role-select]')?.value || '');
+    const rt = (hidden('role_title')||{}).value || (document.querySelector('[data-role-select]')?.selectedOptions?.[0]?.text || '');
     return Boolean(name && nc && fn && (rc || rt));
   }
   function update(){
@@ -80,10 +80,10 @@
     }
 
     // business function + role
-    const fn = get('business_function');
+    const fn = get('business_function') || (document.querySelector('[data-function-select]')?.value || '');
     if (fn) { profile.business_function = fn; profile.agent.business_function = fn; }
-    const roleCode = get('role_code');
-    const roleTitle = get('role_title');
+    const roleCode = get('role_code') || (document.querySelector('[data-role-select]')?.value || '');
+    const roleTitle = get('role_title') || (document.querySelector('[data-role-select]')?.selectedOptions?.[0]?.text || '');
     const roleSenior = get('role_seniority');
     if (roleCode || roleTitle || roleSenior) {
       profile.role = { code: roleCode, title: roleTitle || roleCode, seniority: roleSenior, function: fn || profile.agent.role };
@@ -108,7 +108,8 @@
       agent_id: get('identity.agent_id'),
       display_name: get('identity.display_name'),
       owners: (get('identity.owners')||'').split(',').map(s=>s.trim()).filter(Boolean),
-      no_impersonation: !!(form.querySelector('[name="identity.no_impersonation"]')?.checked)
+      no_impersonation: !!(form.querySelector('[name="identity.no_impersonation"]')?.checked),
+      agent_version: get('agent_version') || '1.0.0'
     };
     profile.role_profile = {
       archetype: get('role_profile.archetype'),
@@ -186,11 +187,37 @@
       const text = await res.text();
       const json = (()=>{ try { return JSON.parse(text) } catch { return null } })();
       if (res.ok && json && json.status === 'ok') {
-        alert('Agent repo generation started. Check output in the app logs.');
+        alert('Agent repo generated successfully. Check the generated_repos folder.');
       } else {
+        if (res.status === 404) {
+          // Fallback: submit the form to '/' to trigger server-side build on POST
+          console.log('API endpoint not found, falling back to form submit');
+          const formEl = document.querySelector('form');
+          if (formEl) {
+            const marker = document.createElement('input');
+            marker.type = 'hidden';
+            marker.name = '__auto_repo';
+            marker.value = '1';
+            formEl.appendChild(marker);
+            formEl.submit();
+            return;
+          }
+        }
         alert('Generation failed: ' + (json && json.issues ? json.issues.join('; ') : res.status + ' ' + text));
       }
     } catch (err) {
+      // If fetch fails completely, try the fallback path
+      console.error('API call failed, attempting form submit fallback:', err);
+      const formEl = document.querySelector('form');
+      if (formEl) {
+        const marker = document.createElement('input');
+        marker.type = 'hidden';
+        marker.name = '__auto_repo';
+        marker.value = '1';
+        formEl.appendChild(marker);
+        formEl.submit();
+        return;
+      }
       alert('Generation error: ' + err);
     } finally {
       btn.textContent = 'Generate Agent Repo';

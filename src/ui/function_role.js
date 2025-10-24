@@ -324,6 +324,7 @@
 
   function initialLoad() {
     populateFunctions();
+    // Restore function selection from bootstrap state or hidden field
     if (hiddenFunction && hiddenFunction.value) {
       functionSelect.value = hiddenFunction.value;
     }
@@ -331,12 +332,21 @@
     if (roleSelect.options && roleSelect.options.length > 1) {
       roleSelect.disabled = false;
     }
+    // Always update role options based on current function
     updateRoleOptions();
-    const initialRole = fetchRole(hiddenRoleCode?.value || '');
-    if (initialRole) {
-      roleSelect.value = initialRole.code;
-      updateHiddenValues(initialRole);
-      updatePreview(initialRole);
+    // Restore role selection from bootstrap state or hidden field
+    const initialRoleCode = hiddenRoleCode?.value || '';
+    if (initialRoleCode) {
+      const initialRole = fetchRole(initialRoleCode);
+      if (initialRole) {
+        roleSelect.value = initialRole.code;
+        updateHiddenValues(initialRole);
+        updatePreview(initialRole);
+      } else {
+        // Role code exists but not found in current list, still set hidden values
+        // This ensures the values persist even if the role list hasn't loaded yet
+        updatePreview(null);
+      }
     }
   }
 

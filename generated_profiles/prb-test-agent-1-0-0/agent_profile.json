@@ -1,0 +1,55 @@
+{
+  "intake_version": "v3.0",
+  "identity": {
+    "agent_id": "AGENT-PRB-001",
+    "display_name": "PRB Test Agent",
+    "owners": [
+      "CAIO",
+      "CPA"
+    ]
+  },
+  "context": {
+    "naics": {
+      "code": "541110",
+      "title": "Offices of Lawyers",
+      "level": 6,
+      "lineage": []
+    },
+    "region": [
+      "CA"
+    ]
+  },
+  "role": {
+    "function_code": "legal_compliance",
+    "role_code": "AIA-P",
+    "role_title": "Legal & Compliance Lead",
+    "objectives": [
+      "Ensure compliance"
+    ]
+  },
+  "governance_eval": {
+    "gates": {
+      "PRI_min": 0.95,
+      "hallucination_max": 0.02,
+      "audit_min": 0.9
+    }
+  },
+  "role_profile": {
+    "archetype": "AIA-P",
+    "role_title": "Legal & Compliance Lead",
+    "objectives": [
+      "Ensure compliance"
+    ]
+  },
+  "sector_profile": {
+    "sector": "Offices of Lawyers",
+    "region": [
+      "CA"
+    ],
+    "regulatory": [
+      "ISO_IEC_42001",
+      "NIST_AI_RMF",
+      "PIPEDA"
+    ]
+  }
+}
