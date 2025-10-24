@@ -68,8 +68,8 @@ def normalize_context_role(v3: Mapping[str, Any]) -> Dict[str, Any]:
     role = role if isinstance(role, Mapping) else {}
 
     region = ctx.get("region")
-    if not isinstance(region, list):
-        region = ["CA"]
+    if not isinstance(region, list) or not region:
+        region = ["CA"]  # Default to CA when region is missing or empty
 
     naics = ctx.get("naics") if isinstance(ctx.get("naics"), Mapping) else {}
 

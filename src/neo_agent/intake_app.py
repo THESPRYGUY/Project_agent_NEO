@@ -218,8 +218,24 @@ FORM_TEMPLATE = Template(
             .summary pre { background: #0b1b36; color: #e3f6f5; padding: 1rem; border-radius: 8px; }
             .notice { margin-bottom: 1rem; color: #205072; }
             .generate-agent { display: flex; justify-content: flex-end; margin-top: 1rem; }
+            /* Build Panel styles */
+            .build-panel { position: relative; margin-top: 1.5rem; padding: 1rem; background: #ffffff; border: 1px solid #dbe2ef; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
+            .build-panel__header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 0.75rem; }
+            .build-panel__title { font-size: 1.1rem; font-weight: 600; color: #112d4e; }
+            .build-panel__actions { display: flex; gap: 0.5rem; }
+            .build-panel__btn { background: #1f3c88; color: #fff; padding: 0.5rem 0.9rem; border: none; border-radius: 6px; cursor: pointer; font-size: 0.95rem; }
+            .build-panel__btn[disabled] { opacity: 0.6; cursor: not-allowed; }
+            .build-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 0.75rem; }
+            .card { background: #f7f9fc; border: 1px solid #e6edf6; border-radius: 8px; padding: 0.75rem; }
+            .card h3 { margin: 0 0 0.5rem 0; font-size: 0.95rem; color: #0b2545; }
+            .health-chip { display: inline-flex; align-items: center; gap: 0.5rem; background: #eef2fb; border: 1px solid #dbe2ef; border-radius: 999px; padding: 0.25rem 0.6rem; font-size: 0.85rem; color: #0b2545; }
+            .status-ok { color: #1b5e20; }
+            .status-bad { color: #b71c1c; }
+            .mono { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace; }
+            details.build-errors { max-height: 200px; overflow: auto; }
 $persona_styles
 $extra_styles
+$build_panel_styles
         </style>
         <script>
             function updateSliderValue(id, value) {
@@ -250,6 +266,7 @@ $extra_styles
                 <label>Agent ID
                     <input type="text" name="identity.agent_id" placeholder="auto-generated" value="$agent_id" readonly data-identity-agent-id>
                 </label>
+                <input type="hidden" name="identity.agent_version" value="$agent_version">
                 <label>Owners (comma separated)
                     <input type="text" name="identity.owners" placeholder="CAIO, CPA, TeamLead" value="">
                 </label>
@@ -438,6 +455,54 @@ $extra_styles
         </form>
 
         $summary
+        <section class="build-panel" id="build-panel" aria-labelledby="build-panel-title">
+          <div class="build-panel__header">
+            <div class="build-panel__title" id="build-panel-title">Build & Verify</div>
+            <div class="build-panel__actions">
+              <button type="button" class="build-panel__btn" data-build-repo>Build Repo</button>
+            </div>
+          </div>
+          <div class="build-grid">
+            <div class="card" id="health-card">
+              <h3>Health</h3>
+              <div class="health-chip" data-health-chip>
+                <span>Schema</span>
+                <strong class="mono" data-intake-schema>v3.0</strong>
+                <span>• App</span>
+                <strong class="mono" data-app-version>0.0.0</strong>
+              </div>
+              <div style="margin-top: 0.5rem; font-size: 0.85rem;">
+                <div>pid: <span class="mono" data-pid>?</span></div>
+                <div>output: <span class="mono" data-repo-output-dir>…</span></div>
+              </div>
+            </div>
+            <div class="card" id="parity-card">
+              <h3>Parity</h3>
+              <div>02 ↔ 14: <strong data-parity-02-14 title="02_Global-Instructions vs 14_KPI targets parity">–</strong></div>
+              <div>11 ↔ 02: <strong data-parity-11-02 title="11_Workflow gates vs 02 targets parity">–</strong></div>
+            </div>
+            <div class="card" id="integrity-card">
+              <h3>Integrity</h3>
+              <div>Files: <strong data-file-count>0</strong></div>
+              <details class="build-errors" data-errors-details>
+                <summary>Errors <span data-errors-count>(0)</span></summary>
+                <ul data-errors-list></ul>
+              </details>
+              <details class="build-errors" data-warnings-details>
+                <summary>Warnings <span data-warnings-count>(0)</span></summary>
+                <ul data-warnings-list></ul>
+              </details>
+            </div>
+            <div class="card" id="output-card">
+              <h3>Output</h3>
+              <div style="display:flex; align-items:center; gap:0.5rem; flex-wrap: wrap;">
+                <input type="text" readonly class="mono" style="flex:1; min-width:260px; padding:0.35rem;" data-outdir value="" placeholder="Run Build to populate path">
+                <a href="#" data-open-outdir style="text-decoration: underline; font-size: 0.9rem;">Open</a>
+                <button type="button" class="build-panel__btn" data-copy-outdir>Copy Path</button>
+              </div>
+            </div>
+          </div>
+        </section>
         <script type="module">
 $persona_script
         </script>
@@ -455,6 +520,9 @@ $identity_script
         </script>
         <script>
 $generate_agent_script
+        </script>
+        <script type="module">
+$build_panel_script
         </script>
     </body>
 </html>
@@ -518,6 +586,9 @@ class IntakeApplication:
         self._domain_selector_html = self._safe_read_text(self.ui_dir / "domain_selector.html")
         self._domain_selector_css = self._safe_read_text(self.ui_dir / "domain_selector.css")
         self._domain_selector_js = self._safe_read_text(self.ui_dir / "domain_selector.js")
+        # Build panel assets
+        self._build_panel_js = self._safe_read_text(self.ui_dir / "build_panel.js")
+        self._build_panel_css = self._safe_read_text(self.ui_dir / "build_panel.css")
         self._domain_bundle_css = self._safe_read_text(self.ui_dir / "domain_bundle.css")
         self._domain_bundle_js = self._safe_read_text(self.ui_dir / "domain_bundle.js")
         self._domain_selector_assets = self._load_domain_selector_assets()
@@ -1086,8 +1157,11 @@ window.addEventListener('DOMContentLoaded', function () {
   function get(name){ return form.querySelector('[name="'+name+'"]'); }
   function set(name,val){ const el=get(name); if(el){ el.value = val||''; } }
   function mirror(){ const n = (get('identity.agent_name')||{}).value || ''; set('identity.display_name', n); set('agent_name', n); }
+  // Keep identity.agent_version in sync with agent_version input
+  function syncAgentVersion(){ const v = (get('agent_version')||{}).value || '1.0.0'; set('identity.agent_version', v); }
   async function regen(){
     mirror();
+    syncAgentVersion();
     const na = (get('naics_code')||{}).value || '';
     const fn = (get('business_function')||{}).value || '';
     const rc = (get('role_code')||{}).value || '';
@@ -1100,11 +1174,11 @@ window.addEventListener('DOMContentLoaded', function () {
     } catch (e) { /* ignore */ }
   }
   const schedule=(()=>{ let t; return ()=>{ clearTimeout(t); t=setTimeout(regen,200); };})();
-  form.addEventListener('input', function(e){ if (e && e.target && e.target.name === 'identity.agent_name') schedule(); }, true);
+  form.addEventListener('input', function(e){ if (!e || !e.target) return; if (e.target.name === 'identity.agent_name') schedule(); if (e.target.name === 'agent_version') syncAgentVersion(); }, true);
   document.addEventListener('business:functionChanged', schedule, true);
   document.addEventListener('role:changed', schedule, true);
   document.addEventListener('change', function(e){ if (e && e.target && e.target.name === 'naics_code') schedule(); }, true);
-  mirror();
+  mirror(); syncAgentVersion();
 })();
 """,
             spaces=8,
@@ -1178,6 +1252,8 @@ window.addEventListener('DOMContentLoaded', function () {
             function_role_script=function_role_script or "",
             identity_script=identity_script or "",
             generate_agent_script=generate_agent_script or "",
+            build_panel_script=self._indent_block(self._build_panel_js or "", spaces=8),
+            build_panel_styles=self._indent_block(self._build_panel_css or "", spaces=12),
         )
         return page
 
@@ -2004,7 +2080,6 @@ window.addEventListener('DOMContentLoaded', function () {
                         form_profile = fp
                 except Exception:
                     pass
-
                 try:
                     with self.profile_path.open("w", encoding="utf-8") as handle:
                         json.dump(form_profile, handle, indent=2)
@@ -2103,5 +2178,3 @@ def create_app(*, base_dir: Optional[Path] = None) -> IntakeApplication:
 
 if __name__ == "__main__":  # pragma: no cover - manual run helper
     create_app().serve()
-
-

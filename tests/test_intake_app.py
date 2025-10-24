@@ -125,3 +125,44 @@ def test_repo_scaffold_contains_mbti(tmp_path: Path) -> None:
     assert persona_meta.get("axes", {}).get("EI") == "E"
     assert isinstance(persona_meta.get("suggested_traits", []), list)
 
+
+def test_api_generate_agent_repo(tmp_path: Path) -> None:
+    # Spin app, then call /api/agent/generate with minimal v3-style profile
+    app = create_app(base_dir=tmp_path)
+
+    # Build payload
+    profile = {
+        "agent": {"name": "API Agent", "version": "1.0.0"},
+        "classification": {"naics": {"code": "541110", "title": "Offices of Lawyers", "level": 6, "lineage": []}},
+        "context": {"region": ["CA"]},
+        "business_function": "legal_compliance",
+        "role": {"code": "AIA-P", "title": "Legal & Compliance Lead"},
+    }
+
+    body = json.dumps({"profile": profile}).encode("utf-8")
+    environ = {
+        "REQUEST_METHOD": "POST",
+        "PATH_INFO": "/api/agent/generate",
+        "QUERY_STRING": "",
+        "SERVER_NAME": "testserver",
+        "SERVER_PORT": "80",
+        "wsgi.version": (1, 0),
+        "wsgi.url_scheme": "http",
+        "wsgi.input": io.BytesIO(body),
+        "CONTENT_LENGTH": str(len(body)),
+    }
+
+    status_headers: list[tuple[str, list[tuple[str, str]]]] = []
+
+    def start_response(status: str, headers: list[tuple[str, str]]) -> None:
+        status_headers.append((status, headers))
+
+    response_iter = app.wsgi_app(environ, start_response)
+    body_bytes = b"".join(response_iter)
+    assert status_headers[0][0] == "200 OK"
+    payload = json.loads(body_bytes.decode("utf-8"))
+    assert payload.get("status") == "ok"
+    gen_root = Path(payload.get("out_dir"))
+    # Writers place packs directly in the target directory; check canonical file present
+    expect = gen_root / "01_README+Directory-Map_v2.json"
+    assert expect.exists(), f"missing {expect}"
