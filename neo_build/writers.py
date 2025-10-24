@@ -106,10 +106,24 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
 
     # 03 Operating Rules
     hg = human_gate_actions(_get(_get(capabilities_tools, "human_gate", {}), "actions", []))
+    # Sprint-3.1: RBAC owners propagation (additive) when identity.owners present
+    base_roles = list(_dget(profile, "governance.rbac.roles", []) or [])
+    owners_from_identity = list((_get(identity, "owners") or [])) if isinstance(identity, Mapping) else []
+    if owners_from_identity:
+        # unique union of identity owners and default owners triad
+        roles_out: List[str] = []
+        for r in owners_from_identity + _owners():
+            rr = str(r)
+            if rr and rr not in roles_out:
+                roles_out.append(rr)
+    else:
+        # leave defaults unchanged
+        roles_out = base_roles
+
     orules = {
         "version": 2,
         "human_gate": {"actions": hg},
-        "rbac": {"roles": list(_dget(profile, "governance.rbac.roles", []) or [])},
+        "rbac": {"roles": roles_out},
     }
     packs["03_Operating-Rules_v2.json"] = orules
     json_write(out_dir / "03_Operating-Rules_v2.json", orules)
@@ -195,6 +209,9 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
     # 09 Agent Manifests Catalog
     owners_from_identity = list((_get(identity, "owners") or [])) if isinstance(identity, Mapping) else []
     owners = owners_from_identity or _owners()
+    # Selected role title (deterministic): prefer profile.role.title then role_profile.role_title
+    selected_role_title = str(_dget(profile, "role.title", _get(role_profile, "role_title", "")))
+
     amc = {
         "version": 2,
         "owners": owners,
@@ -211,6 +228,7 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
                 "display_name": str(_get(identity, "display_name", _get(_get(profile, "agent", {}), "name", ""))),
                 "owners": owners,
                 "agent_id": str(_get(identity, "agent_id", "")),
+                "role_title": selected_role_title,
             }
         ],
     }
