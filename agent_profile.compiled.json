@@ -2,64 +2,64 @@
   "version": "1.2.3",
   "meta": {
     "version": "1.0",
-    "generated_at": "2025-10-24T03:37:37Z"
+    "generated_at": "2025-10-24T16:26:28Z"
   },
   "slugs": {
-    "agent": "helen-1-2-3"
+    "agent": "macy-1-2-3"
   },
   "agent": {
-    "name": "helen",
+    "name": "macy",
     "version": "1.2.3",
     "persona": {
-      "mbti_code": "ENFJ",
-      "name": "Alignment Driver",
-      "description": "Charismatic coaches who rally teams and orchestrate consensus.",
+      "mbti_code": "ISFP",
+      "name": "Experience Designer",
+      "description": "Gentle innovators dedicated to crafting intuitive user journeys.",
       "axes": {
-        "EI": "E",
-        "SN": "N",
+        "EI": "I",
+        "SN": "S",
         "TF": "F",
-        "JP": "J"
+        "JP": "P"
       },
       "suggested_traits": []
     }
   },
   "business": {
-    "function": "R&D/Innovation",
+    "function": "Legal & Compliance",
     "role": {
-      "code": "RANDD:LEAD",
-      "title": "Director of R&D",
-      "seniority": "Director"
+      "code": "LEGAL:COMP",
+      "title": "Compliance Officer",
+      "seniority": "Manager"
     }
   },
   "classification": {
     "naics": {
-      "code": "337910",
-      "title": "Mattress Manufacturing",
+      "code": "551114",
+      "title": "Corporate, Subsidiary, and Regional Managing Offices",
       "level": 6,
       "lineage": [
         {
-          "code": "33",
-          "title": "Manufacturing",
+          "code": "55",
+          "title": "Management of Companies and Enterprises",
           "level": 2
         },
         {
-          "code": "337",
-          "title": "Furniture and Related Product Manufacturing",
+          "code": "551",
+          "title": "Management of Companies and Enterprises",
           "level": 3
         },
         {
-          "code": "3379",
-          "title": "Other Furniture Related Product Manufacturing",
+          "code": "5511",
+          "title": "Management of Companies and Enterprises",
           "level": 4
         },
         {
-          "code": "33791",
-          "title": "Mattress Manufacturing",
+          "code": "55111",
+          "title": "Management of Companies and Enterprises",
           "level": 5
         },
         {
-          "code": "337910",
-          "title": "Mattress Manufacturing",
+          "code": "551114",
+          "title": "Corporate, Subsidiary, and Regional Managing Offices",
           "level": 6
         }
       ]
@@ -83,55 +83,55 @@
     ]
   },
   "preferences": {
-    "autonomy": 71,
-    "confidence": 82,
-    "collaboration": 18,
+    "autonomy": 31,
+    "confidence": 30,
+    "collaboration": 63,
     "communication_style": "Formal",
-    "collaboration_mode": "Solo"
+    "collaboration_mode": "Cross-Functional"
   },
   "mapping_hints": {
     "neo_agent_config_json": {
       "agent": {
-        "name": "helen",
+        "name": "macy",
         "version": "1.2.3"
       },
-      "business_function": "R&D/Innovation",
+      "business_function": "Legal & Compliance",
       "role": {
-        "code": "RANDD:LEAD",
-        "title": "Director of R&D",
-        "seniority": "Director",
-        "function": "R&D/Innovation"
+        "code": "LEGAL:COMP",
+        "title": "Compliance Officer",
+        "seniority": "Manager",
+        "function": "Legal & Compliance"
       },
       "routing_hints": {},
       "classification": {
         "naics": {
-          "code": "337910",
-          "title": "Mattress Manufacturing",
+          "code": "551114",
+          "title": "Corporate, Subsidiary, and Regional Managing Offices",
           "level": 6,
           "lineage": [
             {
-              "code": "33",
-              "title": "Manufacturing",
+              "code": "55",
+              "title": "Management of Companies and Enterprises",
               "level": 2
             },
             {
-              "code": "337",
-              "title": "Furniture and Related Product Manufacturing",
+              "code": "551",
+              "title": "Management of Companies and Enterprises",
               "level": 3
             },
             {
-              "code": "3379",
-              "title": "Other Furniture Related Product Manufacturing",
+              "code": "5511",
+              "title": "Management of Companies and Enterprises",
               "level": 4
             },
             {
-              "code": "33791",
-              "title": "Mattress Manufacturing",
+              "code": "55111",
+              "title": "Management of Companies and Enterprises",
               "level": 5
             },
             {
-              "code": "337910",
-              "title": "Mattress Manufacturing",
+              "code": "551114",
+              "title": "Corporate, Subsidiary, and Regional Managing Offices",
               "level": 6
             }
           ]
