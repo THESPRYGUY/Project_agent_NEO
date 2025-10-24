@@ -1,13 +1,16 @@
 {
-  "name": "project-agent-neo",
-  "private": true,
-  "type": "module",
-  "scripts": {
-    "test": "vitest run --reporter=dot"
-  },
-  "devDependencies": {
-    "typescript": "^5.4.0",
-    "vitest": "^1.6.0"
-  },
-  "version": "0.0.0"
+    "name": "project-agent-neo",
+    "private": true,
+    "type": "module",
+    "scripts": {
+        "pretest": "node scripts/no_bom_check.cjs",
+        "test": "vitest --run --reporter=dot"
+    },
+    "devDependencies": {
+        "@testing-library/dom": "^9.3.4",
+        "jsdom": "^27.0.1",
+        "typescript": "^5.4.0",
+        "vitest": "^1.6.0"
+    },
+    "version": "0.0.0"
 }

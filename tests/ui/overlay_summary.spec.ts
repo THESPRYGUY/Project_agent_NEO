@@ -1,71 +1,22 @@
-import { describe, it, expect, beforeEach, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { fireEvent, getByRole, queryByRole } from '@testing-library/dom'
 
-function mountDOM() {
-  const store = new Map<string, any>()
-  function el() {
-    const attrs: Record<string,string> = {}
-    const handlers: Record<string, Function[]> = {}
-    return {
-      textContent: '',
-      className: '',
-      hidden: false,
-      title: '',
-      href: '',
-      parentElement: null as any,
-      appendChild(child: any) { child.parentElement = this; store.set('[data-overlay-backdrop]', child) },
-      setAttribute(name: string, value: string) {
-        attrs[name] = String(value)
-        if (name === 'data-download-zip') store.set('[data-download-zip]', this)
-        if (name === 'data-view-overlays') store.set('[data-view-overlays]', this)
-        if (name === 'id') store.set('#' + String(value), this)
-      },
-      getAttribute(name: string) { return attrs[name] ?? null },
-      addEventListener(type: string, fn: any) { (handlers[type] ||= []).push(fn) },
-      dispatchEvent(evt: any) { (handlers[evt?.type] || []).forEach(fn => fn(evt || {})) },
-      click() { (handlers['click'] || []).forEach(fn => fn({})) },
-      focus() {},
-      querySelector(sel: string) {
-        const e = el()
-        if (sel === '[data-view-overlays]') { store.set('[data-view-overlays]', e); return e }
-        if (sel === '.overlay-close') { store.set('.overlay-close', e); return e }
-        if (sel === '[data-copy-overlay]') { store.set('[data-copy-overlay]', e); return e }
-        if (sel === '[data-close-overlay]') { store.set('[data-close-overlay]', e); return e }
-        return undefined as any
-      },
-    }
-  }
-  // Pre-create elements used by code
-  const parityCard = el();
-  const outputCard = el();
-  const buildPanel = el();
-  store.set('#parity-card', parityCard)
-  store.set('#output-card', outputCard)
-  store.set('#build-panel', buildPanel)
-  store.set('[data-parity-02-14]', el())
-  store.set('[data-parity-11-02]', el())
-  store.set('[data-parity-03-02]', el())
-  store.set('[data-parity-17-02]', el())
-  store.set('[data-file-count]', el())
-  store.set('[data-errors-list]', { innerHTML: '', appendChild() {} })
-  store.set('[data-warnings-list]', { innerHTML: '', appendChild() {} })
-  store.set('[data-outdir]', { value: '' })
-
-  // @ts-ignore
-  const keyHandlers: Record<string, Function[]> = {}
-  // @ts-ignore
-  global.document = {
-    querySelector: (sel: string) => {
-      const v = store.get(sel)
-      if (v) return v
-      if (sel === '[data-view-overlays]') return null
-      return el()
-    },
-    getElementById: (id: string) => store.get('#' + id) || el(),
-    createElement: (_tag: string) => el(),
-    addEventListener: (type: string, fn: any) => { (keyHandlers[type] ||= []).push(fn) },
-    dispatchEvent: (evt: any) => { (keyHandlers[evt?.type] || []).forEach(fn => fn(evt || {})) },
-    body: { appendChild: (child: any) => { store.set('[data-overlay-backdrop]', child) } },
-  }
+function mountBaseDOM() {
+  document.body.innerHTML = `
+    <section class="build-panel" id="build-panel">
+      <div class="build-grid">
+        <div id="parity-card">
+          <div>02 <-> 14: <strong data-parity-02-14>-</strong></div>
+          <div>11 <-> 02: <strong data-parity-11-02>-</strong></div>
+        </div>
+        <div id="output-card"><div>
+          <input data-outdir />
+          <a href="#" data-open-outdir>Open</a>
+          <button data-copy-outdir>Copy Path</button>
+        </div></div>
+      </div>
+    </section>
+  `
 }
 
 function mockFetchWithOverlay(itemsLen = 1) {
@@ -95,58 +46,69 @@ function mockFetchWithOverlay(itemsLen = 1) {
   return fn
 }
 
+async function waitForSelector(sel: string, timeoutMs = 1000): Promise<Element | null> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const el = document.querySelector(sel);
+    if (el) return el;
+    await new Promise(r => setTimeout(r, 10));
+  }
+  return null;
+}
+
 describe('overlay summary UI', () => {
   beforeEach(() => {
-    mountDOM()
-    vi.stubGlobal('navigator', { clipboard: { writeText: vi.fn() } })
-    ;(globalThis as any).KeyboardEvent = function(type: string, init?: any){ return { type, key: (init||{}).key } } as any
-    const ss = new Map<string,string>()
-    vi.stubGlobal('sessionStorage', {
-      getItem: (k: string) => ss.get(k) || null,
-      setItem: (k: string, v: string) => { ss.set(k, v) },
-      removeItem: (k: string) => { ss.delete(k) },
-      clear: () => { ss.clear() },
-    })
+    mountBaseDOM()
   })
 
-  it.skip('shows View overlays button when items exist', async () => {
+  it('renders View overlays button when items exist; hidden otherwise', async () => {
     vi.stubGlobal('fetch', mockFetchWithOverlay(2))
-    await import('../../src/ui/build_panel.js')
-    const btn = document.querySelector('[data-view-overlays]') as HTMLButtonElement
+    const mod = await import('../../src/ui/build_panel.js')
+    const btn = await waitForSelector('[data-view-overlays]') as HTMLButtonElement
     expect(btn).toBeTruthy()
+    // Now force render with empty overlay_summary and verify absence
+    mod.renderParityBanner({ timestamp: 'x', outdir: '/tmp', parity: { '02_vs_14': true,'11_vs_02': true,'03_vs_02': true,'17_vs_02': true }, overlay_summary: { applied: false, items: [] } } as any)
+    const btn2 = document.querySelector('[data-view-overlays]') as HTMLButtonElement | null
+    expect(btn2).toBeFalsy()
   })
 
-  // Negative path implicitly covered by absence of click handler in non-applied runs.
-
-  it.skip('opens modal, ESC closes, focus returns', async () => {
-    const fetch = mockFetchWithOverlay(1)
-    vi.stubGlobal('fetch', fetch)
-    await import('../../src/ui/build_panel.js')
-    const trigger = document.querySelector('[data-view-overlays]') as HTMLButtonElement
+  it('opens modal with role="dialog"; aria-modal=true; ESC closes and focus returns', async () => {
+    const mod = await import('../../src/ui/build_panel.js')
+    // Render banner with overlay items directly
+    mod.renderParityBanner({ timestamp: 'x', outdir: '/tmp', parity: { '02_vs_14': true,'11_vs_02': true,'03_vs_02': true,'17_vs_02': true }, overlay_summary: { applied: true, items: [{ id:'ovl-001', name:'persistence_adaptiveness', version:'v1.0', source:'allowlist', allowlisted:true, status:'applied', notes:'ok', actions:['apply:persistence_adaptiveness'] }], rollback: { supported:true, last_action:'none', ts:'x' } } } as any)
+    const trigger = await waitForSelector('[data-view-overlays]') as HTMLButtonElement
     expect(trigger).toBeTruthy()
     trigger.focus()
     trigger.click()
-    const dlg = document.querySelector('[data-overlay-backdrop]') as any
+    // Modal present
+    const dlg = getByRole(document.body, 'dialog') as HTMLElement
     expect(dlg).toBeTruthy()
-    // ESC closes
-    const esc = new KeyboardEvent('keydown', { key: 'Escape' })
-    document.dispatchEvent(esc)
-    const gone = document.querySelector('[data-overlay-backdrop]') as any
-    expect(gone).toBeFalsy()
-    // focus returns to trigger (best-effort in jsdom)
-    expect(document.activeElement === trigger || true).toBeTruthy()
+    expect(dlg.getAttribute('aria-modal')).toBe('true')
+    // Focus moves to first focusable (close button) or dialog
+    await new Promise(r => setTimeout(r, 0))
+    expect(document.activeElement === dlg || (document.activeElement as HTMLElement)?.className.includes('overlay-close')).toBeTruthy()
+    // ESC closes and focus returns to the trigger
+    fireEvent.keyDown(document, { key: 'Escape' })
+    const gone = queryByRole(document.body, 'dialog')
+    expect(gone).toBeNull()
+    expect(document.activeElement).toBe(trigger)
   })
 
-  it.skip('copies overlay JSON to clipboard', async () => {
-    const fetch = mockFetchWithOverlay(1)
-    vi.stubGlobal('fetch', fetch)
-    await import('../../src/ui/build_panel.js')
-    const trigger = document.querySelector('[data-view-overlays]') as HTMLButtonElement
+  it('copies overlay JSON via the footer button', async () => {
+    const spy = vi.spyOn(navigator.clipboard, 'writeText')
+    const mod = await import('../../src/ui/build_panel.js')
+    mod.renderParityBanner({ timestamp: 'x', outdir: '/tmp', parity: { '02_vs_14': true,'11_vs_02': true,'03_vs_02': true,'17_vs_02': true }, overlay_summary: { applied: true, items: [{ id:'ovl-001', name:'persistence_adaptiveness', version:'v1.0', source:'allowlist', allowlisted:true, status:'applied', notes:'ok', actions:['apply:persistence_adaptiveness'] }], rollback: { supported:true, last_action:'none', ts:'x' } } } as any)
+    const trigger = await waitForSelector('[data-view-overlays]') as HTMLButtonElement
     trigger.click()
-    const copyBtn = document.querySelector('[data-copy-overlay]') as HTMLButtonElement
+    const copyBtn = await waitForSelector('[data-copy-overlay]') as HTMLButtonElement
     expect(copyBtn).toBeTruthy()
-    copyBtn.click()
-    const w = (navigator as any).clipboard.writeText as any
-    expect(w).toHaveBeenCalled()
+    fireEvent.click(copyBtn)
+    expect(spy).toHaveBeenCalled()
+    const arg = (spy.mock.calls[0] || [])[0]
+    expect(typeof arg).toBe('string')
+    const obj = JSON.parse(String(arg))
+    expect(obj && typeof obj === 'object').toBeTruthy()
+    expect(obj.applied).toBe(true)
+    expect(Array.isArray(obj.items)).toBe(true)
   })
 })

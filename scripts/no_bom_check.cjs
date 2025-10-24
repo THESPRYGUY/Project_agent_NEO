@@ -1,0 +1,1 @@
+﻿const fs=require('fs');const path=require('path');function ensureNoBom(file){const txt=fs.readFileSync(file,'utf8');if(txt.charCodeAt(0)===0xFEFF){throw new Error('BOM in '+file);}}try{ensureNoBom(path.join(process.cwd(),'package.json'));}catch(e){console.error(String(e && e.message || e));process.exit(1);}
