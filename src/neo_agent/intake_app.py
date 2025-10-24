@@ -2115,7 +2115,6 @@ window.addEventListener('DOMContentLoaded', function () {
                     repo_built = False
                     try:
                         # Create unique repo subdirectory based on agent identity
-                        from .services.identity_utils import generate_agent_id
                         agent_section = form_profile.get("agent") if isinstance(form_profile, Mapping) else {}
                         if not isinstance(agent_section, Mapping):
                             agent_section = {}

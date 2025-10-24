@@ -1,0 +1,19 @@
+{
+  "gates": {
+    "activation": [
+      "PRI>=0.95",
+      "HAL<=0.02",
+      "AUD>=0.9"
+    ]
+  },
+  "human_gate": {
+    "actions": [
+      "legal_advice",
+      "regulatory_interpretation"
+    ]
+  },
+  "rbac": {
+    "roles": []
+  },
+  "version": 2
+}

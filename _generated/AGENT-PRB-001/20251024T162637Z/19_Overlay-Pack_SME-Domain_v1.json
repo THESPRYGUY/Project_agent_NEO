@@ -1,0 +1,56 @@
+{
+  "industry": "",
+  "naics": {
+    "code": "551114",
+    "level": 6,
+    "lineage": [
+      {
+        "code": "55",
+        "level": 2,
+        "title": "Management of Companies and Enterprises"
+      },
+      {
+        "code": "551",
+        "level": 3,
+        "title": "Management of Companies and Enterprises"
+      },
+      {
+        "code": "5511",
+        "level": 4,
+        "title": "Management of Companies and Enterprises"
+      },
+      {
+        "code": "55111",
+        "level": 5,
+        "title": "Management of Companies and Enterprises"
+      },
+      {
+        "code": "551114",
+        "level": 6,
+        "title": "Corporate, Subsidiary, and Regional Managing Offices"
+      }
+    ],
+    "title": "Corporate, Subsidiary, and Regional Managing Offices"
+  },
+  "refs": {
+    "region": [
+      "CA"
+    ],
+    "regulators": [
+      "ISO_IEC_42001",
+      "NIST_AI_RMF",
+      "PIPEDA"
+    ],
+    "sector": "MULTI"
+  },
+  "region": [
+    "CA"
+  ],
+  "regulators": [
+    "ISO_IEC_42001",
+    "NIST_AI_RMF",
+    "PIPEDA"
+  ],
+  "sector": "MULTI",
+  "version": 1
+}

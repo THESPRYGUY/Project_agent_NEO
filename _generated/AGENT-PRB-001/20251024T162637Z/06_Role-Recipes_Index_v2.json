@@ -1,0 +1,18 @@
+{
+  "archetype": "AIA-P",
+  "mapping": {
+    "agent_id": "AGENT-PRB-001",
+    "primary_role_code": "AIA-P"
+  },
+  "objectives": [],
+  "role_recipe_ref": "",
+  "role_title": "",
+  "roles_index": [
+    {
+      "code": "AIA-P",
+      "objectives": [],
+      "title": "Compliance Officer"
+    }
+  ],
+  "version": 2
+}
