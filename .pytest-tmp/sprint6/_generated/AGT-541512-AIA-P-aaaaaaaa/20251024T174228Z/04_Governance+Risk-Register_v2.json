@@ -1,0 +1,63 @@
+{
+  "classification_default": "confidential",
+  "frameworks": {
+    "regulators": [
+      "ISO_IEC_42001",
+      "NIST_AI_RMF",
+      "PIPEDA"
+    ]
+  },
+  "pii_flags": [],
+  "policy": {
+    "classification_default": "confidential",
+    "no_impersonation": true
+  },
+  "regulators": [
+    "ISO_IEC_42001",
+    "NIST_AI_RMF",
+    "PIPEDA"
+  ],
+  "risk_register_tags": [],
+  "version": 2,
+  "delegated_authority_bands": {
+    "Finance": [
+      {
+        "band:\"F-1\"": null,
+        "action:\"RefundDecision\"": null,
+        "limit:500": null,
+        "controls": [
+          "single_agent_ok"
+        ]
+      },
+      {
+        "band:\"F-2\"": null,
+        "action:\"RefundDecision\"": null,
+        "limit:2500": null,
+        "controls": [
+          "two_key_approval"
+        ]
+      },
+      {
+        "band:\"F-3\"": null,
+        "action:\"RefundDecision\"": null,
+        "limit:\"2500+\"": null,
+        "controls": [
+          "mandatory_escalation"
+        ]
+      }
+    ]
+  },
+  "escalation_thresholds": {
+    "accountability_score": {
+      "A1:0.15": null,
+      "A2:0.25": null,
+      "A3:0.40": null,
+      "A4:0.60": null,
+      "A5:1.00": null
+    }
+  },
+  "comfort_levels": {
+    "default:\"A2\"": null,
+    "note:\"If estimated impact exceeds comfort_level tier \u2014 escalate regardless of band.\"": null
+  }
+}

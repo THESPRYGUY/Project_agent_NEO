@@ -1,0 +1,16 @@
+{
+  "store_raw_cot": false,
+  "version": 1,
+  "fields": [
+    "objective",
+    "assumptions",
+    "tools_invoked",
+    "artifacts",
+    "risk",
+    "confidence",
+    "next_decision",
+    "zros_summary",
+    "band_verdict",
+    "escalation_packet_id"
+  ]
+}
