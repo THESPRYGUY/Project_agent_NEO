@@ -478,8 +478,8 @@ $build_panel_styles
             </div>
             <div class="card" id="parity-card">
               <h3>Parity</h3>
-              <div>02 ↔ 14: <strong data-parity-02-14>–</strong></div>
-              <div>11 ↔ 02: <strong data-parity-11-02>–</strong></div>
+              <div>02 ↔ 14: <strong data-parity-02-14 title="02_Global-Instructions vs 14_KPI targets parity">–</strong></div>
+              <div>11 ↔ 02: <strong data-parity-11-02 title="11_Workflow gates vs 02 targets parity">–</strong></div>
             </div>
             <div class="card" id="integrity-card">
               <h3>Integrity</h3>
