@@ -18,3 +18,13 @@
 .info-btn { margin-left: 0.35rem; padding: 0 0.35rem; border: 1px solid #d0d3df; background: #fff; border-radius: 3px; cursor: pointer; }
 .info-btn:focus { outline: 2px solid #6aa0ff; outline-offset: 1px; }
 .tooltip { margin-top: 0.25rem; background: #fff; border: 1px solid #d0d3df; padding: 0.35rem 0.5rem; border-radius: 4px; font-size: 0.85rem; max-width: 420px; }
+
+/* Overlay modal */
+.overlay-backdrop { position: fixed; inset: 0; background: rgba(0,0,0,0.35); display: flex; align-items: center; justify-content: center; z-index: 1000; }
+.overlay-dialog { background: #fff; border-radius: 8px; border: 1px solid #d0d3df; box-shadow: 0 8px 32px rgba(0,0,0,0.25); max-width: 720px; width: 96%; max-height: 80vh; display: flex; flex-direction: column; }
+.overlay-header { display: flex; align-items: center; justify-content: space-between; padding: 0.75rem 1rem; border-bottom: 1px solid #eceff5; }
+.overlay-body { padding: 0.75rem 1rem; overflow: auto; }
+.overlay-footer { padding: 0.75rem 1rem; border-top: 1px solid #eceff5; display: flex; gap: 0.5rem; justify-content: flex-end; }
+.overlay-close { background: transparent; border: none; font-size: 1.25rem; line-height: 1; cursor: pointer; }
+.overlay-table { width: 100%; border-collapse: collapse; font-size: 0.95rem; }
+.overlay-table th, .overlay-table td { border-bottom: 1px solid #f0f2f7; padding: 0.5rem; text-align: left; }

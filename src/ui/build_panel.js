@@ -313,12 +313,15 @@ export function renderParityBanner(summary) {
     const ts = String(summary.timestamp || '').replace('T', ' ').replace('Z','Z');
     const allTrue = ['02_vs_14','11_vs_02','03_vs_02','17_vs_02'].every(k => Boolean(summary?.parity?.[k]));
     const outdir = String(summary.outdir || '');
+    const itemsLen = Number(((summary||{}).overlay_summary||{}).items?.length || 0);
+    const hasOverlays = itemsLen > 0;
     banner.innerHTML = '' +
       `<div class="banner-row">` +
         `<span class="badge ${allTrue ? 'ok' : 'warn'}" aria-label="Aggregate parity">${allTrue ? 'ALL TRUE' : 'NEEDS REVIEW'}</span>` +
         `<span class="ts">${ts}</span>` +
         `<span class="path mono" title="${outdir}">${outdir}</span>` +
         `<span class="ovl">Overlays: ${summary.overlays_applied ? 'yes' : 'no'}</span>` +
+        (hasOverlays ? `<button type="button" class="build-panel__btn" data-view-overlays>View overlays</button>` : '') +
         `<button type="button" class="build-panel__btn" data-copy-last>Copy Path</button>` +
         `<a class="build-panel__btn" data-last-zip href="${outdir ? ('/build/zip?outdir=' + encodeURIComponent(outdir)) : '#'}" ${outdir ? '' : 'hidden'}>Download ZIP</a>` +
       `</div>`;
@@ -326,5 +329,91 @@ export function renderParityBanner(summary) {
     const a = banner.querySelector('[data-last-zip]');
     if (copy) copy.addEventListener('click', () => outdir && copyToClipboard(outdir));
     if (a) a.hidden = !Boolean(outdir);
+    const view = banner.querySelector('[data-view-overlays]');
+    if (view) view.addEventListener('click', () => openOverlayModal(summary));
   } catch {}
+}
+
+function openOverlayModal(summary) {
+  try {
+    const data = (summary && summary.overlay_summary) ? summary.overlay_summary : { applied: false, items: [] };
+    if (!data || !Array.isArray(data.items) || data.items.length === 0) return;
+    const prev = document.activeElement;
+    // Backdrop
+    const backdrop = document.createElement('div');
+    backdrop.className = 'overlay-backdrop';
+    backdrop.setAttribute('data-overlay-backdrop','1');
+    // Dialog
+    const dlg = document.createElement('div');
+    dlg.className = 'overlay-dialog';
+    dlg.setAttribute('role', 'dialog');
+    dlg.setAttribute('aria-modal', 'true');
+    dlg.setAttribute('aria-labelledby', 'overlay-modal-title');
+    dlg.tabIndex = -1;
+    const title = 'Applied Overlays';
+    const rows = data.items.map(item =>
+      `<tr>`+
+      `<td>${escapeHtml(item.name||'')}</td>`+
+      `<td>${escapeHtml(item.version||'')}</td>`+
+      `<td>${escapeHtml(item.status||'')}</td>`+
+      `<td>${item.allowlisted ? 'yes' : 'no'}</td>`+
+      `<td>${escapeHtml(item.notes||'')}</td>`+
+      `</tr>`
+    ).join('');
+    dlg.innerHTML = `
+      <div class="overlay-header">
+        <h2 id="overlay-modal-title">${title}</h2>
+        <button type="button" class="overlay-close" aria-label="Close">×</button>
+      </div>
+      <div class="overlay-body">
+        <table class="overlay-table" aria-describedby="overlay-modal-title">
+          <thead><tr><th>Name</th><th>Version</th><th>Status</th><th>Allowlisted</th><th>Notes</th></tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      </div>
+      <div class="overlay-footer">
+        <button type="button" class="build-panel__btn" data-copy-overlay>Copy overlay JSON</button>
+        <button type="button" class="build-panel__btn" data-close-overlay>Close</button>
+      </div>`;
+    backdrop.appendChild(dlg);
+    document.body.appendChild(backdrop);
+    // Focus management
+    const closeBtn = dlg.querySelector('.overlay-close');
+    const copyBtn = dlg.querySelector('[data-copy-overlay]');
+    const footerClose = dlg.querySelector('[data-close-overlay]');
+    const focusables = [closeBtn, copyBtn, footerClose].filter(Boolean);
+    const focusTrap = (e) => {
+      if (e.key === 'Tab') {
+        const list = focusables;
+        if (!list.length) return;
+        const idx = list.indexOf(document.activeElement);
+        if (e.shiftKey) {
+          const prevIdx = idx <= 0 ? (list.length - 1) : (idx - 1);
+          e.preventDefault(); list[prevIdx].focus();
+        } else {
+          const nextIdx = idx === list.length - 1 ? 0 : (idx + 1);
+          e.preventDefault(); list[nextIdx].focus();
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault(); doClose();
+      }
+    };
+    const doClose = () => {
+      try { document.removeEventListener('keydown', focusTrap, true); } catch {}
+      try { document.body.removeChild(backdrop); } catch {}
+      try { if (prev && typeof prev.focus === 'function') prev.focus(); } catch {}
+    };
+    if (closeBtn) closeBtn.addEventListener('click', doClose);
+    if (footerClose) footerClose.addEventListener('click', doClose);
+    if (copyBtn) copyBtn.addEventListener('click', () => {
+      try { copyToClipboard(JSON.stringify(data, null, 2)); } catch {}
+    });
+    document.addEventListener('keydown', focusTrap, true);
+    // Initial focus
+    setTimeout(() => { try { (closeBtn||dlg).focus(); } catch {} }, 0);
+  } catch {}
+}
+
+function escapeHtml(s) {
+  try { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); } catch { return String(s) }
 }
