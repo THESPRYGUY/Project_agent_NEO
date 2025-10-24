@@ -19,6 +19,7 @@ from .logging import get_logger
 from .repo_generator import AgentRepoGenerationError, generate_agent_repo
 from neo_build.writers import write_repo_files
 from neo_build.validators import integrity_report
+from neo_build.contracts import CANONICAL_PACK_FILENAMES
 from .adapters.normalize_v3 import normalize_context_role
 from .spec_generator import generate_agent_specs
 from .services.identity_utils import generate_agent_id
@@ -1929,6 +1930,41 @@ window.addEventListener('DOMContentLoaded', function () {
                     "integrity_errors": report.get("errors", []) if isinstance(report, Mapping) else [],
                     "warnings": warnings,
                 }
+                # Optional overlay auto-apply (Sprint-6)
+                try:
+                    apply_flag = str(os.environ.get("NEO_APPLY_OVERLAYS", "false")).lower() in ("1", "true", "yes")
+                    if apply_flag:
+                        from neo_build.overlays import load_overlay_config, apply_overlays
+                        overlay_cfg = load_overlay_config()
+                        summary = apply_overlays(out_dir, overlay_cfg)
+                        # Reload packs from disk and recompute integrity/parity
+                        updated: dict[str, Any] = {}
+                        for name in CANONICAL_PACK_FILENAMES:
+                            pth = out_dir / name
+                            if pth.exists():
+                                updated[name] = json.loads(pth.read_text(encoding="utf-8"))
+                        report2 = integrity_report(profile, updated)
+                        (out_dir / "INTEGRITY_REPORT.json").write_text(json.dumps(report2, indent=2), encoding="utf-8")
+                        # Overwrite parity and integrity in response with post-overlay values
+                        p2 = (report2 or {}).get("parity", {}) if isinstance(report2, Mapping) else {}
+                        resp["parity"] = {
+                            "02_vs_14": bool(p2.get("02_vs_14", True)),
+                            "11_vs_02": bool(p2.get("11_vs_02", True)),
+                            "03_vs_02": bool(p2.get("03_vs_02", True)),
+                            "17_vs_02": bool(p2.get("17_vs_02", True)),
+                        }
+                        resp["parity_deltas"] = (report2 or {}).get("parity_deltas", {}) if isinstance(report2, Mapping) else {}
+                        resp["integrity_errors"] = (report2 or {}).get("errors", []) if isinstance(report2, Mapping) else []
+                        resp["overlays_applied"] = not bool(summary.get("rolled_back"))
+                        if summary.get("rolled_back"):
+                            resp["rolled_back"] = True
+                            if summary.get("reason"):
+                                resp["overlay_failure_reason"] = summary.get("reason")
+                        resp["overlay_summary"] = summary
+                    else:
+                        resp["overlays_applied"] = False
+                except Exception as overlay_exc:
+                    warnings.append(f"overlays_apply_failed: {overlay_exc}")
                 # Telemetry: parity checked summary
                 if emit_event:
                     try:

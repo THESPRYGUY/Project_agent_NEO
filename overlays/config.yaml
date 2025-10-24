@@ -1,0 +1,11 @@
+# Overlay pipeline configuration
+# Toggle via env var NEO_APPLY_OVERLAYS (default: false)
+
+apply:
+  - "19_SME_Domain"
+  - "20_Enterprise"
+  - "persistence_adaptiveness"
+
+# Path to the persistence/adaptiveness overlay operations
+persistence_ops: "overlays/apply.persistence_adaptiveness.yaml"
+

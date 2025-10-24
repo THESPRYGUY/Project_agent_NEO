@@ -1,0 +1,23 @@
+{
+  "id": "memory_schema_v2",
+  "initial_memory_packs": [],
+  "memory_scopes": [],
+  "optional_packs": [],
+  "packs": {
+    "initial": [],
+    "optional": []
+  },
+  "principles": {
+    "redact_pii": true
+  },
+  "retention": {
+    "episodic": {
+      "retention_days": 180
+    }
+  },
+  "scopes": [],
+  "sync": {
+    "allowed_sources": []
+  },
+  "version": 2
+}

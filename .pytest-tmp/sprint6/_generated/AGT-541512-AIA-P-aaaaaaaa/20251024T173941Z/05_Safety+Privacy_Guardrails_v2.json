@@ -1,0 +1,8 @@
+{
+  "no_impersonation": true,
+  "pii_mask_on_ingest": true,
+  "privacy_policies": {
+    "pii_flags": []
+  },
+  "version": 2
+}

@@ -90,6 +90,22 @@ The command prints a one-line status, for example:
 SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0 | outdir=<path>
 ```
 
+## Overlays (optional)
+
+You can auto-apply overlays immediately after a successful `/build`:
+
+- Feature flag: set `NEO_APPLY_OVERLAYS=true` to enable.
+- Config: `overlays/config.yaml`
+  - `apply`: list of overlays to run (order matters)
+    - `19_SME_Domain` — ensures pack 19 refs align to sector/region/regulators
+    - `20_Enterprise` — ensures brand/legal/stakeholders presence
+    - `persistence_adaptiveness` — applies operations from `overlays/apply.persistence_adaptiveness.yaml`
+
+Safety and integrity:
+- The applier performs additive, minimal diffs; required keys are not overwritten.
+- After apply, integrity and KPI parity (02/03/11/14/17) are recomputed. If any check fails, changes are rolled back.
+- Response includes `overlays_applied: true/false` and an `overlay_summary` with `applied`, `touched_packs`, `deltas`, and post-apply `parity`.
+
 ## Build & Verify Panel
 
 - Save Profile → click Build Repo to POST `/build` and write the 20 canonical files.

@@ -1,0 +1,19 @@
+{
+  "templates": [
+    {
+      "fields": [
+        "ID",
+        "LastUpdated",
+        "Owner",
+        "PolicyRef",
+        "Remediation",
+        "Severity",
+        "Status",
+        "Title"
+      ],
+      "id": "default",
+      "name": "Default Template"
+    }
+  ],
+  "version": 2
+}

@@ -1,0 +1,48 @@
+operations:
+  - inject_block: { capsule: persistence_adaptiveness_v1, target_file: "02_Global-Instructions_v2.json", path: ["system_blocks","persistence_adaptiveness"] }
+  - inject_block: { capsule: persistence_adaptiveness_v1, target_file: "10_Prompt-Pack_v2.json", path: ["fragments","persistence_adaptiveness"] }
+
+  - upsert: { target_file: "03_Operating-Rules_v2.json", set:
+      { stop_conditions: ["budget_exhausted","time_exhausted","policy_conflict","exceeds_band_limit","risk_high","two_no_progress_loops"],
+        persistence_formula: "PersistenceLevel = f(TaskCriticality, CostBudget, TimeBudget, RiskScore, Confidence)",
+        loop_caps: { soft_block_after: 2, hard_max_steps: 25 } } }
+
+  - upsert: { target_file: "04_Governance+Risk-Register_v2.json", set:
+      { delegated_authority_bands: { Finance:
+          [ {band:"F-1", action:"RefundDecision", limit:500, controls:["single_agent_ok"]},
+            {band:"F-2", action:"RefundDecision", limit:2500, controls:["two_key_approval"]},
+            {band:"F-3", action:"RefundDecision", limit:"2500+", controls:["mandatory_escalation"]} ] },
+        escalation_thresholds: { accountability_score: {A1:0.15,A2:0.25,A3:0.40,A4:0.60,A5:1.00} },
+        comfort_levels: { default:"A2", note:"If estimated impact exceeds comfort_level tier — escalate regardless of band." } } }
+
+  - upsert: { target_file: "05_Safety+Privacy_Guardrails_v2.json", set:
+      { human_in_loop_triggers: ["finance_actions","personal_data","protected_categories","policy_risk>=medium"] } }
+
+  - upsert: { target_file: "11_Workflow-Pack_v2.json", set:
+      { approvals: { two_key_approval: { approver_role:"OwnerOrDelegate", channel:"notifications/escalations" } },
+        escalation_flow: { on_exceeds_band_or_threshold:
+          { steps: ["summarize_state","ZROS_reflection","notify_operator_with_options","await_decision"] } } } }
+
+  - upsert: { target_file: "14_KPI+Evaluation-Framework_v2.json", set:
+      { live_kpis: ["first_pass_success","escalation_rate_by_tier","breach_free_rate","avg_steps_per_goal","latency_s","dollars_at_risk","dollars_saved"],
+        post_run_kpis: ["incident_count","mttr","deviation_index_trend"] } }
+
+  - upsert: { target_file: "15_Observability+Telemetry_Spec_v2.json", set:
+      { decision_event_fields: ["step_id","persistence_level","band_used","risk","confidence","cost_elapsed","time_elapsed","escalation_flag","escalation_reason"],
+        sampling: { deviation_check_every_n_steps: 5 } } }
+
+  - upsert: { target_file: "16_Reasoning-Footprints_Schema_v1.json", set:
+      { fields: ["objective","assumptions","tools_invoked","artifacts","risk","confidence","next_decision","zros_summary","band_verdict","escalation_packet_id"] } }
+
+integrity_checks:
+  must_include_block:
+    - {file:"02_Global-Instructions_v2.json", path:["system_blocks","persistence_adaptiveness"]}
+    - {file:"10_Prompt-Pack_v2.json", path:["fragments","persistence_adaptiveness"]}
+  required_fields_present:
+    - {file:"15_Observability+Telemetry_Spec_v2.json", field:"decision_event_fields"}
+    - {file:"16_Reasoning-Footprints_Schema_v1.json", field:"fields"}
+  cross_refs:
+    - {from:"03_Operating-Rules_v2.json:stop_conditions", to:"02_Global-Instructions_v2.json:system_blocks.persistence_adaptiveness"}
+    - {from:"11_Workflow-Pack_v2.json:escalation_flow", to:"04_Governance+Risk-Register_v2.json:delegated_authority_bands"}
+  fail_build_on_error: true
+
