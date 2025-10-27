@@ -114,8 +114,8 @@ describe('build_panel UI a11y', () => {
       overlay_summary: { applied: true, items: [{ name: 'persistence', version: 'v1', status: 'ok', allowlisted: true, notes: '' }] },
     } as any)
     const banner = document.querySelector('[data-last-build-banner]') as any
-    expect(banner).toBeTruthy()
-    const copyBtn = banner.querySelector('[data-copy-last]')
+    expect(!!banner).toBe(true)
+    const copyBtn = document.querySelector('[data-copy-last]') as any
     expect(!!copyBtn).toBe(true)
   })
 
@@ -146,7 +146,7 @@ describe('build_panel UI a11y', () => {
       overlays_applied: true,
       overlay_summary: { applied: true, items: [{ name: 'persistence', version: 'v1', status: 'ok', allowlisted: true, notes: 'n/a' }] },
     } as any)
-    const viewBtn = (document.querySelector('[data-last-build-banner]') as any)?.querySelector('[data-view-overlays]')
+    const viewBtn = document.querySelector('[data-view-overlays]') as any
     expect(!!viewBtn).toBe(true)
     viewBtn?.click?.()
     const backdrop = document.querySelector('[data-overlay-backdrop]')
