@@ -17,3 +17,9 @@ Overlay summary triage:
 - When NEO_APPLY_OVERLAYS=true, the server persists overlay_summary in _last_build.json.
 - From the Last-Build banner, click "View overlays" to inspect the table (Name, Version, Status, Allowlisted, Notes).
 - If a build fails parity, validate allowlist/status/notes in the overlay modal, then re-run smoke or rollback as needed.
+
+## PR Gates
+
+- Required: unit-python (pytest, coverage >= 85%) and unit-js (vitest thresholds).
+- Advisory: integration tests via `pytest -m integ` (non-blocking).
+- Required: smoke (`python ci/smoke.py`) builds the 20-pack and validates parity/integrity.
