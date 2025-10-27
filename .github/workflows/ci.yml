@@ -36,7 +36,7 @@ jobs:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
-      - run: npm ci
+      - run: npm i --no-fund --no-audit
       - run: npm test  # vitest with thresholds
 
   integ-and-smoke:
@@ -55,7 +55,7 @@ jobs:
       - uses: actions/setup-node@v4
         with: { node-version: 20 }
       - run: python -m pip install -U pip && pip install -e .[dev]
-      - run: npm ci
+      - run: npm i --no-fund --no-audit
       - name: Integration (non-blocking)
         continue-on-error: true
         run: pytest -q -vv -m "integ"
