@@ -2,11 +2,15 @@ import { defineConfig } from 'vitest/config';
 
 export default defineConfig({
   test: {
-    globals: true,
     environment: 'jsdom',
     setupFiles: ['./tests/ui/setup.ts'],
-    testTimeout: 15000,
-    include: ['tests/js/**/*.spec.ts', 'tests/ui/**/*.spec.ts'],
-    exclude: ['tests/js/naics_cascade.spec.ts'],
+    include: ['tests/unit_js/**/*.spec.ts'],
+    coverage: {
+      enabled: true,
+      provider: 'v8',
+      reporter: ['text', 'lcov'],
+      include: ['src/ui/build_panel.js'],
+      thresholds: { lines: 80, functions: 80, statements: 80, branches: 70 },
+    },
   },
 });

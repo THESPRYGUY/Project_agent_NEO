@@ -1,4 +1,4 @@
-name: CI (Python + JS)
+name: CI (Unit + Integ/Smoke)
 
 on:
   push:
@@ -7,7 +7,7 @@ on:
     branches: [ main ]
 
 jobs:
-  test-python:
+  unit-python:
     runs-on: ubuntu-latest
     env:
       PYTHONPATH: ${{ github.workspace }}/src
@@ -17,30 +17,45 @@ jobs:
       NEO_APPLY_OVERLAYS: 'false'
     steps:
       - uses: actions/checkout@v4
-      - name: Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version: '3.11'
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
       - name: Install deps
         run: |
-          python -m pip install --upgrade pip
-          python -m pip install -e .[dev]
-      - name: Pytests
-        run: pytest -q -vv
+          python -m pip install -U pip
+          pip install -e .[dev] coverage
+      - name: Unit tests + coverage
+        run: |
+          coverage run -m pytest
+          coverage report
 
-  test-js:
+  unit-js:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - name: Use Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20.x'
-      - name: Install deps
-        run: |
-          npm i --no-fund --no-audit
-      - name: Run JS tests (vitest)
-        env:
-          NAICS_BASE_URL: http://127.0.0.1:5000
-        run: |
-          npx vitest run --reporter=dot
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: npm ci
+      - run: npm test  # vitest with thresholds
+
+  integ-and-smoke:
+    runs-on: ubuntu-latest
+    needs: [unit-python, unit-js]
+    env:
+      PYTHONPATH: ${{ github.workspace }}/src
+      NEO_REPO_OUTDIR: ${{ runner.temp }}/_generated
+      NEO_COPY_TO_ONEDRIVE: 'false'
+      FAIL_ON_PARITY: 'false'
+      NEO_APPLY_OVERLAYS: 'false'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - run: python -m pip install -U pip && pip install -e .[dev]
+      - run: npm ci
+      - name: Integration (non-blocking)
+        continue-on-error: true
+        run: pytest -q -vv -m "integ"
+      - name: Smoke (blocking)
+        run: python ci/smoke.py

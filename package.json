@@ -8,6 +8,7 @@
     },
     "devDependencies": {
         "@testing-library/dom": "^9.3.4",
+        "@vitest/coverage-v8": "^1.6.1",
         "jsdom": "^27.0.1",
         "typescript": "^5.4.0",
         "vitest": "^1.6.0"

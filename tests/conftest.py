@@ -3,6 +3,7 @@ from __future__ import annotations
 import os
 import sys
 from pathlib import Path
+import pytest
 
 
 # Ensure src/ is importable for all tests (CI and local)
@@ -22,3 +23,16 @@ os.environ.setdefault("FAIL_ON_PARITY", "false")
 os.environ.setdefault("NEO_APPLY_OVERLAYS", "false")
 
 DEFAULT_OUTDIR.mkdir(parents=True, exist_ok=True)
+
+
+def pytest_collection_modifyitems(config, items):
+    """Default all tests to 'unit' unless explicitly marked otherwise.
+
+    - If a test has @pytest.mark.integ or @pytest.mark.smoke, leave it.
+    - If it already has @pytest.mark.unit, leave it.
+    - Else, add @pytest.mark.unit to make unit the default selection.
+    """
+    for item in items:
+        marks = {m.name for m in item.iter_markers()}
+        if not ("integ" in marks or "smoke" in marks or "unit" in marks):
+            item.add_marker(pytest.mark.unit)

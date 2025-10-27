@@ -71,6 +71,14 @@ Node UI utils use `vitest` for lightweight tests:
 npm test
 ```
 
+### Testing & CI
+
+- Pytest markers: `unit` (default), `integ`, `smoke`.
+- Default `pytest` runs only unit tests; use `pytest -m integ` for integration.
+- Python coverage enforced via `.coveragerc` (fail_under=85). CI runs `coverage run -m pytest` then `coverage report`.
+- Vitest covers `tests/unit_js/**` with thresholds: lines 80, functions 80, statements 80, branches 70 (see `vitest.config.ts`).
+- CI gates: unit-python and unit-js are required; integration is advisory; smoke runs via `python ci/smoke.py` and must pass.
+
 ## Smoke Test
 
 Run the end-to-end smoke locally (builds a canonical 20-pack repo, emits artifacts):

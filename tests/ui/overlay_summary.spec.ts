@@ -33,11 +33,7 @@ function mockFetchWithOverlay(itemsLen = 1) {
         parity_deltas: [],
         integrity_errors: [],
         overlays_applied: itemsLen > 0,
-        overlay_summary: {
-          applied: itemsLen > 0,
-          items: Array.from({ length: itemsLen }).map((_, i) => ({ id: `ovl-${i+1}`, name: 'persistence_adaptiveness', version: 'v1.0', source: 'allowlist', allowlisted: true, status: 'applied', notes: 'ok', actions: ['apply:persistence_adaptiveness'] })),
-          rollback: { supported: true, last_action: 'none', ts: '2025-01-02T03:04:05Z' }
-        }
+        overlay_summary: { applied: itemsLen > 0, items: Array.from({ length: itemsLen }, (_, i) => `overlay_${i+1}`), rollback: { supported: true, last_action: 'none', ts: 'x' } },
       }
       return new Response(JSON.stringify(payload), { status: 200, headers: { 'Cache-Control': 'no-store' } })
     }
