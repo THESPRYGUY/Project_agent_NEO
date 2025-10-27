@@ -37,3 +37,17 @@ Overlay summary triage:
 - Triage Deltas:
   - Look for lines like `- 14:PRI_min got=0.94 expected=0.95`.
   - Update the mismatched pack or intake source; re-run `make smoke`.
+
+## Legacy payload triage
+
+- New guard rejects mixed legacy+v3 payloads at `/save` with `DUPLICATE_LEGACY_V3_CONFLICT`.
+- Action: remove legacy fields or submit a legacy-only payload to auto-migrate.
+- Example conflict object:
+  ```json
+  {
+    "code": "DUPLICATE_LEGACY_V3_CONFLICT",
+    "legacy_path": "legacy.kpi",
+    "v3_path": "governance_eval.gates",
+    "hint": "Remove legacy fields or provide legacy-only payload for auto-migration."
+  }
+  ```
