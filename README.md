@@ -177,3 +177,29 @@ A quick smoke check after startup:
 
 - ``curl http://127.0.0.1:5000/`` should return the intake HTML.
 - ``curl http://127.0.0.1:5000/api/profile/validate -X POST -H "Content-Type: application/json" -d '{}'`` returns JSON containing ``status`` and ``issues`` fields.
+
+## Legacy payloads
+
+- Behavior matrix:
+  - Legacy-only payload (top-level ``legacy`` present, no v3 concept keys ``context``/``role``/``governance_eval``) → auto-migrated to v3 before validation and saved if required v3 fields are satisfied.
+  - Mixed legacy+v3 for the same concept → rejected with code ``DUPLICATE_LEGACY_V3_CONFLICT`` and per-field paths; telemetry is emitted with ``{"legacy_detected": true, "conflicts": <n>}``.
+  - Pure v3 payload → validated and saved as-is.
+
+### Error codes
+
+- ``DUPLICATE_LEGACY_V3_CONFLICT``: legacy fields coexist with v3 fields for the same concept.
+  - Example shape:
+    ```json
+    {
+      "status": "invalid",
+      "code": "DUPLICATE_LEGACY_V3_CONFLICT",
+      "conflicts": [
+        {
+          "code": "DUPLICATE_LEGACY_V3_CONFLICT",
+          "legacy_path": "legacy.traits",
+          "v3_path": "persona",
+          "hint": "Remove legacy fields or provide legacy-only payload for auto-migration."
+        }
+      ]
+    }
+    ```

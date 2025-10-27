@@ -26,6 +26,8 @@ from neo_build.contracts import CANONICAL_PACK_FILENAMES
 from .adapters.normalize_v3 import normalize_context_role
 from .spec_generator import generate_agent_specs
 from .services.identity_utils import generate_agent_id
+from neo_build.adapters.legacy_to_v3 import transform as legacy_transform
+from neo_build.validation.schema_guard import check_mutual_exclusion
 
 try:  # pragma: no cover - telemetry is optional in some environments
     from .telemetry import (
@@ -1726,6 +1728,50 @@ window.addEventListener('DOMContentLoaded', function () {
                 data = None
                 errors.append(f"Invalid JSON: {exc}")
 
+            # Sprint-10: Legacy adapter + schema guard before schema validation
+            conflicts: list[dict] = []
+            legacy_detected = False
+            if isinstance(data, Mapping):
+                try:
+                    conflicts = check_mutual_exclusion(data)
+                except Exception:
+                    conflicts = []
+                if conflicts:
+                    legacy_detected = True
+                    # Maintain backward-compatible error string while adding structured conflicts
+                    errors.append("Legacy field not allowed in v3: legacy")
+                    resp = {
+                        "status": "invalid",
+                        "code": "DUPLICATE_LEGACY_V3_CONFLICT",
+                        "conflicts": conflicts,
+                        "errors": errors,
+                    }
+                    payload = json.dumps(resp).encode("utf-8")
+                    if emit_event:
+                        try:
+                            emit_event("intake.legacy", {"legacy_detected": True, "conflicts": len(conflicts)})
+                        except Exception:
+                            pass
+                    start_response("400 Bad Request", _std_headers("application/json", len(payload)))
+                    return [payload]
+
+                # Auto-migrate legacy-only payloads (no v3 concepts present)
+                if isinstance(data.get("legacy"), Mapping):
+                    legacy_detected = True
+                    has_v3_concepts = any(k in data for k in ("context", "role", "governance_eval"))
+                    if not has_v3_concepts:
+                        try:
+                            migrated, _diag = legacy_transform(data)
+                            # Merge identity if present
+                            if isinstance(data.get("identity"), Mapping):
+                                ident = dict(data.get("identity"))
+                                mig_ident = dict(migrated.get("identity") or {})
+                                mig_ident.update({k: v for k, v in ident.items() if k not in mig_ident})
+                                migrated["identity"] = mig_ident
+                            data = migrated
+                        except Exception as exc:
+                            errors.append(f"Legacy migration failed: {exc}")
+
             # Minimal validation against intake_v3 schema (selected required fields and legacy guards)
             def _require(path: list[str], obj: Any) -> None:
                 cur = obj
@@ -1760,6 +1806,12 @@ window.addEventListener('DOMContentLoaded', function () {
                     errors.append("Payload must be a JSON object")
 
             if errors:
+                # Emit telemetry if legacy was detected (no conflicts path)
+                if emit_event and legacy_detected and not conflicts:
+                    try:
+                        emit_event("intake.legacy", {"legacy_detected": True, "conflicts": 0})
+                    except Exception:
+                        pass
                 payload = json.dumps({"status": "invalid", "errors": errors}).encode("utf-8")
                 start_response("400 Bad Request", _std_headers("application/json", len(payload)))
                 return [payload]
@@ -1806,6 +1858,12 @@ window.addEventListener('DOMContentLoaded', function () {
                 naics_code = str((((profile.get("context") or {}).get("naics") or {}).get("code") or "")).strip()
                 role_code = str(((profile.get("role") or {}).get("role_code") or "")).strip()
                 LOGGER.info("/save agent_id=%s naics=%s role=%s", agent_id, naics_code, role_code)
+                # Telemetry for legacy detection (no conflicts in success path)
+                if emit_event and legacy_detected:
+                    try:
+                        emit_event("intake.legacy", {"legacy_detected": True, "conflicts": 0})
+                    except Exception:
+                        pass
                 payload = json.dumps({"status": "ok", "path": str(self.profile_path), "agent_id": agent_id}).encode("utf-8")
                 start_response("200 OK", _std_headers("application/json", len(payload)))
                 return [payload]
