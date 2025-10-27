@@ -203,3 +203,31 @@ A quick smoke check after startup:
       ]
     }
     ```
+
+### Legacy → v3 mapping
+
+- legacy.sector → sector_profile.sector
+- legacy.role → role.role_code
+- legacy.regulators[] → sector_profile.regulatory[]
+- legacy.traits[] / legacy.attributes[] → persona.traits[]
+- legacy.voice → brand.voice.voice_traits[]
+- legacy.tools[] / legacy.capabilities[] → capabilities_tools.tool_suggestions[]
+- legacy.human_gate.actions[] → capabilities_tools.human_gate.actions[]
+- legacy.memory.scopes[] → memory.memory_scopes[]
+- legacy.memory.packs[] → memory.initial_memory_packs[]
+- legacy.memory.sources[] → memory.data_sources[]
+- legacy.kpi.PRI_min → governance_eval.gates.PRI_min
+- legacy.kpi.HAL_max → governance_eval.gates.hallucination_max
+- legacy.kpi.AUD_min → governance_eval.gates.audit_min
+
+Diagnostics example (unknowns are dropped):
+
+```json
+{
+  "dropped": ["legacy.unknown_field"],
+  "mappings_applied": [
+    "legacy.role→role.role_code",
+    "legacy.kpi.PRI_min→governance_eval.gates.PRI_min"
+  ]
+}
+```
