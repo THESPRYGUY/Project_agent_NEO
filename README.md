@@ -95,8 +95,19 @@ Artifacts are written to `_artifacts/smoke/`:
 The command prints a one-line status, for example:
 
 ```
-SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0 | outdir=<path>
+SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0
 ```
+
+### Strict Parity in CI
+
+- Gate: CI enforces KPI parity as a hard gate with `FAIL_ON_PARITY=true` across all jobs.
+- Artifacts: job uploads `_artifacts/**`, `**/INTEGRITY_REPORT.json`, `**/build.json`, and any `**/*.zip` on every run (pass/fail).
+- PR Summary: CI posts a one-line outcome. Green shows:
+  - `✅ SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0`
+  Red shows:
+  - `❌ Parity failure — see integrity artifacts`
+- Triage: open uploaded `INTEGRITY_REPORT.json` and `build.json` for `parity` and `parity_deltas`.
+  - Fix the source pack with mismatched key(s), re-run locally (`make smoke`), then push.
 
 ## Overlays (optional)
 

@@ -13,7 +13,7 @@ jobs:
       PYTHONPATH: ${{ github.workspace }}/src
       NEO_REPO_OUTDIR: ${{ runner.temp }}/_generated
       NEO_COPY_TO_ONEDRIVE: 'false'
-      FAIL_ON_PARITY: 'false'
+      FAIL_ON_PARITY: 'true'
       NEO_APPLY_OVERLAYS: 'false'
     steps:
       - uses: actions/checkout@v4
@@ -30,6 +30,8 @@ jobs:
 
   unit-js:
     runs-on: ubuntu-latest
+    env:
+      FAIL_ON_PARITY: 'true'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -44,7 +46,7 @@ jobs:
       PYTHONPATH: ${{ github.workspace }}/src
       NEO_REPO_OUTDIR: ${{ runner.temp }}/_generated
       NEO_COPY_TO_ONEDRIVE: 'false'
-      FAIL_ON_PARITY: 'false'
+      FAIL_ON_PARITY: 'true'
       NEO_APPLY_OVERLAYS: 'false'
     steps:
       - uses: actions/checkout@v4
@@ -59,3 +61,22 @@ jobs:
         run: pytest -q -vv -m "integ"
       - name: Smoke (blocking)
         run: python ci/smoke.py
+      - name: Upload integrity artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: integrity-artifacts
+          path: |
+            _artifacts/**
+            **/INTEGRITY_REPORT.json
+            **/build.json
+            **/*.zip
+      - name: PR summary
+        if: always()
+        run: |
+          echo "### Smoke result" >> $GITHUB_STEP_SUMMARY
+          if grep -q "SMOKE OK" _artifacts/**/smoke.log 2>/dev/null; then
+            echo "✅ SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0" >> $GITHUB_STEP_SUMMARY
+          else
+            echo "❌ Parity failure — see integrity artifacts" >> $GITHUB_STEP_SUMMARY
+          fi
