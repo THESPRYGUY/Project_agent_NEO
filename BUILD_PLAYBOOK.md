@@ -23,3 +23,17 @@ Overlay summary triage:
 - Required: unit-python (pytest, coverage >= 85%) and unit-js (vitest thresholds).
 - Advisory: integration tests via `pytest -m integ` (non-blocking).
 - Required: smoke (`python ci/smoke.py`) builds the 20-pack and validates parity/integrity.
+
+## Strict Parity in CI
+
+- Configuration: `FAIL_ON_PARITY=true` is set for all CI jobs.
+- Behavior: the smoke step exits nonzero when parity is false and posts a concise summary to the PR.
+- Artifacts (always uploaded):
+  - `_artifacts/**` (includes `smoke.log`)
+  - `**/INTEGRITY_REPORT.json`, `**/build.json`, `**/*.zip`
+- Interpreting PR Summary:
+  - `✅ SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0` → proceed.
+  - `❌ Parity failure — see integrity artifacts` → open uploaded `INTEGRITY_REPORT.json` and `build.json` → inspect `parity_deltas`.
+- Triage Deltas:
+  - Look for lines like `- 14:PRI_min got=0.94 expected=0.95`.
+  - Update the mismatched pack or intake source; re-run `make smoke`.

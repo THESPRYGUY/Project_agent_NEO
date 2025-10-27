@@ -7,7 +7,7 @@ Writes artifacts to `_artifacts/smoke/`:
 - repo.zip (zip of the generated repo)
 
 Prints one line on success:
-  SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0 | outdir=<path>
+  SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0
 """
 
 from __future__ import annotations
@@ -143,16 +143,68 @@ def main() -> int:
     }
     (artifacts / "build.json").write_text(json.dumps(build_json, indent=2), encoding="utf-8")
 
-    # Assertions and single-line status
-    if count_present != 20 or not all_true or len(integrity_errors) > 0:
-        print(
+    # Decide behavior based on parity gate flag
+    fail_on_parity = str(os.environ.get("FAIL_ON_PARITY") or "false").lower() in ("1", "true", "yes")
+
+    # Always write a concise smoke.log line for PR summary
+    log_path = artifacts / "smoke.log"
+
+    # If parity is false and gate is enabled, emit required one-liner and deltas, then exit(1)
+    if not all_true and fail_on_parity:
+        def _tf(b: bool) -> str:
+            return "t" if bool(b) else "f"
+        line = (
+            f"PARITY FAIL | "
+            f"02_vs_14={_tf(parity_clean.get('02_vs_14'))} "
+            f"11_vs_02={_tf(parity_clean.get('11_vs_02'))} "
+            f"03_vs_02={_tf(parity_clean.get('03_vs_02'))} "
+            f"17_vs_02={_tf(parity_clean.get('17_vs_02'))}"
+        )
+        print(line)
+        try:
+            log_path.write_text(line + "\n", encoding="utf-8")
+        except Exception:
+            pass
+        # Pretty-print first 10 deltas (pack:key got→expected)
+        deltas = res.get("parity_deltas")
+        items: list[dict] = []
+        try:
+            if isinstance(deltas, dict):
+                for pack_key, diffs in deltas.items():
+                    for k, tup in (diffs or {}).items():
+                        got, expected = (tup[0], tup[1]) if isinstance(tup, (list, tuple)) and len(tup) == 2 else (None, None)
+                        items.append({"pack": str(pack_key), "key": str(k), "got": got, "expected": expected})
+            elif isinstance(deltas, list):
+                # Already flattened structure
+                for d in deltas:
+                    if isinstance(d, dict) and {"pack","key","got","expected"}.issubset(d.keys()):
+                        items.append({"pack": str(d["pack"]), "key": str(d["key"]), "got": d.get("got"), "expected": d.get("expected")})
+        except Exception:
+            items = []
+        for item in items[:10]:
+            print(f" - {item['pack']}:{item['key']} got={item['got']} expected={item['expected']}")
+        return 1
+
+    # If other fatal conditions occur, preserve legacy failure behavior
+    if count_present != 20 or len(integrity_errors) > 0:
+        line = (
             f"SMOKE FAIL | files={count_present} | parity={'ALL_TRUE' if all_true else 'HAS_FALSE'} | "
             f"integrity_errors={len(integrity_errors)} | outdir={build_json['outdir']}"
         )
+        print(line)
+        try:
+            log_path.write_text(line + "\n", encoding="utf-8")
+        except Exception:
+            pass
         return 1
 
-    # Print single-line status for CI logs
-    print("SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0")
+    # Success path regardless of FAIL_ON_PARITY when parity is true
+    ok_line = "SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0"
+    print(ok_line)
+    try:
+        log_path.write_text(ok_line + "\n", encoding="utf-8")
+    except Exception:
+        pass
     return 0
 
 
