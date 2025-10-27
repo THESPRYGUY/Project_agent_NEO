@@ -1,0 +1,33 @@
+{
+  "industry": "Software",
+  "naics": {
+    "code": "541512",
+    "level": 3,
+    "lineage": [
+      {
+        "code": "54",
+        "level": 2,
+        "title": "Professional, Scientific, and Technical Services"
+      }
+    ],
+    "title": "Computer Systems Design"
+  },
+  "refs": {
+    "region": [
+      "NA"
+    ],
+    "regulators": [
+      "NIST_AI_RMF"
+    ],
+    "sector": "Technology"
+  },
+  "region": [
+    "NA"
+  ],
+  "regulators": [
+    "NIST_AI_RMF"
+  ],
+  "sector": "Technology",
+  "version": 1
+}
+

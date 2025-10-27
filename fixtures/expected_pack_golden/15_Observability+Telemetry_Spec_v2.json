@@ -1,0 +1,15 @@
+{
+  "alerts": [
+    "HAL_breach",
+    "PRI_drop"
+  ],
+  "events": [
+    "gate_evaluation",
+    "intake_loaded",
+    "naics_confirmed",
+    "profile_generated",
+    "repo_generated"
+  ],
+  "version": 2
+}
+

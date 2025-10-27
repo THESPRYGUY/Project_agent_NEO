@@ -1,0 +1,21 @@
+{
+  "classification_default": "confidential",
+  "frameworks": {
+    "regulators": [
+      "NIST_AI_RMF"
+    ]
+  },
+  "pii_flags": [
+    "email"
+  ],
+  "policy": {
+    "classification_default": "confidential",
+    "no_impersonation": true
+  },
+  "regulators": [
+    "NIST_AI_RMF"
+  ],
+  "risk_register_tags": [],
+  "version": 2
+}
+

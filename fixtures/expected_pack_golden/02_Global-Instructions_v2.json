@@ -1,0 +1,36 @@
+{
+  "context": {
+    "naics": {
+      "code": "541512",
+      "level": 3,
+      "lineage": [
+        {
+          "code": "54",
+          "level": 2,
+          "title": "Professional, Scientific, and Technical Services"
+        }
+      ],
+      "title": "Computer Systems Design"
+    }
+  },
+  "effective_autonomy": 0.28,
+  "observability": {
+    "kpi_targets": {
+      "AUD_min": 0.9,
+      "HAL_max": 0.02,
+      "PRI_min": 0.95
+    }
+  },
+  "references": {
+    "memory_schema": "08_Memory-Schema_v2.json",
+    "reasoning_schema": "16_Reasoning-Footprints_Schema_v1.json"
+  },
+  "safety": {
+    "regulatory": [
+      "NIST_AI_RMF"
+    ]
+  },
+  "store_raw_cot": false,
+  "version": 2
+}
+

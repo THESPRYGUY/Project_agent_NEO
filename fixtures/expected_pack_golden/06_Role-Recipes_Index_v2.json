@@ -1,0 +1,19 @@
+{
+  "archetype": "",
+  "mapping": {
+    "agent_id": "golden-agent",
+    "primary_role_code": ""
+  },
+  "objectives": [],
+  "role_recipe_ref": "",
+  "role_title": "",
+  "roles_index": [
+    {
+      "code": "",
+      "objectives": [],
+      "title": ""
+    }
+  ],
+  "version": 2
+}
+

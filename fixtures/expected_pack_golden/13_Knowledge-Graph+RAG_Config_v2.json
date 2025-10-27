@@ -1,0 +1,8 @@
+{
+  "default_index": "default",
+  "indexes": [
+    "kb_main"
+  ],
+  "version": 2
+}
+

@@ -109,6 +109,18 @@ SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0
 - Triage: open uploaded `INTEGRITY_REPORT.json` and `build.json` for `parity` and `parity_deltas`.
   - Fix the source pack with mismatched key(s), re-run locally (`make smoke`), then push.
 
+## Golden Snapshot
+
+- Purpose: lock deterministic output for a canonical v3 intake and fail CI on drift.
+- Fixture: `fixtures/intake_v3_golden.json` (minimal-but-complete v3).
+- Snapshot: `fixtures/expected_pack_golden/01..20_*.json` generated from the fixture.
+- Test: `tests/integ_py/test_golden_snapshot.py` builds from the fixture, asserts:
+  - 20 canonical files exist
+  - integrity errors == 0; parity ALL_TRUE (02/11/03/17 vs 14)
+  - byte-for-byte equality vs snapshot (normalized to `\n` line endings)
+- CI: runs the golden snapshot test (blocking) and uploads `_artifacts/golden-diff/**` on mismatch.
+
+
 ## Overlays (optional)
 
 You can auto-apply overlays immediately after a successful `/build`:

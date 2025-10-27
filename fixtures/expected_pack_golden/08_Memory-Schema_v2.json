@@ -1,0 +1,34 @@
+{
+  "id": "memory_schema_v2",
+  "initial_memory_packs": [
+    "m1"
+  ],
+  "memory_scopes": [
+    "customer"
+  ],
+  "optional_packs": [],
+  "packs": {
+    "initial": [
+      "m1"
+    ],
+    "optional": []
+  },
+  "principles": {
+    "redact_pii": true
+  },
+  "retention": {
+    "episodic": {
+      "retention_days": 180
+    }
+  },
+  "scopes": [
+    "customer"
+  ],
+  "sync": {
+    "allowed_sources": [
+      "kb_main"
+    ]
+  },
+  "version": 2
+}
+
