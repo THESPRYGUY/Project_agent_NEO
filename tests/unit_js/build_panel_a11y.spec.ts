@@ -105,7 +105,18 @@ describe('build_panel UI a11y', () => {
     mod.applyBuildToDom(sample)
     const zip = document.querySelector('[data-download-zip]') as any
     expect(zip).toBeTruthy()
-    expect(zip).toBeTruthy()
+    // Render banner and ensure controls
+    mod.renderParityBanner({
+      timestamp: '2025-01-02T03:04:05Z',
+      outdir: sample.outdir,
+      parity: sample.parity,
+      overlays_applied: false,
+      overlay_summary: { applied: true, items: [{ name: 'persistence', version: 'v1', status: 'ok', allowlisted: true, notes: '' }] },
+    } as any)
+    const banner = document.querySelector('[data-last-build-banner]') as any
+    expect(banner).toBeTruthy()
+    const copyBtn = banner.querySelector('[data-copy-last]')
+    expect(!!copyBtn).toBe(true)
   })
 
   it('a11y: info button toggles aria-expanded and ESC closes', async () => {
@@ -127,6 +138,18 @@ describe('build_panel UI a11y', () => {
     info.click()
     const tip = document.querySelector('[data-parity-tooltip="14-02"]') as any
     expect(tip).toBeTruthy()
+    // Overlay modal flows from banner
+    mod.renderParityBanner({
+      timestamp: '2025-01-02T03:04:05Z',
+      outdir: '/work/AGT/20250102T030405Z',
+      parity: sample.parity,
+      overlays_applied: true,
+      overlay_summary: { applied: true, items: [{ name: 'persistence', version: 'v1', status: 'ok', allowlisted: true, notes: 'n/a' }] },
+    } as any)
+    const viewBtn = (document.querySelector('[data-last-build-banner]') as any)?.querySelector('[data-view-overlays]')
+    expect(!!viewBtn).toBe(true)
+    viewBtn?.click?.()
+    const backdrop = document.querySelector('[data-overlay-backdrop]')
+    expect(!!backdrop).toBe(true)
   })
 })
-
