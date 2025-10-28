@@ -59,11 +59,38 @@ def _read_app_version(project_root: Path) -> str:
         pass
     return "0.0.0"
 
+def _git_sha() -> str:
+    """Return a short git SHA for builds; prefer env ``GIT_SHA``.
+
+    Falls back to reading ``.git/HEAD`` when available. In containers, the
+    Dockerfile can pass ``--build-arg GIT_SHA=$(git rev-parse --short HEAD)``.
+    """
+    try:
+        env_sha = os.environ.get("GIT_SHA")
+        if env_sha:
+            return env_sha
+        # Lightweight fallback: parse .git/HEAD and ref
+        git_dir = (Path(__file__).resolve().parents[2] / ".git")
+        head_path = git_dir / "HEAD"
+        if head_path.exists():
+            head = head_path.read_text(encoding="utf-8", errors="ignore").strip()
+            if head.startswith("ref:"):
+                ref = head.split(" ", 1)[1].strip()
+                ref_path = git_dir / ref
+                if ref_path.exists():
+                    return ref_path.read_text(encoding="utf-8", errors="ignore").strip()[:12]
+            return head[:12]
+    except Exception:
+        pass
+    return "UNKNOWN"
+
+
 def _std_headers(content_type: str, size: int, *, extra: Optional[list[tuple[str,str]]] = None) -> list[tuple[str,str]]:
     base = [
         ("Content-Type", content_type),
         ("Cache-Control", "no-store, must-revalidate"),
         ("X-NEO-Intake-Version", INTAKE_BUILD_TAG),
+        ("X-Commit-SHA", _git_sha()),
         ("Content-Length", str(size)),
     ]
     if extra:
@@ -2516,6 +2543,11 @@ window.addEventListener('DOMContentLoaded', function () {
             httpd.serve_forever()
         finally:
             httpd.server_close()
+
+    # Allow the IntakeApplication instance to be used directly as a WSGI app
+    # (gunicorn expects a callable that accepts (environ, start_response)).
+    def __call__(self, environ, start_response):  # pragma: no cover - simple forwarder
+        return self.wsgi_app(environ, start_response)
 
 
 def create_app(*, base_dir: Optional[Path] = None) -> IntakeApplication:

@@ -190,6 +190,23 @@ A quick smoke check after startup:
 - ``curl http://127.0.0.1:5000/`` should return the intake HTML.
 - ``curl http://127.0.0.1:5000/api/profile/validate -X POST -H "Content-Type: application/json" -d '{}'`` returns JSON containing ``status`` and ``issues`` fields.
 
+## Docker Quickstart
+
+- Build image: ``docker build -t neo-intake:local --build-arg GIT_SHA=$(git rev-parse --short HEAD) .``
+- Run: ``docker run -p 5000:5000 --env-file .env neo-intake:local``
+- Health: ``curl -i http://127.0.0.1:5000/health`` → 200, headers include `X-NEO-Intake-Version` and `X-Commit-SHA`.
+
+### Compose (dev)
+
+Use ``docker-compose.dev.yml`` for local iteration:
+
+```bash
+cp .env.example .env
+docker compose -f docker-compose.dev.yml up --build
+```
+
+The service listens on ``http://127.0.0.1:5000`` and emits structured JSON logs to stdout.
+
 ## Legacy payloads
 
 - Behavior matrix:

@@ -1,0 +1,78 @@
+name: release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+jobs:
+  build-and-release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Compute build metadata
+        id: meta
+        run: |
+          echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
+          echo "tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+
+      - name: Build Docker image
+        run: |
+          docker build --build-arg GIT_SHA=${{ steps.meta.outputs.sha }} -t ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.tag }} .
+
+      - name: Smoke test container
+        run: |
+          docker run -d --rm -p 5000:5000 --name neo-smoke \
+            -e LOG_LEVEL=INFO \
+            -e NEO_REPO_OUTDIR=/tmp/out \
+            ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.tag }}
+          echo "Waiting for health..."
+          for i in {1..20}; do \
+            STATUS=$(curl -fsS -o /dev/null -w "%{http_code}" http://localhost:5000/health || true); \
+            if [ "$STATUS" = "200" ]; then break; fi; sleep 1; \
+          done
+          test "$STATUS" = "200"
+          curl -fsS -D headers.txt http://localhost:5000/health -o health.json
+          docker logs neo-smoke --since 5m || true
+          docker rm -f neo-smoke || true
+
+      - name: Install project for builder
+        run: |
+          pip install -e .
+
+      - name: Generate integrity artifacts (golden intake)
+        run: |
+          mkdir -p _artifacts/smoke
+          python build_repo.py --intake fixtures/intake_v3_golden.json --out _artifacts/smoke --emit-parity || true
+          # Move/copy artifacts to top-level for release attachments
+          ART_DIR=$(ls -1d _artifacts/smoke/* || echo "")
+          echo "Artifact dir: $ART_DIR"
+          if [ -n "$ART_DIR" ]; then \
+            cp "$ART_DIR/INTEGRITY_REPORT.json" INTEGRITY_REPORT.json || echo "no integrity"; \
+          fi
+          # Build summary
+          printf '{"tag":"%s","sha":"%s","ts":"%s"}' "${{ steps.meta.outputs.tag }}" "${{ steps.meta.outputs.sha }}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > build.json
+
+      - name: Create repo zip
+        run: |
+          git archive --format zip -o repo.zip HEAD
+
+      - name: Publish GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.meta.outputs.tag }}
+          files: |
+            repo.zip
+            INTEGRITY_REPORT.json
+            build.json
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
