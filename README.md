@@ -1,8 +1,65 @@
-# Project NEO Agent
+# Project Agent NEO — Quickstart & Onboarding
 
-Project NEO Agent provides a lightweight, test-driven scaffold for experimenting with
-agentic workflows. The repository intentionally limits itself to twenty files while
-still covering configuration, planning, execution, and telemetry capabilities.
+Project Agent NEO is a governed, test-driven scaffold for generating and validating a 20-pack agent repository from a v3 intake. It emphasizes strict KPI parity, observability, and safe reasoning footprints while remaining model/vendor agnostic.
+
+## 1) What is Project Agent NEO
+One-paragraph: NEO provides a reproducible intake → build → validate pipeline producing a canonical 20-file agent repo. It ships a simple WSGI service, UI helpers, builders/validators, and CI gates (parity, golden snapshot, smoke) to ensure deterministic, auditable outputs for any use-case.
+
+## 2) TL;DR Quickstart (5 minutes)
+Copy env and run local compose, then hit health:
+
+```bash
+cp .env.example .env
+docker compose -f docker-compose.dev.yml up --build
+# In another shell
+curl -i http://127.0.0.1:5000/health
+```
+
+You should see HTTP 200 with headers `X-NEO-Intake-Version` and `X-Commit-SHA`.
+
+## 3) Dev Setup (10 minutes)
+- Python 3.11 and Node 20.x
+- Install and run tests:
+
+```bash
+python -m pip install -U pip
+pip install -e .[dev]
+pytest -q -vv
+
+npm ci
+npm test
+```
+
+## 4) CI Matrix (Required + Advisory)
+Required checks (enforced in PRs):
+- unit-python (Py≥85% coverage)
+- unit-js (Vitest thresholds)
+- golden snapshot (within integ-and-smoke job)
+- docker-build-smoke
+- smoke (strict parity ON)
+
+Advisory/non-blocking:
+- Integration tests (`-m integ`)
+- Docs check (SCA warn-only and optional markdown lint)
+
+## 5) Parity & Golden Snapshot
+- Parity model: KPI targets from intake must match across 02 vs 14. CI treats mismatches as blocking (strict parity ON).
+- Golden snapshot: builds from `fixtures/intake_v3_golden.json` and verifies byte-for-byte equality with `fixtures/expected_pack_golden/*`. Diff artifacts uploaded under `_artifacts/golden-diff/**` on failure.
+
+## 6) Release Flow
+Tags `v*` trigger the release workflow:
+- Build container, smoke `/health`, generate integrity artifacts
+- Attach to release: `repo.zip`, `INTEGRITY_REPORT.json`, `build.json`
+
+## 7) Security Posture
+- Dependency pinning: Python constraints and Node lockfile; SCA runs warn-only in CI and uploads reports
+- Optional auth stub (default OFF): when `AUTH_REQUIRED=true`, all non-`/health` routes require `Authorization: Bearer <token>`; 401 JSON envelope returned on missing/invalid tokens
+- “No secrets/PII in logs” policy
+
+## 8) Troubleshooting
+- Line endings: normalize to `\n` in snapshots to avoid diffs
+- Env flags: set `FAIL_ON_PARITY=true` to enforce hard parity gates locally; `NEO_APPLY_OVERLAYS=false` for baseline runs
+- Docker bind issues on Windows: prefer WSL2 backend; ensure `.env` exists
 
 ## Features
 
@@ -149,7 +206,7 @@ Safety and integrity:
 ## Reviewing Builds in the UI
 
 - Last-Build banner: on load the UI fetches `/last-build` and displays the most recent build with timestamp, output path, aggregate parity badge, and whether overlays were applied.
-- Download ZIP: after a build completes or from the Last-Build banner, click “Download ZIP” to retrieve a zipped copy of the repo via `/build/zip?outdir=<path>`.
+- Download ZIP: after a build completes or from the Last-Build banner, click “Download ZIP” or fetch via `GET /download/zip` to retrieve the zipped 20-pack.
 - Parity-deltas tooltips: when any parity check is false, an info icon appears next to the parity card. Activate it (click or keyboard) to see the exact key deltas, e.g. `03 PRI_min — 0.940 → 0.950`.
 
 

@@ -81,3 +81,49 @@ Dependency Pinning Policy:
 SCA Overview (warn‑only):
 - CI runs `pip-audit` for Python and `npm audit --production` for Node
 - Findings do not fail PRs; reports are uploaded as artifacts for review
+
+## Environment Defaults (Truth Table)
+
+| Name | Default | Effect |
+| - | - | - |
+| `NEO_REPO_OUTDIR` | `/_data/generated` | Base folder for generated repos |
+| `FAIL_ON_PARITY` | `false` | When `true`, fail parity mismatches as errors in integrity checks |
+| `NEO_APPLY_OVERLAYS` | `false` | Apply overlays post-build |
+| `LOG_LEVEL` | `INFO` | Logging verbosity |
+| `MAX_BODY_BYTES` | `1048576` | Hard cap on request body size; > returns 413 |
+| `RATE_LIMIT_RPS` | `5` | Token refill rate per IP |
+| `RATE_LIMIT_BURST` | `10` | Max burst tokens per IP |
+| `TELEMETRY_SAMPLE_RATE` | `0.1` | Sampling for non-critical telemetry |
+| `AUTH_REQUIRED` | `false` | When `true`, non-`/health` routes require Bearer token |
+| `AUTH_TOKENS` | `` | CSV list of accepted tokens when auth is enabled |
+| `GIT_SHA` | — | Injected at build; echoed in headers |
+
+## Headers
+- Always: `X-Request-ID`, `X-Response-Time-ms`, `Cache-Control: no-store`
+- Health/others: `X-NEO-Intake-Version: v3.0`, `X-Commit-SHA: <sha>` (via app headers)
+
+## Error Envelope Contract
+All error responses share the JSON envelope:
+
+```json
+{"status":"error","code":"<UPPER_SNAKE>","message":"<string>","details":{},"req_id":"<uuid>"}
+```
+
+Examples:
+- 400 BAD_REQUEST: invalid payload
+- 404 NOT_FOUND: unknown path
+- 405 METHOD_NOT_ALLOWED: wrong method
+- 413 PAYLOAD_TOO_LARGE: body exceeds `MAX_BODY_BYTES`
+- 429 TOO_MANY_REQUESTS: rate limit exceeded
+- 500 INTERNAL_ERROR: unhandled exception
+- `DUPLICATE_LEGACY_V3_CONFLICT`: legacy+v3 fields for same concept (adapter guard)
+
+Auth 401 (when `AUTH_REQUIRED=true`):
+- Envelope: `{ "status":"error", "code":"UNAUTHORIZED", "message":"Missing or invalid bearer token.", "details":{}, "req_id":"..." }`
+- Header: `WWW-Authenticate: Bearer realm="neo", error="invalid_token"`
+
+## Release Steps
+1) Tag `v*`
+2) CI builds image and runs health smoke
+3) Generate integrity artifacts (`repo.zip`, `INTEGRITY_REPORT.json`, `build.json`)
+4) Attach artifacts to the release

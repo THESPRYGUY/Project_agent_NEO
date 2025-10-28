@@ -1,0 +1,14 @@
+### Health
+GET http://127.0.0.1:5000/health
+Accept: application/json
+
+### Build (v3 intake)
+POST http://127.0.0.1:5000/build
+Content-Type: application/json
+
+< ./examples/payloads/v3_intake.json
+
+### Last build
+GET http://127.0.0.1:5000/last-build
+Accept: application/json
+
