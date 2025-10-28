@@ -18,6 +18,7 @@ import tempfile
 from wsgiref.simple_server import make_server
 
 from .linkedin import scrape_linkedin_profile
+from .middleware import ObservabilityMiddleware
 from .logging import get_logger
 from .repo_generator import AgentRepoGenerationError, generate_agent_repo
 from neo_build.writers import write_repo_files
@@ -609,6 +610,11 @@ class IntakeApplication:
         self.profile_output_dir = self.base_dir / "generated_profiles"
         self.profile_output_dir.mkdir(parents=True, exist_ok=True)
         self.persona_state_path = self.base_dir / "persona_state.json"
+        # Process start for uptime reporting
+        try:
+            self._started_at = time.time()
+        except Exception:
+            self._started_at = None
         self.persona_assets = self._load_persona_assets()
         self.persona_config = self._load_persona_config()
         self.mbti_lookup = self._index_mbti_types(self.persona_config.get("mbti_types", []))
@@ -1600,6 +1606,11 @@ window.addEventListener('DOMContentLoaded', function () {
                 "has_api_generate": True,
                 "build_on_post": True,
             }
+            try:
+                if self._started_at:
+                    payload["uptime_s"] = int(max(0.0, time.time() - float(self._started_at)))
+            except Exception:
+                pass
             raw = json.dumps(payload).encode("utf-8")
             start_response("200 OK", _std_headers("application/json", len(raw)))
             return [raw]
@@ -2547,7 +2558,8 @@ window.addEventListener('DOMContentLoaded', function () {
     # Allow the IntakeApplication instance to be used directly as a WSGI app
     # (gunicorn expects a callable that accepts (environ, start_response)).
     def __call__(self, environ, start_response):  # pragma: no cover - simple forwarder
-        return self.wsgi_app(environ, start_response)
+        # Wrap the WSGI app with observability+resilience middleware
+        return ObservabilityMiddleware(self.wsgi_app)(environ, start_response)
 
 
 def create_app(*, base_dir: Optional[Path] = None) -> IntakeApplication:

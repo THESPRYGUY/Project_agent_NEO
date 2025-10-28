@@ -207,6 +207,17 @@ docker compose -f docker-compose.dev.yml up --build
 
 The service listens on ``http://127.0.0.1:5000`` and emits structured JSON logs to stdout.
 
+### Headers you'll see
+
+- `X-Request-ID` — echoed from client or generated per request.
+- `X-Response-Time-ms` — integer processing time for the request.
+
+Error envelope example (uniform for 400/404/405/413/429/500):
+
+```json
+{"status":"error","code":"NOT_FOUND","message":"Not Found","details":{},"req_id":"..."}
+```
+
 ## Legacy payloads
 
 - Behavior matrix:

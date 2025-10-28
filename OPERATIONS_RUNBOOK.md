@@ -37,3 +37,24 @@
   - `build.json` (tag, sha, timestamp)
 - Release attaches artifacts to the tag.
 
+
+## Resilience & Limits
+
+Environment variables (override via `.env` or container env):
+
+- `MAX_BODY_BYTES` (default `1048576`) – hard cap on request body size. Exceeding returns `413` with a JSON error envelope. Keep at 1–5MB for typical form/JSON posts.
+- `RATE_LIMIT_RPS` (default `5`) – per‑IP token refill rate in requests per second.
+- `RATE_LIMIT_BURST` (default `10`) – per‑IP burst tokens. Set both to `0` to disable non‑exempt traffic (useful in maintenance).
+- `TELEMETRY_SAMPLE_RATE` (default `0.1`) – sampling rate (0.0–1.0) for non‑critical telemetry. Errors always emit.
+
+Headers emitted on middleware‑wrapped responses:
+- `X-Request-ID` – echoed from client `X-Request-ID` or generated.
+- `X-Response-Time-ms` – integer duration from request receive to response.
+
+Error envelope (uniform across 400/404/405/413/429/500):
+
+```json
+{"status":"error","code":"<UPPER_SNAKE>","message":"...","details":{},"req_id":"..."}
+```
+
+Rate‑limit exemptions: `GET /health`, `GET /last-build`.
