@@ -1636,7 +1636,8 @@ window.addEventListener('DOMContentLoaded', function () {
                 start_response("500 Internal Server Error", _std_headers("application/json", len(payload)))
                 return [payload]
         # Build ZIP download (validated subpath under out root)
-        if path == "/build/zip" and method == "GET":
+        # Alias: support both /build/zip (deprecated) and /download/zip (preferred)
+        if path in ("/build/zip", "/download/zip") and method == "GET":
             qs = parse_qs(str(environ.get("QUERY_STRING") or ""))
             outdir_q = (qs.get("outdir") or [""])[0]
             if not outdir_q:

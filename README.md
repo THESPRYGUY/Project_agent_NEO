@@ -52,6 +52,15 @@ Tags `v*` trigger the release workflow:
 - Attach to release: `repo.zip`, `INTEGRITY_REPORT.json`, `build.json`
 
 ## 7) Security Posture
+
+See `SECURITY.md` for the full policy and reporting process.
+
+Supported Versions
+
+| Component | Version |
+| - | - |
+| Python | 3.11 |
+| Node.js | 20.x |
 - Dependency pinning: Python constraints and Node lockfile; SCA runs warn-only in CI and uploads reports
 - Optional auth stub (default OFF): when `AUTH_REQUIRED=true`, all non-`/health` routes require `Authorization: Bearer <token>`; 401 JSON envelope returned on missing/invalid tokens
 - “No secrets/PII in logs” policy
