@@ -1,4 +1,4 @@
-name: CI (Unit + Integ/Smoke)
+﻿name: CI (Unit + Integ/Smoke)
 
 on:
   push:
@@ -33,7 +33,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Echo UTF-8 checkmark
-        run: printf 'UTF8 OK: ✅\n'
+        run: printf 'UTF8 OK: ✅…\n'
   sca:
     name: SCA (warn-only)
     runs-on: ubuntu-latest
@@ -160,7 +160,7 @@ jobs:
       - name: Echo smoke summary
         if: always()
         run: |
-          test -f _artifacts/smoke/smoke.log && cat _artifacts/smoke/smoke.log || printf '✅ SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0\n'
+          test -f _artifacts/smoke/smoke.log && cat _artifacts/smoke/smoke.log || printf 'âœ… SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0\n'
       - name: Upload integrity artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -225,3 +225,4 @@ jobs:
         with:
           name: docs-check
           path: docs-check.txt
+
