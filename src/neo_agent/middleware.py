@@ -83,13 +83,23 @@ class ObservabilityMiddleware:
             if isinstance(authz, (bytes, bytearray)):
                 authz = authz.decode("utf-8", errors="ignore")
             token = None
-            if isinstance(authz, str) and authz.startswith("Bearer "):
-                token = authz[7:].strip()
+            if isinstance(authz, str):
+                # Case-insensitive scheme match; tolerate extra whitespace
+                try:
+                    parts = authz.strip().split(None, 1)
+                    if parts and parts[0].lower() == "bearer" and len(parts) == 2:
+                        token = parts[1].strip()
+                except Exception:
+                    token = None
             if not token or token not in self.auth_tokens:
                 duration_ms = int((time.perf_counter() - t0) * 1000)
-                body = _error_envelope(req_id, "UNAUTHORIZED", "missing or invalid bearer token", details={"path": path})
+                body = _error_envelope(req_id, "UNAUTHORIZED", "Missing or invalid bearer token.", details={})
                 headers = _base_headers(environ, req_id, duration_ms)
-                headers += [("WWW-Authenticate", "Bearer realm=\"neo-intake\", charset=\"UTF-8\""), ("Content-Type", "application/json; charset=utf-8"), ("Content-Length", str(len(body)))]
+                headers += [
+                    ("WWW-Authenticate", "Bearer realm=\"neo\", error=\"invalid_token\""),
+                    ("Content-Type", "application/json; charset=utf-8"),
+                    ("Content-Length", str(len(body)))
+                ]
                 start_response("401 Unauthorized", headers)
                 _log_http(method, path, 401, duration_ms, req_id)
                 return [body]
