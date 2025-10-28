@@ -26,6 +26,10 @@ class _JsonFormatter(logging.Formatter):
             payload["event"] = getattr(record, "event")
         if hasattr(record, "payload"):
             payload["payload"] = getattr(record, "payload")
+        # Observability context (when provided by middleware or callers)
+        for key in ("req_id", "method", "path", "status", "duration_ms"):
+            if hasattr(record, key):
+                payload[key] = getattr(record, key)
         return json.dumps(payload, ensure_ascii=False)
 
 
