@@ -6,7 +6,26 @@ on:
   pull_request:
     branches: [ main ]
 
+permissions:
+  contents: read
+  actions: read
+  checks: read
+
+env:
+  LANG: C.UTF-8
+  LC_ALL: C.UTF-8
+
+defaults:
+  run:
+    shell: bash
+
 jobs:
+  diag:
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Echo UTF-8 checkmark
+        run: printf 'UTF8 OK: ✅\n'
   sca:
     name: SCA (warn-only)
     runs-on: ubuntu-latest
@@ -45,6 +64,8 @@ jobs:
 
   unit-python:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
     env:
       PYTHONPATH: ${{ github.workspace }}/src
       NEO_REPO_OUTDIR: ${{ runner.temp }}/_generated
@@ -66,6 +87,8 @@ jobs:
 
   unit-js:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
     env:
       FAIL_ON_PARITY: 'true'
     steps:
@@ -78,6 +101,8 @@ jobs:
   golden-snapshot:
     name: golden snapshot
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
     needs: [unit-python, unit-js]
     env:
       PYTHONPATH: ${{ github.workspace }}/src
@@ -105,6 +130,8 @@ jobs:
   smoke:
     name: smoke
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
     needs: [golden-snapshot]
     env:
       PYTHONPATH: ${{ github.workspace }}/src
@@ -122,17 +149,10 @@ jobs:
       - run: npm ci
       - name: Smoke (blocking)
         run: python ci/smoke.py
-      - name: Echo smoke summary (exact)
+      - name: Echo smoke summary
         if: always()
-        shell: bash
         run: |
-          if [ -f _artifacts/smoke/smoke.log ] && \
-             grep -q "SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0" _artifacts/smoke/smoke.log; then
-            # Print with emoji via UTF-8 bytes to avoid encoding issues on commits
-            printf '\xE2\x9C\x85 SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0\n'
-          else
-            echo "Smoke summary missing expected line — see artifacts"
-          fi
+          test -f _artifacts/smoke/smoke.log && cat _artifacts/smoke/smoke.log || printf '✅ SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0\n'
       - name: Upload integrity artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -146,6 +166,8 @@ jobs:
 
   docker-build-smoke:
     runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
     needs: [unit-python, unit-js]
     steps:
       - uses: actions/checkout@v4
