@@ -122,10 +122,15 @@ jobs:
       - run: npm ci
       - name: Smoke (blocking)
         run: python ci/smoke.py
-      - name: Echo smoke summary
+      - name: Echo smoke summary (exact)
         if: always()
         run: |
-          test -f _artifacts/smoke/smoke.log && tail -n 1 _artifacts/smoke/smoke.log || true
+          if [ -f _artifacts/smoke/smoke.log ] && \
+             grep -q "SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0" _artifacts/smoke/smoke.log; then
+            echo "✅ SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0"
+          else
+            echo "❌ Smoke summary missing expected line — see artifacts"
+          fi
       - name: Upload integrity artifacts
         if: always()
         uses: actions/upload-artifact@v4
