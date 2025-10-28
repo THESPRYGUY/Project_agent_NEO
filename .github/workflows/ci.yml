@@ -150,3 +150,25 @@ jobs:
         with:
           name: docker-health-headers
           path: headers.txt
+
+  docs-check:
+    name: Docs Check (non-blocking)
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: 20 }
+      - name: Run markdownlint via npx
+        run: |
+          npx --yes markdownlint-cli@0.39.0 "README.md" "OPERATIONS_RUNBOOK.md" "docs/**/*.md" "examples/payloads/README.md" || true
+      - name: Save report
+        if: always()
+        run: |
+          echo "Docs check completed at $(date -u +%FT%TZ)" > docs-check.txt
+      - name: Upload docs report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: docs-check
+          path: docs-check.txt

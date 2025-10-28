@@ -1,0 +1,45 @@
+{
+  "identity": {
+    "agent_id": "AGENT-EXAMPLE-001",
+    "display_name": "Example Agent",
+    "attribution_policy": "original",
+    "no_impersonation": true,
+    "owners": ["CAIO", "CPA", "TeamLead"]
+  },
+  "role_profile": {
+    "archetype": "AIA-P",
+    "role_title": "Analysis Planner",
+    "role_recipe_ref": "CAIO_Einstein_v2.0",
+    "objectives": ["Translate executive intent into governed AI work"]
+  },
+  "sector_profile": {
+    "sector": "SECTOR",
+    "industry": "INDUSTRY",
+    "domain_tags": ["tag1"],
+    "region": ["CA"],
+    "languages": ["en"],
+    "risk_tier": "high",
+    "regulatory": ["NIST_AI_RMF"]
+  },
+  "capabilities_tools": {
+    "capabilities": ["plan", "build", "evaluate"],
+    "tool_suggestions": ["email"],
+    "tool_connectors": [
+      { "name": "email", "enabled": true, "scopes": ["read/*"], "secret_ref": "vault://email/agent" }
+    ],
+    "human_gate": { "actions": ["external_email_send"], "approver_role": "CAIO" }
+  },
+  "memory": {
+    "memory_scopes": ["semantic:domain/*"],
+    "initial_memory_packs": ["glossary_v1"],
+    "data_sources": ["index:docs_v1"]
+  },
+  "governance_eval": {
+    "risk_register_tags": ["model_quality"],
+    "pii_flags": ["PII"],
+    "classification_default": "confidential",
+    "gates": { "PRI_min": 0.95, "hallucination_max": 0.02, "audit_min": 0.9 }
+  },
+  "persona": { "persona_label": "ENTJ", "tone": "crisp, analytical, executive", "formality": "high" },
+  "packaging": { "version": "v1.0.0" }
+}

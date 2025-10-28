@@ -1,0 +1,17 @@
+{
+  "legacy": {
+    "sector": "SECTOR",
+    "role": "AIA-P",
+    "regulators": ["NIST_AI_RMF"],
+    "traits": ["analytical"],
+    "voice": "executive",
+    "tools": ["email"],
+    "human_gate": { "actions": ["external_email_send"] },
+    "memory": {
+      "scopes": ["semantic:domain/*"],
+      "packs": ["glossary_v1"],
+      "sources": ["index:docs_v1"]
+    },
+    "kpi": { "PRI_min": 0.95, "HAL_max": 0.02, "AUD_min": 0.9 }
+  }
+}
