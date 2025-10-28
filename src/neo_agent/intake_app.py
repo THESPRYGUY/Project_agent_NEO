@@ -2544,6 +2544,11 @@ window.addEventListener('DOMContentLoaded', function () {
         finally:
             httpd.server_close()
 
+    # Allow the IntakeApplication instance to be used directly as a WSGI app
+    # (gunicorn expects a callable that accepts (environ, start_response)).
+    def __call__(self, environ, start_response):  # pragma: no cover - simple forwarder
+        return self.wsgi_app(environ, start_response)
+
 
 def create_app(*, base_dir: Optional[Path] = None) -> IntakeApplication:
     """Factory for tests and CLI to create the intake application."""

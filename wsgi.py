@@ -10,14 +10,12 @@ from __future__ import annotations
 
 import os
 
-# Ensure ``src`` is visible when running from a container without installation
+# Ensure repository root is visible on sys.path (so `src` can be imported)
 _here = os.path.abspath(os.path.dirname(__file__))
-src_path = os.path.join(_here, "src")
-if os.path.isdir(src_path) and src_path not in os.sys.path:
-    os.sys.path.insert(0, src_path)
+if _here not in os.sys.path:
+    os.sys.path.insert(0, _here)
 
-from neo_agent.intake_app import create_app  # type: ignore  # noqa: E402
+from src.neo_agent.intake_app import create_app  # type: ignore  # noqa: E402
 
-# Gunicorn expects a WSGI callable. IntakeApplication provides ``wsgi_app``.
-app = create_app().wsgi_app
-
+# Expose the application object; IntakeApplication implements __call__ as WSGI.
+app = create_app()

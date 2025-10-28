@@ -14,6 +14,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
+# Create non-root user and group
+RUN groupadd -g 10001 appgroup \
+ && useradd -r -u 10001 -g appgroup appuser
+
 # Copy only what we need to install and run
 COPY pyproject.toml README.md ./
 COPY src ./src
@@ -23,9 +27,13 @@ RUN pip install --no-cache-dir --upgrade pip \
  && pip install --no-cache-dir gunicorn \
  && pip install --no-cache-dir -e .
 
+# Ensure permissions for non-root execution
+RUN chown -R appuser:appgroup /app
+
 EXPOSE 5000
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 CMD curl -fsS http://localhost:5000/health || exit 1
 
-CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:5000", "wsgi:app"]
+USER appuser
 
+CMD ["gunicorn", "-w", "2", "-b", "0.0.0.0:5000", "wsgi:app"]

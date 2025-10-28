@@ -49,10 +49,10 @@ jobs:
         run: |
           pip install -e .
 
-      - name: Generate integrity artifacts
+      - name: Generate integrity artifacts (golden intake)
         run: |
           mkdir -p _artifacts/smoke
-          python build_repo.py --intake agent_profile.json --out _artifacts/smoke --emit-parity || true
+          python build_repo.py --intake fixtures/intake_v3_golden.json --out _artifacts/smoke --emit-parity || true
           # Move/copy artifacts to top-level for release attachments
           ART_DIR=$(ls -1d _artifacts/smoke/* || echo "")
           echo "Artifact dir: $ART_DIR"
@@ -76,4 +76,3 @@ jobs:
             build.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-
