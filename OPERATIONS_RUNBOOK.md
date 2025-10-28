@@ -58,3 +58,26 @@ Error envelope (uniform across 400/404/405/413/429/500):
 ```
 
 Rate‑limit exemptions: `GET /health`, `GET /last-build`.
+
+## Security
+
+Environment variables (auth stub is optional and OFF by default):
+
+- `AUTH_REQUIRED` (default `false`) — when `true`, all non-`/health` routes require a valid Bearer token
+- `AUTH_TOKENS` (default empty) — comma‑separated list of accepted tokens
+
+Behavior:
+- When `AUTH_REQUIRED=true` and the `Authorization: Bearer <token>` header is missing/invalid, responses return `401` with a JSON envelope `{status:"error", code:"UNAUTHORIZED", ...}` and `WWW-Authenticate: Bearer` header
+- `/health` is always exempt to support liveness/readiness probes
+
+Headers & Privacy:
+- Always emit: `X-Request-ID`, `X-Response-Time-ms`, `Cache-Control: no-store`
+- Do not log secrets, tokens, or PII. Ensure any identifiers are hashed or redacted
+
+Dependency Pinning Policy:
+- Python: pins live in `constraints/requirements.lock` and `constraints/requirements-dev.lock`; update monthly or on CVE
+- Node: `package-lock.json` is authoritative; update monthly or on CVE via `npm audit fix` PRs
+
+SCA Overview (warn‑only):
+- CI runs `pip-audit` for Python and `npm audit --production` for Node
+- Findings do not fail PRs; reports are uploaded as artifacts for review

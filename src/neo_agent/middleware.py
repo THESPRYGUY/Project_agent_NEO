@@ -1,4 +1,4 @@
-"""WSGI middleware for request observability and lightweight resilience.
+"""WSGI middleware for request observability, lightweight resilience, and optional auth.
 
 Features:
 - X-Request-ID propagation and response header
@@ -7,12 +7,15 @@ Features:
 - Payload size guard via MAX_BODY_BYTES
 - Simple per-IP token-bucket rate limit with RATE_LIMIT_RPS/RATE_LIMIT_BURST
 - Telemetry sampling for non-critical events; errors always emit
+ - Optional bearer-token auth stub behind ``AUTH_REQUIRED`` (default off)
 
 Environment variables:
 - MAX_BODY_BYTES (default 1048576)
 - RATE_LIMIT_RPS (default 5)
 - RATE_LIMIT_BURST (default 10)
 - TELEMETRY_SAMPLE_RATE (default 0.1)
+ - AUTH_REQUIRED (default false)
+ - AUTH_TOKENS (comma-separated list of allowed tokens)
 """
 
 from __future__ import annotations
@@ -60,6 +63,8 @@ class ObservabilityMiddleware:
         self.rps = _get_float_env("RATE_LIMIT_RPS", 5.0)
         self.burst = _get_int_env("RATE_LIMIT_BURST", 10)
         self.sample_rate = _get_float_env("TELEMETRY_SAMPLE_RATE", 0.1)
+        self.auth_required = _get_bool_env("AUTH_REQUIRED", False)
+        self.auth_tokens = _parse_tokens(os.environ.get("AUTH_TOKENS", ""))
         # State
         self._buckets: dict[str, _TokenBucket] = {}
         self._lock = threading.Lock()
@@ -71,6 +76,33 @@ class ObservabilityMiddleware:
         environ["neo.req_id"] = req_id
         method = str(environ.get("REQUEST_METHOD", "GET"))
         path = str(environ.get("PATH_INFO", "/")) or "/"
+
+        # Optional bearer auth (exempt only /health)
+        if self.auth_required and path != "/health":
+            authz = environ.get("HTTP_AUTHORIZATION")
+            if isinstance(authz, (bytes, bytearray)):
+                authz = authz.decode("utf-8", errors="ignore")
+            token = None
+            if isinstance(authz, str):
+                # Case-insensitive scheme match; tolerate extra whitespace
+                try:
+                    parts = authz.strip().split(None, 1)
+                    if parts and parts[0].lower() == "bearer" and len(parts) == 2:
+                        token = parts[1].strip()
+                except Exception:
+                    token = None
+            if not token or token not in self.auth_tokens:
+                duration_ms = int((time.perf_counter() - t0) * 1000)
+                body = _error_envelope(req_id, "UNAUTHORIZED", "Missing or invalid bearer token.", details={})
+                headers = _base_headers(environ, req_id, duration_ms)
+                headers += [
+                    ("WWW-Authenticate", "Bearer realm=\"neo\", error=\"invalid_token\""),
+                    ("Content-Type", "application/json; charset=utf-8"),
+                    ("Content-Length", str(len(body)))
+                ]
+                start_response("401 Unauthorized", headers)
+                _log_http(method, path, 401, duration_ms, req_id)
+                return [body]
 
         # Payload size guard for methods that typically carry a body
         if method in {"POST", "PUT", "PATCH"}:
@@ -224,6 +256,7 @@ def _client_ip(environ: Mapping[str, object]) -> str:
 def _status_code_name(status: int) -> str:
     mapping = {
         400: "BAD_REQUEST",
+        401: "UNAUTHORIZED",
         404: "NOT_FOUND",
         405: "METHOD_NOT_ALLOWED",
         413: "PAYLOAD_TOO_LARGE",
@@ -317,3 +350,18 @@ def _log_http(method: str, path: str, status: int, duration_ms: int, req_id: str
         )
     except Exception:
         pass
+
+
+def _parse_tokens(csv: str) -> set[str]:
+    try:
+        parts = [p.strip() for p in str(csv or "").split(",")]
+        return {p for p in parts if p}
+    except Exception:
+        return set()
+
+
+def _get_bool_env(name: str, default: bool) -> bool:
+    raw = str(os.environ.get(name, "")).strip().lower()
+    if not raw:
+        return bool(default)
+    return raw in {"1", "true", "yes", "y", "on"}
