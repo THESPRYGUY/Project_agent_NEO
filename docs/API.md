@@ -67,14 +67,14 @@ curl -i http://127.0.0.1:5000/last-build
 
 ---
 
-## GET /build/zip?outdir=<path>
-Returns a ZIP of the generated 20-pack.
+## GET /download/zip
+Streams the current 20-file pack as a ZIP (strict parity enforced by CI).
 
-Query: `outdir` is a subdirectory name under `NEO_REPO_OUTDIR` (validated server-side).
+Response: 200 (application/zip); standard error envelope on failure.
 
 Example:
 ```bash
-curl -L -o repo.zip "http://127.0.0.1:5000/build/zip?outdir=agent-1-0-0"
+curl -fSL http://127.0.0.1:5000/download/zip -o repo.zip
 ```
 
 ---
@@ -83,4 +83,3 @@ curl -L -o repo.zip "http://127.0.0.1:5000/build/zip?outdir=agent-1-0-0"
 - Parity must be ALL_TRUE across 02 vs 14; failures appear in integrity artifacts and may block CI.
 - 429 (rate limit) when per-IP bucket exhausted; tune via `RATE_LIMIT_RPS/BURST`.
 - 413 (size) when payload exceeds `MAX_BODY_BYTES`.
-
