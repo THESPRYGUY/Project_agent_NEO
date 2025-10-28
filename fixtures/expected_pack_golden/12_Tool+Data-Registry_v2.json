@@ -1,0 +1,14 @@
+{
+  "connectors": [
+    {
+      "enabled": true,
+      "name": "sharepoint",
+      "scopes": [
+        "read"
+      ],
+      "secret_ref": "SET_ME"
+    }
+  ],
+  "version": 2
+}
+

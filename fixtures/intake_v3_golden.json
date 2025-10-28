@@ -1,0 +1,45 @@
+{
+  "intake_version": "v3.0",
+  "identity": {
+    "agent_id": "golden-agent",
+    "display_name": "Golden Snapshot Agent",
+    "owners": ["CAIO", "CPA", "TeamLead"],
+    "no_impersonation": true
+  },
+  "agent": { "name": "Golden Agent", "version": "3.0.0" },
+  "context": {
+    "naics": { "code": "541512", "title": "Computer Systems Design" },
+    "region": ["NA"]
+  },
+  "role": {
+    "function_code": "it_ops",
+    "role_code": "AIA-P",
+    "role_title": "IT Ops Lead",
+    "objectives": ["Ship reliably", "Maintain governance"]
+  },
+  "sector_profile": {
+    "sector": "Technology",
+    "industry": "Software",
+    "region": ["NA"],
+    "regulatory": ["NIST_AI_RMF"]
+  },
+  "capabilities_tools": {
+    "tool_connectors": [
+      {"name": "sharepoint", "enabled": true, "scopes": ["read"], "secret_ref": "SET_ME"}
+    ],
+    "human_gate": {"actions": ["legal_advice"]}
+  },
+  "memory": {
+    "memory_scopes": ["customer"],
+    "initial_memory_packs": ["m1"],
+    "data_sources": ["kb_main"]
+  },
+  "governance_eval": {
+    "gates": { "PRI_min": 0.95, "hallucination_max": 0.02, "audit_min": 0.9 },
+    "pii_flags": ["email"],
+    "classification_default": "confidential"
+  },
+  "preferences": { "sliders": { "autonomy": 80 } },
+  "classification": { "naics": { "code": "541512", "title": "Computer Systems Design", "level": 3, "lineage": [{"code": "54", "title": "Professional, Scientific, and Technical Services", "level": 2}] } }
+}
+

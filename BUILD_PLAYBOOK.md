@@ -38,6 +38,31 @@ Overlay summary triage:
   - Look for lines like `- 14:PRI_min got=0.94 expected=0.95`.
   - Update the mismatched pack or intake source; re-run `make smoke`.
 
+## How to re-baseline intentionally
+
+When deterministic outputs change by design, re-baseline the golden snapshot:
+
+1) Run the re-baseline helper locally
+
+```bash
+python scripts/make_golden.py
+```
+
+This rebuilds the golden repo from `fixtures/intake_v3_golden.json` and overwrites
+`fixtures/expected_pack_golden/*`. It prints “GOLDEN UPDATED” and lists changed files.
+
+2) Commit and open a PR
+
+- Commit message should include: `INTENTIONAL SNAPSHOT UPDATE`.
+- In the PR description, explain the change rationale (why the canonical output changed).
+- CI will pass if the snapshot matches and parity/integrity gates hold.
+
+3) On CI failures
+
+- Inspect uploaded `_artifacts/golden-diff/**` for unified diffs of the first drifts.
+- Correct the source or re-run the helper if the change is expected.
+
+
 ## Legacy payload triage
 
 - New guard rejects mixed legacy+v3 payloads at `/save` with `DUPLICATE_LEGACY_V3_CONFLICT`.

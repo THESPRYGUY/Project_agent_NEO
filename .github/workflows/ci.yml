@@ -59,6 +59,8 @@ jobs:
       - name: Integration (non-blocking)
         continue-on-error: true
         run: pytest -q -vv -m "integ"
+      - name: Golden snapshot (blocking)
+        run: pytest -q -vv tests/integ_py/test_golden_snapshot.py
       - name: Smoke (blocking)
         run: python ci/smoke.py
       - name: Upload integrity artifacts
@@ -71,6 +73,12 @@ jobs:
             **/INTEGRITY_REPORT.json
             **/build.json
             **/*.zip
+      - name: Upload golden diff
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-diff
+          path: _artifacts/golden-diff/**
       - name: PR summary
         if: always()
         run: |
