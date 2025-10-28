@@ -124,12 +124,14 @@ jobs:
         run: python ci/smoke.py
       - name: Echo smoke summary (exact)
         if: always()
+        shell: bash
         run: |
           if [ -f _artifacts/smoke/smoke.log ] && \
              grep -q "SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0" _artifacts/smoke/smoke.log; then
-            echo "✅ SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0"
+            # Print with emoji via UTF-8 bytes to avoid encoding issues on commits
+            printf '\xE2\x9C\x85 SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0\n'
           else
-            echo "❌ Smoke summary missing expected line — see artifacts"
+            echo "Smoke summary missing expected line — see artifacts"
           fi
       - name: Upload integrity artifacts
         if: always()
