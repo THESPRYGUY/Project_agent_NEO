@@ -20,6 +20,14 @@ defaults:
     shell: bash
 
 jobs:
+  jobname_manifest:
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Publish canonical Required job names
+        run: |
+          printf "Required job names (copy these into Branch Protection):\n" | tee -a "$GITHUB_STEP_SUMMARY"
+          printf "unit-python\nunit-js\ngolden snapshot\ndocker-build-smoke\nsmoke\n" | tee -a "$GITHUB_STEP_SUMMARY"
   diag:
     if: always()
     runs-on: ubuntu-latest
