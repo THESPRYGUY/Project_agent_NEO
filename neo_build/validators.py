@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Mapping, List
+from typing import Any, Dict, Mapping, List, Set
 import os
 
 from .gates import parse_activation_strings
@@ -190,17 +190,168 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
     out["crossref_errors"] = crossref_errors
     out["crossref_ok"] = len(crossref_errors) == 0
 
-    # Contract: required top-level keys presence per file
-    missing_keys: Dict[str, list[str]] = {}
-    req = required_keys_map()
+    # Contract: required top-level keys presence per file (repeat to keep compatibility with earlier code paths)
+    missing_keys2: Dict[str, list[str]] = {}
     for fname, required in req.items():
         payload = packs.get(fname) if isinstance(packs, Mapping) else None
         present = set(payload.keys()) if isinstance(payload, Mapping) else set()
         miss = [k for k in required if k not in present]
         if miss:
-            missing_keys[fname] = miss
-    out["missing_keys"] = missing_keys
-    out["contract_ok"] = (len(missing_keys) == 0)
+            missing_keys2[fname] = miss
+    out["missing_keys"] = missing_keys2
+    out["contract_ok"] = (len(missing_keys2) == 0)
+
+    # Sprint-19: Section completeness and linkage checks for 10/11/12/13/14/18/19/20
+    missing_sections: Dict[str, List[str]] = {}
+
+    def _nonempty_list(v: Any) -> bool:
+        return isinstance(v, list) and len(v) > 0
+
+    def _nonempty_dict(v: Any) -> bool:
+        return isinstance(v, dict) and len(v.keys()) > 0
+
+    # 10
+    p10 = packs.get("10_Prompt-Pack_v2.json") or {}
+    for sec in ("modules", "reasoning_patterns", "guardrails", "output_contracts"):
+        ok = _nonempty_list(p10.get(sec)) if sec in ("modules", "reasoning_patterns") else _nonempty_dict(p10.get(sec))
+        if not ok:
+            missing_sections.setdefault("10_Prompt-Pack_v2.json", []).append(sec)
+
+    # 11
+    p11 = packs.get("11_Workflow-Pack_v2.json") or {}
+    for sec in ("micro_loops", "graphs", "engine_adapters"):
+        if not _nonempty_list(p11.get(sec)):
+            missing_sections.setdefault("11_Workflow-Pack_v2.json", []).append(sec)
+    if not _nonempty_dict(p11.get("rollback")):
+        missing_sections.setdefault("11_Workflow-Pack_v2.json", []).append("rollback")
+    if not _nonempty_dict((p11.get("gates") or {}).get("kpi_targets", {})):
+        missing_sections.setdefault("11_Workflow-Pack_v2.json", []).append("gates.kpi_targets")
+
+    # 12
+    p12 = packs.get("12_Tool+Data-Registry_v2.json") or {}
+    for sec in ("tools", "connectors", "datasets", "secrets", "policies"):
+        val = p12.get(sec)
+        if sec in ("policies",):
+            ok = _nonempty_dict(val)
+        else:
+            ok = _nonempty_list(val)
+        if not ok:
+            missing_sections.setdefault("12_Tool+Data-Registry_v2.json", []).append(sec)
+    # secrets names only (no values)
+    bad_secret = False
+    for s in p12.get("secrets", []) or []:
+        if isinstance(s, dict):
+            if any(k in s for k in ("value", "token", "password", "secret")):
+                bad_secret = True
+    if bad_secret:
+        missing_sections.setdefault("12_Tool+Data-Registry_v2.json", []).append("secrets:no_values")
+
+    # 13
+    p13 = packs.get("13_Knowledge-Graph+RAG_Config_v2.json") or {}
+    for sec in ("indices", "chunking", "retrievers", "rerankers", "embeddings", "data_quality", "update_policy"):
+        val = p13.get(sec)
+        ok = _nonempty_list(val) if sec in ("indices", "retrievers", "rerankers") else _nonempty_dict(val)
+        if not ok:
+            missing_sections.setdefault("13_Knowledge-Graph+RAG_Config_v2.json", []).append(sec)
+
+    # 14
+    p14full = packs.get("14_KPI+Evaluation-Framework_v2.json") or {}
+    for sec in ("metrics", "eval_pipelines", "reports", "eval_cases"):
+        if not _nonempty_list(p14full.get(sec)):
+            missing_sections.setdefault("14_KPI+Evaluation-Framework_v2.json", []).append(sec)
+
+    # 18
+    p18 = packs.get("18_Reporting-Pack_v2.json") or {}
+    for sec in ("outputs", "publishing", "schedule"):
+        val = p18.get(sec)
+        ok = _nonempty_list(val) if sec == "outputs" else _nonempty_dict(val)
+        if not ok:
+            missing_sections.setdefault("18_Reporting-Pack_v2.json", []).append(sec)
+    if not _nonempty_list(p18.get("templates")):
+        missing_sections.setdefault("18_Reporting-Pack_v2.json", []).append("templates")
+
+    # 19
+    p19 = packs.get("19_Overlay-Pack_SME-Domain_v1.json") or {}
+    for sec in ("policies", "datasets", "prompts", "eval_cases"):
+        val = p19.get(sec)
+        ok = _nonempty_dict(val) if sec == "policies" else _nonempty_list(val)
+        if not ok:
+            missing_sections.setdefault("19_Overlay-Pack_SME-Domain_v1.json", []).append(sec)
+
+    # 20
+    p20 = packs.get("20_Overlay-Pack_Enterprise_v1.json") or {}
+    for sec in ("refs", "policies", "brand", "legal", "stakeholders", "escalations"):
+        val = p20.get(sec)
+        if sec in ("stakeholders",):
+            ok = _nonempty_list(val)
+        else:
+            ok = _nonempty_dict(val)
+        if not ok:
+            missing_sections.setdefault("20_Overlay-Pack_Enterprise_v1.json", []).append(sec)
+
+    # Linkage checks
+    linkage_errors: List[str] = []
+    # 10↔11: module IDs referenced by 11.graphs exist in 10.modules
+    module_ids: Set[str] = set()
+    try:
+        for m in (p10.get("modules") or []):
+            mid = str(m.get("id") or "").strip()
+            if mid:
+                module_ids.add(mid)
+        for g in (p11.get("graphs") or []):
+            for n in (g.get("nodes") or []):
+                mid = str(n.get("module_id") or "").strip()
+                if mid and mid not in module_ids:
+                    linkage_errors.append(f"11.nodes.module_id_missing:{mid}")
+    except Exception:
+        pass
+
+    # 18↔15: reporting fields exist with matching types
+    det_fields = set((packs.get("15_Observability+Telemetry_Spec_v2.json") or {}).get("decision_event_fields", []) or [])
+    det_types = dict((packs.get("15_Observability+Telemetry_Spec_v2.json") or {}).get("decision_event_field_types", {}) or {})
+    try:
+        used: Set[str] = set()
+        for tpl in (p18.get("templates") or []):
+            for f in (tpl.get("fields") or []):
+                used.add(str(f))
+        for f in used:
+            if f not in det_fields:
+                linkage_errors.append(f"18.fields.unknown:{f}")
+            elif det_types.get(f) not in {"string", "number", "boolean"}:
+                linkage_errors.append(f"18.fields.type_invalid:{f}")
+    except Exception:
+        pass
+
+    # 12/13 resolution: tools referenced by 11 exist; retriever/index names resolve from 10→13
+    tool_names = {str(t.get("name")).strip() for t in (p12.get("tools") or []) if isinstance(t, dict)}
+    try:
+        for g in (p11.get("graphs") or []):
+            for n in (g.get("nodes") or []):
+                t = str(n.get("tool") or "").strip()
+                if t and t not in tool_names:
+                    linkage_errors.append(f"11.nodes.tool_missing:{t}")
+    except Exception:
+        pass
+    retrievers = {str(r.get("name")).strip(): str(r.get("index")).strip() for r in (p13.get("retrievers") or []) if isinstance(r, dict)}
+    indices = {str(x.get("name")).strip() for x in (p13.get("indices") or []) if isinstance(x, dict)}
+    try:
+        for m in (p10.get("modules") or []):
+            rv = str(m.get("retriever") or "").strip()
+            if rv:
+                if rv not in retrievers:
+                    linkage_errors.append(f"10.modules.retriever_missing:{rv}")
+                else:
+                    idx = retrievers.get(rv)
+                    if idx and idx not in indices:
+                        linkage_errors.append(f"13.indices.missing:{idx}")
+    except Exception:
+        pass
+
+    if linkage_errors:
+        out["linkage_errors"] = linkage_errors
+
+    out["missing_sections"] = missing_sections
+    out["packs_complete"] = (len(missing_sections) == 0)
 
     # Contract: required top-level keys presence per file
     missing_keys: Dict[str, list[str]] = {}
