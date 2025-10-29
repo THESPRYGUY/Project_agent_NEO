@@ -1,0 +1,35 @@
+{
+  "id": "memory_schema_v2",
+  "initial_memory_packs": [
+    "glossary_v1"
+  ],
+  "memory_scopes": [
+    "procedural:ops/*",
+    "semantic:domain/*"
+  ],
+  "optional_packs": [],
+  "packs": {
+    "initial": [
+      "glossary_v1"
+    ],
+    "optional": []
+  },
+  "principles": {
+    "redact_pii": true
+  },
+  "retention": {
+    "episodic": {
+      "retention_days": 180
+    }
+  },
+  "scopes": [
+    "procedural:ops/*",
+    "semantic:domain/*"
+  ],
+  "sync": {
+    "allowed_sources": [
+      "index:docs_v1"
+    ]
+  },
+  "version": 2
+}

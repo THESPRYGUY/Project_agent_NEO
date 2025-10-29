@@ -1,65 +1,65 @@
 {
-  "version": "1.2.3",
+  "version": "1.0.0",
   "meta": {
     "version": "1.0",
-    "generated_at": "2025-10-24T16:26:28Z"
+    "generated_at": "2025-10-28T19:59:04Z"
   },
   "slugs": {
-    "agent": "macy-1-2-3"
+    "agent": "agent-build-001-1-0-0"
   },
   "agent": {
-    "name": "macy",
-    "version": "1.2.3",
+    "name": "Agent Build #001",
+    "version": "1.0.0",
     "persona": {
-      "mbti_code": "ISFP",
-      "name": "Experience Designer",
-      "description": "Gentle innovators dedicated to crafting intuitive user journeys.",
+      "mbti_code": "INFJ",
+      "name": "Insightful Advocate",
+      "description": "Mission-driven mentors balancing empathy with systems thinking.",
       "axes": {
         "EI": "I",
-        "SN": "S",
+        "SN": "N",
         "TF": "F",
-        "JP": "P"
+        "JP": "J"
       },
       "suggested_traits": []
     }
   },
   "business": {
-    "function": "Legal & Compliance",
+    "function": "Marketing",
     "role": {
-      "code": "LEGAL:COMP",
-      "title": "Compliance Officer",
+      "code": "MKT:MANAGER",
+      "title": "Content Marketing Manager",
       "seniority": "Manager"
     }
   },
   "classification": {
     "naics": {
-      "code": "551114",
-      "title": "Corporate, Subsidiary, and Regional Managing Offices",
+      "code": "541110",
+      "title": "Offices of Lawyers",
       "level": 6,
       "lineage": [
         {
-          "code": "55",
-          "title": "Management of Companies and Enterprises",
+          "code": "54",
+          "title": "Professional, Scientific, and Technical Services",
           "level": 2
         },
         {
-          "code": "551",
-          "title": "Management of Companies and Enterprises",
+          "code": "541",
+          "title": "Professional, Scientific, and Technical Services",
           "level": 3
         },
         {
-          "code": "5511",
-          "title": "Management of Companies and Enterprises",
+          "code": "5411",
+          "title": "Legal Services",
           "level": 4
         },
         {
-          "code": "55111",
-          "title": "Management of Companies and Enterprises",
+          "code": "54111",
+          "title": "Offices of Lawyers",
           "level": 5
         },
         {
-          "code": "551114",
-          "title": "Corporate, Subsidiary, and Regional Managing Offices",
+          "code": "541110",
+          "title": "Offices of Lawyers",
           "level": 6
         }
       ]
@@ -74,64 +74,59 @@
     "kpi_weights": {}
   },
   "capabilities": {
-    "toolsets_normalized": [
-      "data_analysis",
-      "communication"
-    ],
-    "attributes_normalized": [
-      "strategic"
-    ]
+    "toolsets_normalized": [],
+    "attributes_normalized": []
   },
   "preferences": {
-    "autonomy": 31,
-    "confidence": 30,
-    "collaboration": 63,
-    "communication_style": "Formal",
-    "collaboration_mode": "Cross-Functional"
+    "autonomy": 87,
+    "confidence": 82,
+    "collaboration": 100,
+    "communication_style": "Conversational",
+    "collaboration_mode": "Advisory"
   },
   "mapping_hints": {
     "neo_agent_config_json": {
       "agent": {
-        "name": "macy",
-        "version": "1.2.3"
+        "name": "Agent Build #001",
+        "version": "1.0.0"
       },
-      "business_function": "Legal & Compliance",
+      "business_function": "Marketing",
       "role": {
-        "code": "LEGAL:COMP",
-        "title": "Compliance Officer",
+        "code": "MKT:MANAGER",
+        "title": "Content Marketing Manager",
         "seniority": "Manager",
-        "function": "Legal & Compliance"
+        "function": "Marketing"
       },
       "routing_hints": {},
       "classification": {
         "naics": {
-          "code": "551114",
-          "title": "Corporate, Subsidiary, and Regional Managing Offices",
+          "code": "541110",
+          "title": "Offices of Lawyers",
           "level": 6,
           "lineage": [
             {
-              "code": "55",
-              "title": "Management of Companies and Enterprises",
+              "code": "54",
+              "title": "Professional, Scientific, and Technical Services",
               "level": 2
             },
             {
-              "code": "551",
-              "title": "Management of Companies and Enterprises",
+              "code": "541",
+              "title": "Professional, Scientific, and Technical Services",
               "level": 3
             },
             {
-              "code": "5511",
-              "title": "Management of Companies and Enterprises",
+              "code": "5411",
+              "title": "Legal Services",
               "level": 4
             },
             {
-              "code": "55111",
-              "title": "Management of Companies and Enterprises",
+              "code": "54111",
+              "title": "Offices of Lawyers",
               "level": 5
             },
             {
-              "code": "551114",
-              "title": "Corporate, Subsidiary, and Regional Managing Offices",
+              "code": "541110",
+              "title": "Offices of Lawyers",
               "level": 6
             }
           ]

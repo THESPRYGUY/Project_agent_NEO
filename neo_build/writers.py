@@ -17,6 +17,7 @@ from .contracts import (
     KPI_TARGETS,
 )
 from .utils import json_write, deep_sorted
+from .scaffolder import get_contract_mode, enrich_packs
 from .validators import (
     compute_effective_autonomy,
     human_gate_actions,
@@ -391,6 +392,25 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
     }
     packs["20_Overlay-Pack_Enterprise_v1.json"] = eo
     json_write(out_dir / "20_Overlay-Pack_Enterprise_v1.json", eo)
+
+    # Contract scaffolder: enrich in 'full' mode after minimal writes
+    try:
+        mode = get_contract_mode()
+    except Exception:
+        mode = "preview"
+    if mode == "full":
+        enriched = enrich_packs(profile, packs)
+        for fname, payload in enriched.items():
+            packs[fname] = payload
+            if fname == "03_Operating-Rules_v2.json":
+                # Preserve RBAC roles ordering as in initial write
+                (out_dir / fname).write_text(
+                    json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
+                    encoding="utf-8",
+                    newline="\n",
+                )
+            else:
+                json_write(out_dir / fname, payload)
 
     return packs
 

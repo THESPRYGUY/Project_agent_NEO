@@ -6,6 +6,7 @@ from typing import Any, Dict, Mapping
 import os
 
 from .gates import parse_activation_strings
+from .schemas import required_keys_map
 
 from .contracts import KPI_TARGETS, REQUIRED_ALERTS, REQUIRED_EVENTS, REQUIRED_HUMAN_GATE_ACTIONS
 
@@ -142,6 +143,18 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
 
     out["parity"] = parity
     out["parity_deltas"] = parity_deltas
+
+    # Contract: required top-level keys presence per file
+    missing_keys: Dict[str, list[str]] = {}
+    req = required_keys_map()
+    for fname, required in req.items():
+        payload = packs.get(fname) if isinstance(packs, Mapping) else None
+        present = set(payload.keys()) if isinstance(payload, Mapping) else set()
+        miss = [k for k in required if k not in present]
+        if miss:
+            missing_keys[fname] = miss
+    out["missing_keys"] = missing_keys
+    out["contract_ok"] = (len(missing_keys) == 0)
 
     # Optional failure gate via env
     try:

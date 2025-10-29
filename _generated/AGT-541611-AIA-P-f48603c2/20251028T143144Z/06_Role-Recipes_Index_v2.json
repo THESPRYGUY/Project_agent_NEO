@@ -1,0 +1,22 @@
+{
+  "archetype": "AIA-P",
+  "mapping": {
+    "agent_id": "AGT-541611-AIA-P-f48603c2",
+    "primary_role_code": "AIA-P"
+  },
+  "objectives": [
+    "Translate executive intent into governed AI work"
+  ],
+  "role_recipe_ref": "",
+  "role_title": "Chief AI Officer (CAIO)",
+  "roles_index": [
+    {
+      "code": "AIA-P",
+      "objectives": [
+        "Translate executive intent into governed AI work"
+      ],
+      "title": "Chief AI Officer (CAIO)"
+    }
+  ],
+  "version": 2
+}
