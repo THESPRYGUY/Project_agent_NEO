@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Mapping
+from typing import Any, Dict, Mapping, List
 import os
 
 from .gates import parse_activation_strings
 from .schemas import required_keys_map
 
-from .contracts import KPI_TARGETS, REQUIRED_ALERTS, REQUIRED_EVENTS, REQUIRED_HUMAN_GATE_ACTIONS
+from .contracts import KPI_TARGETS, REQUIRED_ALERTS, REQUIRED_EVENTS, REQUIRED_HUMAN_GATE_ACTIONS, PACK_ID_TO_FILENAME
 
 
 def compute_effective_autonomy(preferences: Mapping[str, Any] | None, routing_defaults: Mapping[str, Any] | None) -> float:
@@ -143,6 +143,7 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
 
     out["parity"] = parity
     out["parity_deltas"] = parity_deltas
+    out["parity_ok"] = bool(all(parity.values()))
 
     # Contract: required top-level keys presence per file
     missing_keys: Dict[str, list[str]] = {}
@@ -155,6 +156,31 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
             missing_keys[fname] = miss
     out["missing_keys"] = missing_keys
     out["contract_ok"] = (len(missing_keys) == 0)
+
+    # Cross-reference checks (from 02_Global-Instructions_v2.json)
+    crossref_errors: List[str] = []
+    p02 = packs.get("02_Global-Instructions_v2.json") or {}
+    try:
+        if (p02.get("constraints") or {}).get("governance_file") != PACK_ID_TO_FILENAME[4]:
+            crossref_errors.append("02.constraints.governance_file")
+        if (p02.get("constraints") or {}).get("safety_privacy_file") != PACK_ID_TO_FILENAME[5]:
+            crossref_errors.append("02.constraints.safety_privacy_file")
+        if (p02.get("constraints") or {}).get("eval_framework_file") != PACK_ID_TO_FILENAME[14]:
+            crossref_errors.append("02.constraints.eval_framework_file")
+        if (p02.get("constraints") or {}).get("observability_file") != PACK_ID_TO_FILENAME[15]:
+            crossref_errors.append("02.constraints.observability_file")
+        if ((p02.get("agentic_policies") or {}).get("routing") or {}).get("workflow_pack") != PACK_ID_TO_FILENAME[11]:
+            crossref_errors.append("02.agentic_policies.routing.workflow_pack")
+        if ((p02.get("agentic_policies") or {}).get("routing") or {}).get("prompt_pack") != PACK_ID_TO_FILENAME[10]:
+            crossref_errors.append("02.agentic_policies.routing.prompt_pack")
+        if ((p02.get("agentic_policies") or {}).get("reasoning") or {}).get("footprints_spec") != PACK_ID_TO_FILENAME[16]:
+            crossref_errors.append("02.agentic_policies.reasoning.footprints_spec")
+        if (p02.get("go_live") or {}).get("lifecycle_pack") != PACK_ID_TO_FILENAME[17]:
+            crossref_errors.append("02.go_live.lifecycle_pack")
+    except Exception:
+        crossref_errors.append("02.crossref_unreadable")
+    out["crossref_errors"] = crossref_errors
+    out["crossref_ok"] = len(crossref_errors) == 0
 
     # Optional failure gate via env
     try:
