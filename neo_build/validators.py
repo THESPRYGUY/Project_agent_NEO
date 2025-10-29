@@ -190,6 +190,18 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
     out["crossref_errors"] = crossref_errors
     out["crossref_ok"] = len(crossref_errors) == 0
 
+    # Contract: required top-level keys presence per file
+    missing_keys: Dict[str, list[str]] = {}
+    req = required_keys_map()
+    for fname, required in req.items():
+        payload = packs.get(fname) if isinstance(packs, Mapping) else None
+        present = set(payload.keys()) if isinstance(payload, Mapping) else set()
+        miss = [k for k in required if k not in present]
+        if miss:
+            missing_keys[fname] = miss
+    out["missing_keys"] = missing_keys
+    out["contract_ok"] = (len(missing_keys) == 0)
+
     # Optional failure gate via env
     try:
         fail_on_parity = str(os.environ.get("FAIL_ON_PARITY", "false")).lower() in ("1","true","yes")
