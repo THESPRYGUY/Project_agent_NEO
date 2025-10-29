@@ -108,7 +108,15 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
     p17 = parse_activation_strings(act17)
 
     def _eq(a: Mapping[str, Any] | None, b: Mapping[str, Any] | None) -> bool:
-        return bool((a or {}).get("PRI_min") == (b or {}).get("PRI_min") and (a or {}).get("HAL_max") == (b or {}).get("HAL_max") and (a or {}).get("AUD_min") == (b or {}).get("AUD_min"))
+        a = dict(a or {})
+        b = dict(b or {})
+        keys = ("PRI_min", "HAL_max", "AUD_min")
+        # Null-safe: all keys must exist in both
+        if not all(k in a for k in keys):
+            return False
+        if not all(k in b for k in keys):
+            return False
+        return a.get("PRI_min") == b.get("PRI_min") and a.get("HAL_max") == b.get("HAL_max") and a.get("AUD_min") == b.get("AUD_min")
 
     parity = {
         "02_vs_14": _eq(p02, p14),
