@@ -5,7 +5,7 @@ All values are pure data used across writers and validators.
 
 from __future__ import annotations
 
-from typing import Final, List
+from typing import Final, List, Dict
 
 
 CANONICAL_PACK_FILENAMES: Final[List[str]] = [
@@ -59,3 +59,6 @@ REQUIRED_HUMAN_GATE_ACTIONS: Final[List[str]] = [
     "regulatory_interpretation",
 ]
 
+
+PACK_ID_TO_FILENAME: Final[Dict[int, str]] = {i + 1: n for i, n in enumerate(CANONICAL_PACK_FILENAMES)}
+FILENAME_TO_ID: Final[Dict[str, int]] = {n: i for i, n in PACK_ID_TO_FILENAME.items()}

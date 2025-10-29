@@ -1,0 +1,276 @@
+"""JSON Schema and required-keys map for the 20 GEN2 packs.
+
+This module intentionally defines only top-level requirements to avoid drift
+and keep CI stable. It can be extended with deeper property types later.
+"""
+
+from __future__ import annotations
+
+from typing import Dict, List
+
+
+def required_keys_map() -> Dict[str, List[str]]:
+    # Per GEN2 v2 contract (minimum top-level keys per file)
+    base = {
+        "01_README+Directory-Map_v2.json": [
+            "meta",
+            "objective",
+            "schema_keys",
+            "token_budget",
+            "structure_map",
+            "conventions",
+            "getting_started",
+        ],
+        "02_Global-Instructions_v2.json": [
+            "meta",
+            "objective",
+            "schema_keys",
+            "token_budget",
+            "time_prefs",
+            "constraints",
+            "agentic_policies",
+            "refusals",
+            "safety",
+            "memory",
+            "token_hygiene",
+            "observability",
+            "go_live",
+            "defaults",
+        ],
+        "03_Operating-Rules_v2.json": [
+            "meta",
+            "objective",
+            "schema_keys",
+            "token_budget",
+            "lifecycle",
+            "rbac",
+            "escalation",
+            "gates",
+            "logging_audit",
+        ],
+        "04_Governance+Risk-Register_v2.json": [
+            "meta",
+            "objective",
+            "schema_keys",
+            "token_budget",
+            "frameworks",
+            "policy",
+            "risk_register",
+            "compliance_mapping",
+            "approvals",
+            "definition_of_done",
+        ],
+        "05_Safety+Privacy_Guardrails_v2.json": [
+            "meta",
+            "objective",
+            "schema_keys",
+            "token_budget",
+            "principles",
+            "data_classification",
+            "privacy_policies",
+            "refusal_playbooks",
+            "redlines",
+            "jurisdictional_rules",
+            "content_filters",
+            "operational_hooks",
+            "audit_checklist",
+        ],
+        "06_Role-Recipes_Index_v2.json": [
+            "meta",
+            "objective",
+            "schema_keys",
+            "token_budget",
+            "roles_index",
+            "mapping",
+            "definition_of_done",
+        ],
+        "07_Subagent_Role-Recipes_v2.json": [
+            "meta",
+            "objective",
+            "schema_keys",
+            "token_budget",
+            "recipes",
+        ],
+        "08_Memory-Schema_v2.json": [
+            "meta",
+            "objective",
+            "schema_keys",
+            "token_budget",
+            "scopes",
+            "packs",
+            "storage",
+            "retention",
+            "redaction",
+            "sync",
+        ],
+        "09_Agent-Manifests_Catalog_v2.json": [
+            "meta",
+            "objective",
+            "schema_keys",
+            "token_budget",
+            "policy",
+            "agents",
+            "definition_of_done",
+        ],
+        "10_Prompt-Pack_v2.json": [
+            "meta",
+            "objective",
+            "schema_keys",
+            "token_budget",
+            "refs",
+            "reasoning_patterns",
+            "modules",
+            "guardrails",
+            "output_contracts",
+        ],
+        "11_Workflow-Pack_v2.json": [
+            "meta",
+            "objective",
+            "schema_keys",
+            "token_budget",
+            "conventions",
+            "micro_loops",
+            "gates",
+            "graphs",
+            "rollback",
+            "engine_adapters",
+        ],
+        "12_Tool+Data-Registry_v2.json": [
+            "meta",
+            "objective",
+            "schema_keys",
+            "token_budget",
+            "tools",
+            "connectors",
+            "datasets",
+            "secrets",
+            "policies",
+        ],
+        "13_Knowledge-Graph+RAG_Config_v2.json": [
+            "meta",
+            "objective",
+            "schema_keys",
+            "token_budget",
+            "indices",
+            "chunking",
+            "retrievers",
+            "rerankers",
+            "embeddings",
+            "data_quality",
+            "update_policy",
+        ],
+        "14_KPI+Evaluation-Framework_v2.json": [
+            "meta",
+            "objective",
+            "schema_keys",
+            "token_budget",
+            "metrics",
+            "datasets",
+            "eval_pipelines",
+            "targets",
+            "reports",
+            "eval_cases",
+            "definition_of_done",
+        ],
+        "15_Observability+Telemetry_Spec_v2.json": [
+            "meta",
+            "objective",
+            "schema_keys",
+            "token_budget",
+            "events",
+            "pii_redaction",
+            "sampling",
+            "sinks",
+            "dashboards",
+            "alerts",
+            "definition_of_done",
+        ],
+        "16_Reasoning-Footprints_Schema_v1.json": [
+            "meta",
+            "objective",
+            "schema_keys",
+            "token_budget",
+            "artifacts",
+            "storage",
+            "retention",
+            "access",
+            "redaction",
+            "compliance",
+        ],
+        "17_Lifecycle-Pack_v2.json": [
+            "meta",
+            "objective",
+            "schema_keys",
+            "token_budget",
+            "stages",
+            "gates",
+            "rollback",
+            "change_mgmt",
+            "definition_of_done",
+        ],
+        "18_Reporting-Pack_v2.json": [
+            "meta",
+            "objective",
+            "schema_keys",
+            "token_budget",
+            "templates",
+            "outputs",
+            "publishing",
+            "schedule",
+            "definition_of_done",
+        ],
+        "19_Overlay-Pack_SME-Domain_v1.json": [
+            "meta",
+            "objective",
+            "schema_keys",
+            "token_budget",
+            "refs",
+            "policies",
+            "datasets",
+            "prompts",
+            "eval_cases",
+            "definition_of_done",
+        ],
+        "20_Overlay-Pack_Enterprise_v1.json": [
+            "meta",
+            "objective",
+            "schema_keys",
+            "token_budget",
+            "refs",
+            "policies",
+            "brand",
+            "legal",
+            "stakeholders",
+            "escalations",
+            "definition_of_done",
+        ],
+    }
+    return base
+
+
+def _base_properties() -> dict:
+    return {
+        "meta": {"type": "object"},
+        "objective": {"type": ["string", "null"]},
+        "schema_keys": {"type": "array", "items": {"type": "string"}},
+        "token_budget": {"type": "object"},
+    }
+
+
+def schemas() -> Dict[str, dict]:
+    req = required_keys_map()
+    out: Dict[str, dict] = {}
+    for fname, required in req.items():
+        out[fname] = {
+            "$schema": "http://json-schema.org/draft-07/schema#",
+            "title": fname,
+            "type": "object",
+            "required": list(required),
+            "properties": _base_properties(),
+            "additionalProperties": True,
+        }
+    return out
+
+
+SCHEMAS: Dict[str, dict] = schemas()
+

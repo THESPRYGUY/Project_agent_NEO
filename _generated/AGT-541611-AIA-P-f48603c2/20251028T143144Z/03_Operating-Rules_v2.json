@@ -1,0 +1,25 @@
+{
+  "gates": {
+    "activation": [
+      "PRI>=0.95",
+      "HAL<=0.02",
+      "AUD>=0.9"
+    ]
+  },
+  "human_gate": {
+    "actions": [
+      "external_email_send",
+      "prod_cutover",
+      "legal_advice",
+      "regulatory_interpretation"
+    ]
+  },
+  "rbac": {
+    "roles": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ]
+  },
+  "version": 2
+}

@@ -1,0 +1,30 @@
+{
+  "industry": "",
+  "naics": {
+    "code": "",
+    "level": null,
+    "lineage": [],
+    "title": ""
+  },
+  "refs": {
+    "region": [
+      "CA"
+    ],
+    "regulators": [
+      "ISO_IEC_42001",
+      "NIST_AI_RMF",
+      "PIPEDA"
+    ],
+    "sector": "Administrative Management and General Management Consulting Services"
+  },
+  "region": [
+    "CA"
+  ],
+  "regulators": [
+    "ISO_IEC_42001",
+    "NIST_AI_RMF",
+    "PIPEDA"
+  ],
+  "sector": "Administrative Management and General Management Consulting Services",
+  "version": 1
+}
