@@ -1,0 +1,37 @@
+{
+  "access": {},
+  "artifacts": {},
+  "compliance": {},
+  "meta": {
+    "agent_id": "atlas",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "2025-10-29T15:40:35Z",
+    "name": "16_Reasoning-Footprints_Schema_v1.json",
+    "version": "1.0.0"
+  },
+  "objective": "Contract-scaffolded payload for 16_Reasoning-Footprints_Schema_v1.json",
+  "redaction": {},
+  "retention": [],
+  "schema_keys": [
+    "access",
+    "artifacts",
+    "compliance",
+    "meta",
+    "objective",
+    "redaction",
+    "retention",
+    "schema_keys",
+    "storage",
+    "token_budget"
+  ],
+  "storage": {},
+  "store_raw_cot": false,
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "version": 1
+}

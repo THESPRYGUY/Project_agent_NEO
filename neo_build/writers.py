@@ -355,12 +355,23 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
     packs["17_Lifecycle-Pack_v2.json"] = lc
     json_write(out_dir / "17_Lifecycle-Pack_v2.json", lc)
 
-    # 18 Reporting Pack with default field spec
+    # 18 Reporting Pack with canonical decision_event_fields
+    rp_fields = [
+        "step_id",
+        "persistence_level",
+        "band_used",
+        "risk",
+        "confidence",
+        "cost_elapsed",
+        "time_elapsed",
+        "escalation_flag",
+        "escalation_reason",
+    ]
     rp = {"version": 2, "templates": [
         {
             "id": "default",
             "name": "Default Template",
-            "fields": ["ID", "Title", "PolicyRef", "Severity", "Owner", "Status", "Remediation", "LastUpdated"],
+            "fields": rp_fields,
         }
     ]}
     packs["18_Reporting-Pack_v2.json"] = rp

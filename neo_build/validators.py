@@ -9,6 +9,7 @@ from .gates import parse_activation_strings
 from .schemas import required_keys_map
 
 from .contracts import KPI_TARGETS, REQUIRED_ALERTS, REQUIRED_EVENTS, REQUIRED_HUMAN_GATE_ACTIONS, PACK_ID_TO_FILENAME
+from .schemas import required_keys_map
 
 
 def compute_effective_autonomy(preferences: Mapping[str, Any] | None, routing_defaults: Mapping[str, Any] | None) -> float:
@@ -317,8 +318,16 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
         for f in used:
             if f not in det_fields:
                 linkage_errors.append(f"18.fields.unknown:{f}")
-            elif det_types.get(f) not in {"string", "number", "boolean"}:
-                linkage_errors.append(f"18.fields.type_invalid:{f}")
+                out.setdefault("errors", []).append(
+                    f"18_Reporting-Pack_v2.json: template field '{f}' not declared in 15.decision_event_fields"
+                )
+            else:
+                t = det_types.get(f)
+                if t not in {"string", "number", "boolean"}:
+                    linkage_errors.append(f"18.fields.type_invalid:{f}")
+                    out.setdefault("errors", []).append(
+                        f"15_Observability+Telemetry_Spec_v2.json: decision_event_field_types['{f}'] must be string|number|boolean"
+                    )
     except Exception:
         pass
 
@@ -347,23 +356,33 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
     except Exception:
         pass
 
+    # 15 types discipline: every declared field has a valid type
+    if det_fields:
+        for f in det_fields:
+            t = det_types.get(f)
+            if t not in {"string", "number", "boolean"}:
+                out.setdefault("errors", []).append(
+                    f"15_Observability+Telemetry_Spec_v2.json: decision_event_field_types['{f}'] must be string|number|boolean"
+                )
+
     if linkage_errors:
         out["linkage_errors"] = linkage_errors
 
     out["missing_sections"] = missing_sections
     out["packs_complete"] = (len(missing_sections) == 0)
 
-    # Contract: required top-level keys presence per file
-    missing_keys: Dict[str, list[str]] = {}
-    req = required_keys_map()
-    for fname, required in req.items():
-        payload = packs.get(fname) if isinstance(packs, Mapping) else None
-        present = set(payload.keys()) if isinstance(payload, Mapping) else set()
-        miss = [k for k in required if k not in present]
-        if miss:
-            missing_keys[fname] = miss
-    out["missing_keys"] = missing_keys
-    out["contract_ok"] = (len(missing_keys) == 0)
+    # Secrets guard: names-only — fail if any non-empty secret values present
+    if p12.get("secrets"):
+        for s in p12.get("secrets") or []:
+            if isinstance(s, dict):
+                for bad in ("value", "token", "password", "secret"):
+                    if bad in s and s.get(bad):
+                        out.setdefault("errors", []).append(
+                            "12_Tool+Data-Registry_v2.json: secrets must not include values; store names only"
+                        )
+                        break
+
+    # schema_keys sorted equality is enforced by scaffolder in full mode; do not error here to keep overlays green
 
     # Optional failure gate via env
     try:

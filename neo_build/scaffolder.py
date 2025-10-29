@@ -281,7 +281,9 @@ def enrich_single(profile: Mapping[str, Any], filename: str, payload: Mapping[st
             out["graphs"] = graphs
 
             # Rollback and engine adapters
-            out.setdefault("rollback", {"on_gate_fail": "return_to:Plan"})
+            rb = out.get("rollback")
+            if not isinstance(rb, dict) or not rb:
+                out["rollback"] = {"on_gate_fail": "return_to:Plan"}
             if not out.get("engine_adapters"):
                 out["engine_adapters"] = ["chat-completion", "function-tooling"]
 
@@ -307,7 +309,15 @@ def enrich_single(profile: Mapping[str, Any], filename: str, payload: Mapping[st
                     datasets.append({"name": str(ds), "owner": "CDO"})
             out["datasets"] = datasets
 
-            # Secrets: names only with source hints
+            # Ensure at least one connector exists in full mode
+            if not out.get("connectors"):
+                out["connectors"] = [{"name": "placeholder", "enabled": False, "scopes": ["read"], "secret_ref": "SET_ME"}]
+
+            # If datasets empty, add default placeholder
+            if not out.get("datasets"):
+                out["datasets"] = [{"name": "default_index", "owner": "CDO"}]
+
+            # Secrets: names only with source hints (after connectors ensured)
             secrets = list(out.get("secrets") or [])
             if not secrets:
                 for c in list(out.get("connectors") or []):
@@ -332,13 +342,24 @@ def enrich_single(profile: Mapping[str, Any], filename: str, payload: Mapping[st
             out["indices"] = indices
 
             # Chunking / retrievers / rerankers / embeddings / data_quality / update_policy
-            out.setdefault("chunking", {"strategy": "semantic", "max_tokens": 800})
+            ch = out.get("chunking")
+            if not isinstance(ch, dict) or not ch:
+                out["chunking"] = {"strategy": "semantic", "max_tokens": 800}
             if not out.get("retrievers"):
                 out["retrievers"] = [{"name": "default_retriever", "index": "default_index", "top_k": 8}]
-            out.setdefault("rerankers", [{"name": "cross-encoder", "top_k": 5}])
-            out.setdefault("embeddings", {"model": "text-embedding-3-large"})
-            out.setdefault("data_quality", {"dedupe": True, "lang_filter": ["en"]})
-            out.setdefault("update_policy", {"schedule": "weekly", "owner": "CPA"})
+            rr = out.get("rerankers")
+            if not isinstance(rr, list) or not rr:
+                out["rerankers"] = [{"name": "cross-encoder", "top_k": 5}]
+            # embeddings: ensure dict shape, fill if missing/empty or wrong type
+            emb = out.get("embeddings")
+            if not isinstance(emb, dict) or not emb:
+                out["embeddings"] = {"model": "text-embedding-3-large"}
+            dq = out.get("data_quality")
+            if not isinstance(dq, dict) or not dq:
+                out["data_quality"] = {"dedupe": True, "lang_filter": ["en"]}
+            up = out.get("update_policy")
+            if not isinstance(up, dict) or not up:
+                out["update_policy"] = {"schedule": "weekly", "owner": "CPA"}
 
         elif filename == PACK_ID_TO_FILENAME[14]:  # 14_KPI+Evaluation-Framework_v2.json
             # Metrics and eval pipelines; keep targets in sync with 02
@@ -351,16 +372,23 @@ def enrich_single(profile: Mapping[str, Any], filename: str, payload: Mapping[st
             out.setdefault("datasets", [{"name": "eval_set_v1", "split": ["dev", "staging", "prod"]}])
             if not out.get("eval_pipelines"):
                 out["eval_pipelines"] = [{"name": "pre-release", "metrics": ["PRI", "HAL", "AUD"], "dataset": "eval_set_v1"}]
-            out.setdefault("reports", ["weekly_kpi_report", "release_gate_report"])
-            out.setdefault("eval_cases", ["default_quality_check"])
+            if not isinstance(out.get("reports"), list) or not out.get("reports"):
+                out["reports"] = ["weekly_kpi_report", "release_gate_report"]
+            if not isinstance(out.get("eval_cases"), list) or not out.get("eval_cases"):
+                out["eval_cases"] = ["default_quality_check"]
             out.setdefault("definition_of_done", ["All targets met", "No critical regressions"])
 
         elif filename == PACK_ID_TO_FILENAME[18]:  # 18_Reporting-Pack_v2.json
             # Outputs / publishing / schedule driven by observability fields
-            out.setdefault("outputs", ["pdf", "docx", "html"])
+            if not isinstance(out.get("outputs"), list) or not out.get("outputs"):
+                out["outputs"] = ["pdf", "docx", "html"]
             default_class = ((profile.get("governance_eval") or {}).get("classification_default") or "confidential")
-            out.setdefault("publishing", {"channels": ["internal_sharepoint", "email_internal"], "classification": default_class})
-            out.setdefault("schedule", {"weekly": True, "on_demand": True})
+            pb = out.get("publishing")
+            if not isinstance(pb, dict) or not pb:
+                out["publishing"] = {"channels": ["internal_sharepoint", "email_internal"], "classification": default_class}
+            sc = out.get("schedule")
+            if not isinstance(sc, dict) or not sc:
+                out["schedule"] = {"weekly": True, "on_demand": True}
             # Template fields mirror decision_event_fields from 15 (canonical set)
             if not out.get("templates"):
                 fields = [
@@ -383,10 +411,12 @@ def enrich_single(profile: Mapping[str, Any], filename: str, payload: Mapping[st
             pol.setdefault("advisory_scope", list(((profile.get("role_profile") or {}).get("objectives") or [])))
             out["policies"] = pol
             if not out.get("datasets"):
-                out["datasets"] = list(((profile.get("memory") or {}).get("data_sources") or []))
+                ds = list(((profile.get("memory") or {}).get("data_sources") or []))
+                out["datasets"] = ds or ["default_index"]
             if not out.get("prompts"):
                 out["prompts"] = ["Analyst_CDD_Review", "Policy_Alignment_Check"]
-            out.setdefault("eval_cases", ["default_domain_eval"])
+            if not isinstance(out.get("eval_cases"), list) or not out.get("eval_cases"):
+                out["eval_cases"] = ["default_domain_eval"]
             out.setdefault("definition_of_done", ["Overlay resolves domain/regional parameters"])
 
         elif filename == PACK_ID_TO_FILENAME[20]:  # 20_Overlay-Pack_Enterprise_v1.json
@@ -418,7 +448,9 @@ def enrich_single(profile: Mapping[str, Any], filename: str, payload: Mapping[st
             if not out.get("stakeholders"):
                 owners = list(((profile.get("identity") or {}).get("owners") or [])) or ["CAIO", "CPA", "TeamLead"]
                 out["stakeholders"] = owners
-            out.setdefault("escalations", {"primary": "CAIO", "secondary": "TeamLead"})
+            es = out.get("escalations")
+            if not isinstance(es, dict) or not es:
+                out["escalations"] = {"primary": "CAIO", "secondary": "TeamLead"}
             out.setdefault("definition_of_done", ["Brand/legal present", "Escalations defined"])
 
         elif filename == PACK_ID_TO_FILENAME[3]:  # 03_Operating-Rules_v2.json

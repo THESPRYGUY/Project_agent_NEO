@@ -1,0 +1,63 @@
+{
+  "escalation": {
+    "breach_contact": "CAIO",
+    "human_gate": {
+      "actions": []
+    }
+  },
+  "gates": {
+    "activation": [
+      "PRI>=0.95",
+      "HAL<=0.02",
+      "AUD>=0.9"
+    ]
+  },
+  "human_gate": {
+    "actions": [
+      "legal_advice",
+      "regulatory_interpretation"
+    ]
+  },
+  "lifecycle": {
+    "default": "staging",
+    "states": [
+      "dev",
+      "staging",
+      "prod"
+    ]
+  },
+  "logging_audit": {
+    "level": "info",
+    "sink": "15_Observability+Telemetry_Spec_v2.json#sinks"
+  },
+  "meta": {
+    "agent_id": "atlas",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "2025-10-29T15:48:37Z",
+    "name": "03_Operating-Rules_v2.json",
+    "version": "1.0.0"
+  },
+  "objective": "Contract-scaffolded payload for 03_Operating-Rules_v2.json",
+  "rbac": {
+    "roles": []
+  },
+  "schema_keys": [
+    "escalation",
+    "gates",
+    "lifecycle",
+    "logging_audit",
+    "meta",
+    "objective",
+    "rbac",
+    "schema_keys",
+    "token_budget"
+  ],
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "version": 2
+}

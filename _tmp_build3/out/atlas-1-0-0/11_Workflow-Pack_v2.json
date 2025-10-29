@@ -1,0 +1,83 @@
+{
+  "conventions": {},
+  "defaults": {
+    "persona": "",
+    "tone": ""
+  },
+  "engine_adapters": [
+    "chat-completion",
+    "function-tooling"
+  ],
+  "gates": {
+    "effective_autonomy": 0.0,
+    "kpi_targets": {
+      "AUD_min": 0.9,
+      "HAL_max": 0.02,
+      "PRI_min": 0.95
+    }
+  },
+  "graphs": [
+    {
+      "edges": [
+        {
+          "from": "n1",
+          "to": "n2"
+        },
+        {
+          "from": "n2",
+          "to": "n3"
+        }
+      ],
+      "name": "DefaultFlow",
+      "nodes": [
+        {
+          "id": "n1",
+          "module_id": "mod.plan"
+        },
+        {
+          "id": "n2",
+          "module_id": "mod.build",
+          "tool": "email"
+        },
+        {
+          "id": "n3",
+          "module_id": "mod.evaluate"
+        }
+      ]
+    }
+  ],
+  "meta": {
+    "agent_id": "atlas",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "2025-10-29T15:42:00Z",
+    "name": "11_Workflow-Pack_v2.json",
+    "version": "1.0.0"
+  },
+  "micro_loops": [
+    "plan+build+evaluate",
+    "reflect+revise"
+  ],
+  "name": "DefaultFlow",
+  "objective": "Contract-scaffolded payload for 11_Workflow-Pack_v2.json",
+  "rollback": {},
+  "schema_keys": [
+    "conventions",
+    "engine_adapters",
+    "gates",
+    "graphs",
+    "meta",
+    "micro_loops",
+    "objective",
+    "rollback",
+    "schema_keys",
+    "token_budget"
+  ],
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "version": 2
+}

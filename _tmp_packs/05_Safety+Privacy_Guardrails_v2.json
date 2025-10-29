@@ -1,0 +1,73 @@
+{
+  "audit_checklist": [
+    "Filters active",
+    "Guardrails loaded",
+    "Refusal reasons logged"
+  ],
+  "content_filters": {},
+  "data_classification": {
+    "default": "confidential",
+    "labels": [
+      "confidential",
+      "internal",
+      "public",
+      "restricted"
+    ]
+  },
+  "jurisdictional_rules": {
+    "default": "CA"
+  },
+  "meta": {
+    "agent_id": "atlas",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "2025-10-29T15:48:25Z",
+    "name": "05_Safety+Privacy_Guardrails_v2.json",
+    "version": "v2"
+  },
+  "no_impersonation": true,
+  "objective": "Contract-scaffolded payload for 05_Safety+Privacy_Guardrails_v2.json",
+  "operational_hooks": {},
+  "pii_mask_on_ingest": true,
+  "principles": {},
+  "privacy_policies": {
+    "pii_flags": []
+  },
+  "redlines": {
+    "prohibited_content": [
+      "doxxing",
+      "malware creation"
+    ],
+    "restricted_handling": [
+      "PCI",
+      "PII"
+    ]
+  },
+  "refusal_playbooks": [
+    "Illegal requests",
+    "Regulatory evasion",
+    "Sensitive personal data"
+  ],
+  "schema_keys": [
+    "audit_checklist",
+    "content_filters",
+    "data_classification",
+    "jurisdictional_rules",
+    "meta",
+    "objective",
+    "operational_hooks",
+    "principles",
+    "privacy_policies",
+    "redlines",
+    "refusal_playbooks",
+    "schema_keys",
+    "token_budget"
+  ],
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "version": 2
+}

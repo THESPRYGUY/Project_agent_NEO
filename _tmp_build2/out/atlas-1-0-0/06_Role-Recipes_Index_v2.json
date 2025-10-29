@@ -1,0 +1,43 @@
+{
+  "archetype": "",
+  "definition_of_done": [],
+  "mapping": {
+    "agent_id": "atlas",
+    "primary_role_code": ""
+  },
+  "meta": {
+    "agent_id": "atlas",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "2025-10-29T15:41:43Z",
+    "name": "06_Role-Recipes_Index_v2.json",
+    "version": "1.0.0"
+  },
+  "objective": "Contract-scaffolded payload for 06_Role-Recipes_Index_v2.json",
+  "objectives": [],
+  "role_recipe_ref": "",
+  "role_title": "",
+  "roles_index": [
+    {
+      "code": "",
+      "objectives": [],
+      "title": ""
+    }
+  ],
+  "schema_keys": [
+    "definition_of_done",
+    "mapping",
+    "meta",
+    "objective",
+    "roles_index",
+    "schema_keys",
+    "token_budget"
+  ],
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "version": 2
+}

@@ -1,0 +1,58 @@
+{
+  "agents": [
+    {
+      "agent_id": "atlas",
+      "display_name": "Atlas",
+      "owners": [
+        "CAIO",
+        "CPA",
+        "TeamLead"
+      ],
+      "role_title": ""
+    }
+  ],
+  "definition_of_done": [],
+  "meta": {
+    "agent_id": "atlas",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "2025-10-29T15:41:43Z",
+    "name": "09_Agent-Manifests_Catalog_v2.json",
+    "version": "1.0.0"
+  },
+  "objective": "Contract-scaffolded payload for 09_Agent-Manifests_Catalog_v2.json",
+  "owners": [
+    "CAIO",
+    "CPA",
+    "TeamLead"
+  ],
+  "policy": {},
+  "schema_keys": [
+    "agents",
+    "definition_of_done",
+    "meta",
+    "objective",
+    "policy",
+    "schema_keys",
+    "token_budget"
+  ],
+  "summary": {
+    "languages": [],
+    "naics": {
+      "code": "",
+      "level": null,
+      "lineage": [],
+      "title": ""
+    },
+    "region": [],
+    "regulators": [],
+    "sector": ""
+  },
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "version": 2
+}

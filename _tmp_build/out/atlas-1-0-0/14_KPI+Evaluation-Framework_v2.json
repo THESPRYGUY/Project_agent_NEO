@@ -1,0 +1,68 @@
+{
+  "datasets": [],
+  "definition_of_done": [],
+  "eval_cases": [],
+  "eval_pipelines": [
+    {
+      "dataset": "eval_set_v1",
+      "metrics": [
+        "AUD",
+        "HAL",
+        "PRI"
+      ],
+      "name": "pre-release"
+    }
+  ],
+  "meta": {
+    "agent_id": "atlas",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "2025-10-29T15:40:35Z",
+    "name": "14_KPI+Evaluation-Framework_v2.json",
+    "version": "1.0.0"
+  },
+  "metrics": [
+    {
+      "code": "AUD",
+      "name": "Auditability",
+      "threshold_min": 0.9
+    },
+    {
+      "code": "HAL",
+      "name": "Hallucination Rate",
+      "threshold_max": 0.02
+    },
+    {
+      "code": "PRI",
+      "name": "Precision",
+      "threshold_min": 0.95
+    }
+  ],
+  "objective": "Contract-scaffolded payload for 14_KPI+Evaluation-Framework_v2.json",
+  "reports": [],
+  "schema_keys": [
+    "datasets",
+    "definition_of_done",
+    "eval_cases",
+    "eval_pipelines",
+    "meta",
+    "metrics",
+    "objective",
+    "reports",
+    "schema_keys",
+    "targets",
+    "token_budget"
+  ],
+  "targets": {
+    "AUD_min": 0.9,
+    "HAL_max": 0.02,
+    "PRI_min": 0.95
+  },
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "version": 2
+}
