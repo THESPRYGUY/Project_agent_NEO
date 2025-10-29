@@ -9,11 +9,19 @@ from .schemas import required_keys_map
 
 
 def get_contract_mode() -> str:
+    """Resolve contract mode with CI hardening.
+
+    Priority:
+      1) Explicit override via NEO_CONTRACT_MODE={preview|full}
+      2) CI detection via CI=1|true|True or GITHUB_ACTIONS=true
+      3) Default to full locally
+    """
     env = str(os.environ.get("NEO_CONTRACT_MODE", "")).strip().lower()
     if env in ("preview", "full"):
         return env
-    # Default: CI stays preview to avoid drift; app builds default full
-    in_ci = str(os.environ.get("CI", "")).strip().lower() in ("1", "true", "yes", "y")
+    ci_val = str(os.environ.get("CI", "")).strip().lower()
+    ga_val = str(os.environ.get("GITHUB_ACTIONS", "")).strip().lower()
+    in_ci = (ci_val in ("1", "true", "yes", "y")) or (ga_val in ("1", "true", "yes", "y"))
     return "preview" if in_ci else "full"
 
 
@@ -62,7 +70,8 @@ def objective_from_profile(profile: Mapping[str, Any], filename: str) -> str:
 
 def schema_keys_for(filename: str) -> list[str]:
     req = required_keys_map().get(filename) or []
-    return list(req)
+    # Sorted for stability
+    return sorted(set(req))
 
 
 def token_budget_for(profile: Mapping[str, Any], filename: str) -> Dict[str, Any]:
@@ -125,7 +134,8 @@ def enrich_single(profile: Mapping[str, Any], filename: str, payload: Mapping[st
     # Ensure core contract keys
     out.setdefault("meta", build_meta(profile, filename))
     out.setdefault("objective", objective_from_profile(profile, filename))
-    out.setdefault("schema_keys", schema_keys_for(filename))
+    # Enforce schema_keys exactness and stable ordering
+    out["schema_keys"] = schema_keys_for(filename)
     out.setdefault("token_budget", token_budget_for(profile, filename))
 
     # Ensure other required top-level keys are present as empty stubs
@@ -142,4 +152,3 @@ def enrich_packs(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Dict[s
         payload = packs.get(fname) if isinstance(packs, Mapping) else None
         out[fname] = enrich_single(profile, fname, payload or {})
     return out
-

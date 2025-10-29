@@ -1,0 +1,96 @@
+{
+  "agentic_policies": {},
+  "constraints": {},
+  "context": {
+    "naics": {
+      "code": "541110",
+      "level": 6,
+      "lineage": [
+        {
+          "code": "54",
+          "level": 2,
+          "title": "Professional, Scientific, and Technical Services"
+        },
+        {
+          "code": "541",
+          "level": 3,
+          "title": "Professional, Scientific, and Technical Services"
+        },
+        {
+          "code": "5411",
+          "level": 4,
+          "title": "Legal Services"
+        },
+        {
+          "code": "54111",
+          "level": 5,
+          "title": "Offices of Lawyers"
+        },
+        {
+          "code": "541110",
+          "level": 6,
+          "title": "Offices of Lawyers"
+        }
+      ],
+      "title": "Offices of Lawyers"
+    }
+  },
+  "defaults": {},
+  "effective_autonomy": 0.28,
+  "go_live": {},
+  "memory": {},
+  "meta": {
+    "agent_id": "AGT-541110-MKT:MANAGER-e4fd86a6",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "2025-10-29T14:04:44Z",
+    "name": "02_Global-Instructions_v2.json",
+    "version": "1.0.0"
+  },
+  "objective": "Contract-scaffolded payload for 02_Global-Instructions_v2.json",
+  "observability": {
+    "kpi_targets": {
+      "AUD_min": 0.9,
+      "HAL_max": 0.02,
+      "PRI_min": 0.95
+    }
+  },
+  "references": {
+    "memory_schema": "08_Memory-Schema_v2.json",
+    "reasoning_schema": "16_Reasoning-Footprints_Schema_v1.json"
+  },
+  "refusals": {},
+  "safety": {
+    "regulatory": [
+      "ISO_IEC_42001",
+      "NIST_AI_RMF",
+      "PIPEDA"
+    ]
+  },
+  "schema_keys": [
+    "agentic_policies",
+    "constraints",
+    "defaults",
+    "go_live",
+    "memory",
+    "meta",
+    "objective",
+    "observability",
+    "refusals",
+    "safety",
+    "schema_keys",
+    "time_prefs",
+    "token_budget",
+    "token_hygiene"
+  ],
+  "store_raw_cot": false,
+  "time_prefs": {},
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "token_hygiene": {},
+  "version": 2
+}

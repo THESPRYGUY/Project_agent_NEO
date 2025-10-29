@@ -1,0 +1,52 @@
+{
+  "id": "memory_schema_v2",
+  "initial_memory_packs": [],
+  "memory_scopes": [],
+  "meta": {
+    "agent_id": "AGT-541110-MKT:MANAGER-e4fd86a6",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "2025-10-29T14:04:45Z",
+    "name": "08_Memory-Schema_v2.json",
+    "version": "1.0.0"
+  },
+  "objective": "Contract-scaffolded payload for 08_Memory-Schema_v2.json",
+  "optional_packs": [],
+  "packs": {
+    "initial": [],
+    "optional": []
+  },
+  "principles": {
+    "redact_pii": true
+  },
+  "redaction": {},
+  "retention": {
+    "episodic": {
+      "retention_days": 180
+    }
+  },
+  "schema_keys": [
+    "meta",
+    "objective",
+    "packs",
+    "redaction",
+    "retention",
+    "schema_keys",
+    "scopes",
+    "storage",
+    "sync",
+    "token_budget"
+  ],
+  "scopes": [],
+  "storage": {},
+  "sync": {
+    "allowed_sources": []
+  },
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "version": 2
+}
