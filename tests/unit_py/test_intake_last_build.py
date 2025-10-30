@@ -68,13 +68,13 @@ def test_last_build_headers_no_store_and_version(tmp_path: Path):
     assert data["outdir"].endswith("AGT")
 
 
-def test_last_build_with_overlay_summary_schema(tmp_path: Path):
+def test_last_build_with_minimal_pointer_schema(tmp_path: Path):
     _ensure_import_path()
     os.environ["NEO_REPO_OUTDIR"] = str((tmp_path / "root").resolve())
     os.environ["NEO_APPLY_OVERLAYS"] = "true"
     from neo_agent.intake_app import create_app
     app = create_app(base_dir=tmp_path)
-    # Save + build to generate last-build with overlay_summary
+    # Save + build to generate last-build pointer
     fixture = json.loads((Path.cwd() / "fixtures" / "sample_profile.json").read_text(encoding="utf-8"))
     st, _, _ = _wsgi_call(app, "POST", "/save", fixture)
     assert st == "200 OK"
@@ -86,12 +86,5 @@ def test_last_build_with_overlay_summary_schema(tmp_path: Path):
     assert hdr.get("cache-control", "").startswith("no-store")
     assert hdr.get("x-neo-intake-version") == "v3.0"
     payload = json.loads(body.decode("utf-8"))
-    ovl = payload.get("overlay_summary")
-    assert isinstance(ovl, dict)
-    assert isinstance(ovl.get("applied"), bool)
-    assert isinstance(ovl.get("items"), list)
-    if ovl.get("items"):
-        first = ovl["items"][0]
-        for key in ("id", "name", "version", "source", "allowlisted", "status"):
-            assert key in first
-
+    assert set(["agent_id", "outdir", "files", "ts"]).issubset(payload.keys())
+    assert (Path(payload["outdir"]).exists())

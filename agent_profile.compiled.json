@@ -1,65 +1,65 @@
 {
-  "version": "1.0.0",
+  "version": "1.1.1",
   "meta": {
     "version": "1.0",
-    "generated_at": "2025-10-28T19:59:04Z"
+    "generated_at": "2025-10-30T15:43:43Z"
   },
   "slugs": {
-    "agent": "agent-build-001-1-0-0"
+    "agent": "agent-build-002-1-1-1"
   },
   "agent": {
-    "name": "Agent Build #001",
-    "version": "1.0.0",
+    "name": "Agent Build #002",
+    "version": "1.1.1",
     "persona": {
-      "mbti_code": "INFJ",
-      "name": "Insightful Advocate",
-      "description": "Mission-driven mentors balancing empathy with systems thinking.",
+      "mbti_code": "ENTJ",
+      "name": "Decisive Leader",
+      "description": "Visionary organizers who mobilize teams toward ambitious goals.",
       "axes": {
-        "EI": "I",
+        "EI": "E",
         "SN": "N",
-        "TF": "F",
+        "TF": "T",
         "JP": "J"
       },
       "suggested_traits": []
     }
   },
   "business": {
-    "function": "Marketing",
+    "function": "Executive/General Management",
     "role": {
-      "code": "MKT:MANAGER",
-      "title": "Content Marketing Manager",
-      "seniority": "Manager"
+      "code": "EXEC:GM",
+      "title": "General Manager",
+      "seniority": "Director"
     }
   },
   "classification": {
     "naics": {
-      "code": "541110",
-      "title": "Offices of Lawyers",
+      "code": "213112",
+      "title": "Support Activities for Oil and Gas Operations",
       "level": 6,
       "lineage": [
         {
-          "code": "54",
-          "title": "Professional, Scientific, and Technical Services",
+          "code": "21",
+          "title": "Mining, Quarrying, and Oil and Gas Extraction",
           "level": 2
         },
         {
-          "code": "541",
-          "title": "Professional, Scientific, and Technical Services",
+          "code": "213",
+          "title": "Support Activities for Mining",
           "level": 3
         },
         {
-          "code": "5411",
-          "title": "Legal Services",
+          "code": "2131",
+          "title": "Support Activities for Mining",
           "level": 4
         },
         {
-          "code": "54111",
-          "title": "Offices of Lawyers",
+          "code": "21311",
+          "title": "Support Activities for Mining",
           "level": 5
         },
         {
-          "code": "541110",
-          "title": "Offices of Lawyers",
+          "code": "213112",
+          "title": "Support Activities for Oil and Gas Operations",
           "level": 6
         }
       ]
@@ -74,59 +74,65 @@
     "kpi_weights": {}
   },
   "capabilities": {
-    "toolsets_normalized": [],
-    "attributes_normalized": []
+    "toolsets_normalized": [
+      "data_analysis"
+    ],
+    "attributes_normalized": [
+      "collaborative",
+      "proactive",
+      "experimental"
+    ]
   },
   "preferences": {
-    "autonomy": 87,
-    "confidence": 82,
-    "collaboration": 100,
-    "communication_style": "Conversational",
-    "collaboration_mode": "Advisory"
+    "autonomy": 99,
+    "confidence": 49,
+    "collaboration": 43,
+    "communication_style": "Concise",
+    "collaboration_mode": "Cross-Functional"
   },
   "mapping_hints": {
     "neo_agent_config_json": {
       "agent": {
-        "name": "Agent Build #001",
-        "version": "1.0.0"
+        "name": "Agent Build #002",
+        "version": "1.1.1"
       },
-      "business_function": "Marketing",
+      "business_function": "Executive/General Management",
       "role": {
-        "code": "MKT:MANAGER",
-        "title": "Content Marketing Manager",
-        "seniority": "Manager",
-        "function": "Marketing"
+        "code": "EXEC:GM",
+        "title": "General Manager",
+        "seniority": "Director",
+        "function": "Executive/General Management"
       },
       "routing_hints": {},
       "classification": {
         "naics": {
-          "code": "541110",
-          "title": "Offices of Lawyers",
+          "code": "213112",
+          "title": "Support Activities for Oil and Gas Operations",
           "level": 6,
           "lineage": [
             {
-              "code": "54",
-              "title": "Professional, Scientific, and Technical Services",
+              "code": "21",
+              "title": "Mining, Quarrying, and Oil and Gas Extraction",
               "level": 2
             },
             {
-              "code": "541",
-              "title": "Professional, Scientific, and Technical Services",
+              "code": "213",
+              "title": "Support Activities for Mining",
               "level": 3
             },
             {
-              "code": "5411",
-              "title": "Legal Services",
+              "code": "2131",
+              "title": "Support Activities for Mining",
               "level": 4
             },
             {
-              "code": "54111",
-              "title": "Offices of Lawyers",
+              "code": "21311",
+              "title": "Support Activities for Mining",
               "level": 5
             },
             {
-              "code": "541110",
-              "title": "Offices of Lawyers",
+              "code": "213112",
+              "title": "Support Activities for Oil and Gas Operations",
               "level": 6
             }
           ]

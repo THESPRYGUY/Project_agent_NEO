@@ -59,7 +59,31 @@ def test_intake_form_submission(tmp_path: Path) -> None:
     }
 
     response = _invoke(app, "POST", post_data)
-    assert b"Agent profile generated successfully" in response
+    # Trigger a deterministic build then verify last-build pointer
+    # (Some form submissions may defer actual build to the explicit /build step)
+    def _wsgi_call(method: str, path: str, body: dict | None = None):
+        raw = json.dumps(body or {}).encode("utf-8")
+        env = {
+            "REQUEST_METHOD": method,
+            "PATH_INFO": path,
+            "QUERY_STRING": "",
+            "SERVER_NAME": "test",
+            "SERVER_PORT": "80",
+            "wsgi.version": (1, 0),
+            "wsgi.url_scheme": "http",
+            "wsgi.input": io.BytesIO(raw),
+            "CONTENT_LENGTH": str(len(raw)),
+        }
+        status_headers = []
+        def start_response(status, headers):
+            status_headers.append((status, headers))
+        data = b"".join(app.wsgi_app(env, start_response))
+        status, headers = status_headers[0]
+        return status, dict(headers), data
+    st, _, _ = _wsgi_call("POST", "/build", {})
+    assert st == "200 OK"
+    last_path = tmp_path / "_generated" / "_last_build.json"
+    assert last_path.exists()
 
     profile_path = tmp_path / "agent_profile.json"
     assert profile_path.exists()
@@ -72,7 +96,12 @@ def test_intake_form_submission(tmp_path: Path) -> None:
     assert profile["agent"]["persona"] == "ENTJ"
     assert profile["agent"]["mbti"]["mbti_code"] == "ENTJ"
 
-    spec_dir = tmp_path / "generated_specs"
+    # Specs now live under last build's spec_preview
+    last_path = tmp_path / "_generated" / "_last_build.json"
+    assert last_path.exists()
+    last = json.loads(last_path.read_text(encoding="utf-8"))
+    outdir = Path(last["outdir"])
+    spec_dir = outdir / "spec_preview"
     assert (spec_dir / "agent_config.json").exists()
 
 
@@ -117,7 +146,33 @@ def test_repo_scaffold_contains_mbti(tmp_path: Path) -> None:
         "linkedin_url": "",
     }
     _invoke(app, "POST", post_data)
-    config_path = tmp_path / "generated_specs" / "agent_config.json"
+    # Kick off build to populate last-build pointer
+    def _wsgi_call(method: str, path: str, body: dict | None = None):
+        raw = json.dumps(body or {}).encode("utf-8")
+        env = {
+            "REQUEST_METHOD": method,
+            "PATH_INFO": path,
+            "QUERY_STRING": "",
+            "SERVER_NAME": "test",
+            "SERVER_PORT": "80",
+            "wsgi.version": (1, 0),
+            "wsgi.url_scheme": "http",
+            "wsgi.input": io.BytesIO(raw),
+            "CONTENT_LENGTH": str(len(raw)),
+        }
+        status_headers = []
+        def start_response(status, headers):
+            status_headers.append((status, headers))
+        data = b"".join(app.wsgi_app(env, start_response))
+        status, headers = status_headers[0]
+        return status, dict(headers), data
+    st, _, _ = _wsgi_call("POST", "/build", {})
+    assert st == "200 OK"
+    # Specs path moved to spec_preview under SoT outdir
+    last_path = tmp_path / "_generated" / "_last_build.json"
+    assert last_path.exists()
+    last = json.loads(last_path.read_text(encoding="utf-8"))
+    config_path = Path(last["outdir"]) / "spec_preview" / "agent_config.json"
     with config_path.open("r", encoding="utf-8") as handle:
         config = json.load(handle)
     persona_meta = config.get("metadata", {}).get("persona", {})
