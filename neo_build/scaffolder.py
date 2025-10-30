@@ -49,11 +49,20 @@ def _agent_name(profile: Mapping[str, Any]) -> str:
 def build_meta(profile: Mapping[str, Any], filename: str) -> Dict[str, Any]:
     agent = profile.get("agent") if isinstance(profile, Mapping) else None
     version = str((agent or {}).get("version") or "")
+    # Deterministic timestamp in CI runs
+    ci_flag = str(os.environ.get("CI", "")).strip().lower() in ("1", "true", "yes") or (
+        str(os.environ.get("GITHUB_ACTIONS", "")).strip().lower() in ("1", "true", "yes")
+    )
+    created_at = "1970-01-01T00:00:00Z" if ci_flag else _dt.datetime.utcnow().replace(microsecond=0).isoformat() + "Z"
+    # Versioning: prefer app version/commit when available
+    app_version = str(os.environ.get("APP_VERSION", "")).strip()
+    git_sha = str(os.environ.get("GIT_SHA", "")).strip()
+    meta_version = app_version or (git_sha if git_sha else (version or "v2"))
     return {
         "agent_id": _agent_name(profile),
         "name": filename,
-        "version": version or "v2",
-        "created_at": _dt.datetime.utcnow().replace(microsecond=0).isoformat() + "Z",
+        "version": meta_version,
+        "created_at": created_at,
         "authors": _authors(profile),
     }
 

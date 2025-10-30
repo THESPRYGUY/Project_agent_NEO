@@ -1,17 +1,16 @@
-# Operations Runbook — Project NEO Intake Service
+﻿# Operations Runbook â€” Project NEO Intake Service
 
 - Environments: local (compose), staging, prod
 - Runtime: Python 3.11, gunicorn, WSGI app `wsgi:app`
 
 ## Environment Variables
-- `NEO_REPO_OUTDIR` — base path for generated repos (default: `<repo>/_generated`)
-- `FAIL_ON_PARITY` — hard‑fail KPI parity in integrity checks (`true|false`)
-- `NEO_APPLY_OVERLAYS` — apply overlays post build (`true|false`)
-- `LOG_LEVEL` — logging level (`DEBUG|INFO|WARNING|ERROR`)
-- `GIT_SHA` — injected at build time for headers (`X-Commit-SHA`)
+- NEO_REPO_OUTDIR — base path for generated repos (default: <repo>/_generated)
+- FAIL_ON_PARITY — hard-fail KPI parity in integrity checks (	rue|false)
+- NEO_APPLY_OVERLAYS — apply overlays post build (	rue|false)
+- NEO_CONTRACT_MODE — preview|full (CI default: ull)
 
 ## Health & Headers
-- `GET /health` → 200 JSON: `{status, build_tag, app_version, pid, repo_output_dir, ...}`
+- `GET /health` â†’ 200 JSON: `{status, build_tag, app_version, pid, repo_output_dir, ...}`
 - Response headers include:
   - `X-NEO-Intake-Version: v3.0`
   - `X-Commit-SHA: <sha>`
@@ -31,25 +30,24 @@
 - Mounts repo, exposes `:5000`.
 
 ## Release
-- Tag `v*` → GH workflow builds image, smoke‑tests `/health`, generates artifacts:
-  - `repo.zip` (source archive)
-  - `INTEGRITY_REPORT.json` (from builder)
-  - `build.json` (tag, sha, timestamp)
-- Release attaches artifacts to the tag.
-
+- Tag * — GH workflow builds image, smoke-tests /health, generates artifacts:
+  - epo.zip (source archive)
+  - INTEGRITY_REPORT.json (from builder)
+  - contract_report.json (from contract validator)
+  - uild.json (tag, sha, timestamp)
 
 ## Resilience & Limits
 
 Environment variables (override via `.env` or container env):
 
-- `MAX_BODY_BYTES` (default `1048576`) – hard cap on request body size. Exceeding returns `413` with a JSON error envelope. Keep at 1–5MB for typical form/JSON posts.
-- `RATE_LIMIT_RPS` (default `5`) – per‑IP token refill rate in requests per second.
-- `RATE_LIMIT_BURST` (default `10`) – per‑IP burst tokens. Set both to `0` to disable non‑exempt traffic (useful in maintenance).
-- `TELEMETRY_SAMPLE_RATE` (default `0.1`) – sampling rate (0.0–1.0) for non‑critical telemetry. Errors always emit.
+- `MAX_BODY_BYTES` (default `1048576`) â€“ hard cap on request body size. Exceeding returns `413` with a JSON error envelope. Keep at 1â€“5MB for typical form/JSON posts.
+- `RATE_LIMIT_RPS` (default `5`) â€“ perâ€‘IP token refill rate in requests per second.
+- `RATE_LIMIT_BURST` (default `10`) â€“ perâ€‘IP burst tokens. Set both to `0` to disable nonâ€‘exempt traffic (useful in maintenance).
+- `TELEMETRY_SAMPLE_RATE` (default `0.1`) â€“ sampling rate (0.0â€“1.0) for nonâ€‘critical telemetry. Errors always emit.
 
-Headers emitted on middleware‑wrapped responses:
-- `X-Request-ID` – echoed from client `X-Request-ID` or generated.
-- `X-Response-Time-ms` – integer duration from request receive to response.
+Headers emitted on middlewareâ€‘wrapped responses:
+- `X-Request-ID` â€“ echoed from client `X-Request-ID` or generated.
+- `X-Response-Time-ms` â€“ integer duration from request receive to response.
 
 Error envelope (uniform across 400/404/405/413/429/500):
 
@@ -57,14 +55,14 @@ Error envelope (uniform across 400/404/405/413/429/500):
 {"status":"error","code":"<UPPER_SNAKE>","message":"...","details":{},"req_id":"..."}
 ```
 
-Rate‑limit exemptions: `GET /health`, `GET /last-build`.
+Rateâ€‘limit exemptions: `GET /health`, `GET /last-build`.
 
 ## Security
 
 Environment variables (auth stub is optional and OFF by default):
 
-- `AUTH_REQUIRED` (default `false`) — when `true`, all non-`/health` routes require a valid Bearer token
-- `AUTH_TOKENS` (default empty) — comma‑separated list of accepted tokens
+- `AUTH_REQUIRED` (default `false`) â€” when `true`, all non-`/health` routes require a valid Bearer token
+- `AUTH_TOKENS` (default empty) â€” commaâ€‘separated list of accepted tokens
 
 Behavior:
 - When `AUTH_REQUIRED=true` and the `Authorization: Bearer <token>` header is missing/invalid, responses return `401` with a JSON envelope `{status:"error", code:"UNAUTHORIZED", ...}` and `WWW-Authenticate: Bearer` header
@@ -78,7 +76,7 @@ Dependency Pinning Policy:
 - Python: pins live in `constraints/requirements.lock` and `constraints/requirements-dev.lock`; update monthly or on CVE
 - Node: `package-lock.json` is authoritative; update monthly or on CVE via `npm audit fix` PRs
 
-SCA Overview (warn‑only):
+SCA Overview (warnâ€‘only):
 - CI runs `pip-audit` for Python and `npm audit --production` for Node
 - Findings do not fail PRs; reports are uploaded as artifacts for review
 
@@ -96,7 +94,7 @@ SCA Overview (warn‑only):
 | `TELEMETRY_SAMPLE_RATE` | `0.1` | Sampling for non-critical telemetry |
 | `AUTH_REQUIRED` | `false` | When `true`, non-`/health` routes require Bearer token |
 | `AUTH_TOKENS` | `` | CSV list of accepted tokens when auth is enabled |
-| `GIT_SHA` | — | Injected at build; echoed in headers |
+| `GIT_SHA` | â€” | Injected at build; echoed in headers |
 
 ## Headers
 - Always: `X-Request-ID`, `X-Response-Time-ms`, `Cache-Control: no-store`
@@ -127,3 +125,20 @@ Auth 401 (when `AUTH_REQUIRED=true`):
 2) CI builds image and runs health smoke
 3) Generate integrity artifacts (`repo.zip`, `INTEGRITY_REPORT.json`, `build.json`)
 4) Attach artifacts to the release
+
+
+## Determinism Policy
+- JSON writes use canonical UTF-8, indent=2, sort_keys=True.
+- Deep-sorted lists and dict keys for stable ordering across builds.
+- In CI, meta.created_at is fixed to 1970-01-01T00:00:00Z.
+- Meta ersion prefers APP_VERSION or GIT_SHA when present.
+
+## Validator Failure Modes & Triage
+- contract-validate job runs python scripts/contract_validate.py <pack_dir> and uploads:
+  - INTEGRITY_REPORT.json, contract_report.json, epo.zip.
+- Fails when any of: contract_ok, crossref_ok, parity_ok, packs_complete is false, or any missing_* entries non-empty.
+- Common fixes:
+  - Add missing top-level keys per file contract.
+  - Align KPI targets across 02/11/14/17.
+  - Ensure cross-file refs in 02 point to canonical filenames.
+

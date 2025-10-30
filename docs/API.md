@@ -81,5 +81,6 @@ curl -fSL http://127.0.0.1:5000/download/zip -o repo.zip
 
 ## Parity & Rate/Size Notes
 - Parity must be ALL_TRUE across 02 vs 14; failures appear in integrity artifacts and may block CI.
+- CI artifacts (per build): `INTEGRITY_REPORT.json`, `contract_report.json`, `repo.zip`.
 - 429 (rate limit) when per-IP bucket exhausted; tune via `RATE_LIMIT_RPS/BURST`.
 - 413 (size) when payload exceeds `MAX_BODY_BYTES`.

@@ -199,7 +199,7 @@ def main() -> int:
         return 1
 
     # Success path regardless of FAIL_ON_PARITY when parity is true
-    ok_line = "SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0"
+    ok_line = "✅ SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0"
     print(ok_line)
     try:
         log_path.write_text(ok_line + "\n", encoding="utf-8")

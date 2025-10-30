@@ -1,0 +1,15 @@
+{
+  "contract_ok": true,
+  "crossref_ok": true,
+  "parity_ok": true,
+  "packs_complete": true,
+  "missing_keys": {},
+  "missing_sections": {},
+  "crossref_errors": [],
+  "parity_deltas": {
+    "03": {},
+    "17": {},
+    "11": {},
+    "14": {}
+  }
+}

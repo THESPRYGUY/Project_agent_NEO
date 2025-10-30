@@ -1,0 +1,63 @@
+{
+  "definition_of_done": [],
+  "meta": {
+    "agent_id": "AGT-541110-MKT:MANAGER-e4fd86a6",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "1970-01-01T00:00:00Z",
+    "name": "18_Reporting-Pack_v2.json",
+    "version": "1.0.0"
+  },
+  "objective": "Contract-scaffolded payload for 18_Reporting-Pack_v2.json",
+  "outputs": [
+    "docx",
+    "html",
+    "pdf"
+  ],
+  "publishing": {
+    "channels": [
+      "email_internal",
+      "internal_sharepoint"
+    ],
+    "classification": "confidential"
+  },
+  "schedule": {
+    "on_demand": true,
+    "weekly": true
+  },
+  "schema_keys": [
+    "definition_of_done",
+    "meta",
+    "objective",
+    "outputs",
+    "publishing",
+    "schedule",
+    "schema_keys",
+    "templates",
+    "token_budget"
+  ],
+  "templates": [
+    {
+      "fields": [
+        "band_used",
+        "confidence",
+        "cost_elapsed",
+        "escalation_flag",
+        "escalation_reason",
+        "persistence_level",
+        "risk",
+        "step_id",
+        "time_elapsed"
+      ],
+      "id": "default",
+      "name": "Default Template"
+    }
+  ],
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "version": 2
+}
