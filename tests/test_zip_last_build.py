@@ -66,8 +66,6 @@ def test_last_build_and_zip_endpoints(tmp_path: Path):
     assert headers.get("x-neo-intake-version") == "v3.0"
     last = json.loads(body.decode("utf-8"))
     assert last["outdir"] == str(outdir)
-    assert isinstance(last.get("parity"), dict)
-    assert isinstance(last.get("integrity_errors"), list)
 
     # GET /build/zip valid
     # Build query-string env

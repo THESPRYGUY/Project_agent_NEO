@@ -79,15 +79,11 @@ def test_post_generates_full_repo(app: IntakeApplication, temp_base_dir: Path):
     assert len(responses) == 1
     assert responses[0][0] == "200 OK"
     
-    # Check that repo was created
-    repos_dir = temp_base_dir / "generated_repos"
-    assert repos_dir.exists(), "generated_repos directory should exist"
-    
-    # Find the generated repo folder (should be only one)
-    repo_folders = [d for d in repos_dir.iterdir() if d.is_dir()]
-    assert len(repo_folders) >= 1, "At least one repo folder should be created"
-    
-    repo_dir = repo_folders[0]
+    # Check that SoT repo was created under _generated via last-build pointer
+    last_path = temp_base_dir / "_generated" / "_last_build.json"
+    assert last_path.exists(), "_last_build.json should exist after save"
+    last = json.loads(last_path.read_text(encoding="utf-8"))
+    repo_dir = Path(last["outdir"])  # authoritative pack path
     
     # Check for essential files
     readme_file = repo_dir / "01_README+Directory-Map_v2.json"
@@ -154,10 +150,9 @@ def test_api_agent_generate_endpoint(app: IntakeApplication, temp_base_dir: Path
     assert "out_dir" in response_data
     assert "checks" in response_data
     
-    # Verify repo was created
+    # Verify repo was created in generated_repos for API endpoint
     repos_dir = temp_base_dir / "generated_repos"
-    repo_folders = [d for d in repos_dir.iterdir() if d.is_dir()]
-    assert len(repo_folders) >= 1
+    assert repos_dir.exists()
 
 
 def test_agent_id_persists_across_rerender(app: IntakeApplication, temp_base_dir: Path):

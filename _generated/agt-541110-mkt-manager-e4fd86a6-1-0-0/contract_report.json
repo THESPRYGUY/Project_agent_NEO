@@ -1,0 +1,78 @@
+{
+  "contract_ok": true,
+  "crossref_ok": false,
+  "parity_ok": true,
+  "packs_complete": false,
+  "missing_keys": {},
+  "missing_sections": {
+    "10_Prompt-Pack_v2.json": [
+      "modules",
+      "reasoning_patterns",
+      "guardrails",
+      "output_contracts"
+    ],
+    "11_Workflow-Pack_v2.json": [
+      "micro_loops",
+      "graphs",
+      "engine_adapters",
+      "rollback"
+    ],
+    "12_Tool+Data-Registry_v2.json": [
+      "tools",
+      "connectors",
+      "datasets",
+      "secrets",
+      "policies"
+    ],
+    "13_Knowledge-Graph+RAG_Config_v2.json": [
+      "indices",
+      "chunking",
+      "retrievers",
+      "rerankers",
+      "embeddings",
+      "data_quality",
+      "update_policy"
+    ],
+    "14_KPI+Evaluation-Framework_v2.json": [
+      "metrics",
+      "eval_pipelines",
+      "reports",
+      "eval_cases"
+    ],
+    "18_Reporting-Pack_v2.json": [
+      "outputs",
+      "publishing",
+      "schedule"
+    ],
+    "19_Overlay-Pack_SME-Domain_v1.json": [
+      "policies",
+      "datasets",
+      "prompts",
+      "eval_cases"
+    ],
+    "20_Overlay-Pack_Enterprise_v1.json": [
+      "refs",
+      "policies",
+      "brand",
+      "legal",
+      "stakeholders",
+      "escalations"
+    ]
+  },
+  "crossref_errors": [
+    "02.constraints.governance_file",
+    "02.constraints.safety_privacy_file",
+    "02.constraints.eval_framework_file",
+    "02.constraints.observability_file",
+    "02.agentic_policies.routing.workflow_pack",
+    "02.agentic_policies.routing.prompt_pack",
+    "02.agentic_policies.reasoning.footprints_spec",
+    "02.go_live.lifecycle_pack"
+  ],
+  "parity_deltas": {
+    "03": {},
+    "17": {},
+    "11": {},
+    "14": {}
+  }
+}

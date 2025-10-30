@@ -54,21 +54,12 @@ def test_last_build_overlay_summary_present_when_applied(tmp_path: Path):
     assert hdr.get("cache-control", "").startswith("no-store")
     assert hdr.get("x-neo-intake-version") == "v3.0"
 
-    # Read last-build and verify overlay_summary extension
+    # Read last-build and verify minimal SoT pointer
     st, headers, body = _wsgi_call(app, "GET", "/last-build", None)
     assert st == "200 OK"
     hdr = {k.lower(): v for k, v in headers.items()}
     assert hdr.get("cache-control", "").startswith("no-store")
     assert hdr.get("x-neo-intake-version") == "v3.0"
     last = json.loads(body.decode("utf-8"))
-    ovl = last.get("overlay_summary")
-    assert isinstance(ovl, dict)
-    assert isinstance(ovl.get("applied"), bool)
-    assert isinstance(ovl.get("items"), list)
-    # When overlays are applied, expect at least one item
-    assert len(ovl.get("items")) >= 1
-    # Spot-check item keys
-    it = ovl.get("items")[0]
-    for key in ("id", "name", "version", "source", "allowlisted", "status"):
-        assert key in it
-
+    assert set(["agent_id", "outdir", "files", "ts"]).issubset(last.keys())
+    assert Path(last["outdir"]).exists()

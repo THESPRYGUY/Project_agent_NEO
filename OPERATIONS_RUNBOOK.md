@@ -142,3 +142,24 @@ Auth 401 (when `AUTH_REQUIRED=true`):
   - Align KPI targets across 02/11/14/17.
   - Ensure cross-file refs in 02 point to canonical filenames.
 
+## Build Locks and Backoff
+
+- The intake server acquires a per-agent file lock at `_generated/<AGENT_ID>/.build.lock` before creating any temp directories.
+- On contention, `/build` responds with HTTP 423 Locked and header `Retry-After: 5`.
+- Clients should back off and retry after 5 seconds (exponential backoff recommended under bursty load).
+
+## Error Taxonomy and Telemetry
+
+- All 500 envelopes mirror the following error codes and include the `req_id`:
+  - `E_RENDER`: failure during pack rendering before files are finalized.
+  - `E_FS`: filesystem failure when moving the temp build into the final SoT path.
+  - `E_ZIP`: failure when computing the canonical ZIP/hash for the build.
+- Telemetry events emitted:
+  - `build:start` {agent_id, tmp, req_id}
+  - `build:success` {agent_id, outdir, files_count, zip_bytes, duration_ms, outcome:"success", req_id}
+  - `build:error` {agent_id, code, req_id, trace_id}
+
+## ZIP Download Parity
+
+- `/download/zip` without `outdir` defaults to the most recent `_generated/_last_build.json.outdir`.
+- `/download/zip` with explicit `?outdir=` must be byte-identical to the default ZIP (CI checks sha256 equality).

@@ -47,11 +47,19 @@ curl -sS -X POST \
   http://127.0.0.1:5000/build
 ```
 
-Typical errors:
+Locking and errors:
 - 400 BAD_REQUEST: invalid/missing fields
 - 401 UNAUTHORIZED: when auth enabled and token missing/invalid
 - 413 PAYLOAD_TOO_LARGE: exceeds `MAX_BODY_BYTES`
 - 429 TOO_MANY_REQUESTS: rate limit exceeded
+- 423 LOCKED: another build in progress for the same agent; includes `Retry-After: 5` header. Body: `{ "status":"error", "code":"BUILD_LOCKED", "req_id":"..." }`
+
+Error taxonomy (500 envelopes):
+- `E_RENDER`: error during pack rendering (pre-write)
+- `E_FS`: filesystem failure during finalization/move
+- `E_ZIP`: failure computing canonical ZIP/hash
+
+Telemetry fields now include: `files_count`, `zip_bytes`, `duration_ms`, and preserve `req_id`.
 
 ---
 
@@ -72,9 +80,11 @@ Streams the current 20-file pack as a ZIP (strict parity enforced by CI).
 
 Response: 200 (application/zip); standard error envelope on failure.
 
-Example:
+Example (defaults to last-build when `outdir` is omitted):
 ```bash
-curl -fSL http://127.0.0.1:5000/download/zip -o repo.zip
+curl -fSL http://127.0.0.1:5000/download/zip -o repo_default.zip
+curl -fSL "http://127.0.0.1:5000/download/zip?outdir=$(curl -s http://127.0.0.1:5000/last-build | jq -r .outdir)" -o repo_explicit.zip
+sha256sum repo_default.zip repo_explicit.zip  # hashes must match
 ```
 
 ---

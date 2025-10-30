@@ -1,4 +1,4 @@
-﻿"""HTTP server for the Project NEO agent intake experience."""
+"""HTTP server for the Project NEO agent intake experience."""
 
 from __future__ import annotations
 
@@ -23,6 +23,7 @@ from .logging import get_logger
 from .repo_generator import AgentRepoGenerationError, generate_agent_repo
 from neo_build.writers import write_repo_files
 from neo_build.validators import integrity_report
+from neo_build.utils import FileLock
 from neo_build.contracts import CANONICAL_PACK_FILENAMES
 from .adapters.normalize_v3 import normalize_context_role
 from .spec_generator import generate_agent_specs
@@ -602,8 +603,7 @@ class IntakeApplication:
         self.routing_defaults_path = self.data_root / "routing" / "function_role_map.json"
         self.base_dir = self._resolve_base_dir(base_dir)
         self.profile_path = self.base_dir / "agent_profile.json"
-        self.spec_dir = self.base_dir / "generated_specs"
-        self.spec_dir.mkdir(parents=True, exist_ok=True)
+        self.spec_dir = self.base_dir / "generated_specs"  # legacy path (no longer used for writes)
         self.repo_output_dir = self.base_dir / "generated_repos"
         self.repo_output_dir.mkdir(parents=True, exist_ok=True)
         # New: dedicated location to store versioned agent profiles
@@ -618,6 +618,8 @@ class IntakeApplication:
         self.persona_assets = self._load_persona_assets()
         self.persona_config = self._load_persona_config()
         self.mbti_lookup = self._index_mbti_types(self.persona_config.get("mbti_types", []))
+        # Legacy shim hit counter for /generated_specs redirects
+        self._legacy_redirect_hits = 0
         # NAICS caches (filled on-demand)
         self._naics_cache = None
         self._naics_by_code = None
@@ -696,6 +698,227 @@ class IntakeApplication:
         if not has_length:
             updated.append(("Content-Length", str(size)))
         return updated
+
+    # ---------------------------- Sprint-21 helpers ----------------------------
+    def _atomic_write_json(self, path: Path, obj: Mapping[str, Any]) -> None:
+        """Atomically write JSON to path using a temp file then replace."""
+        tmp_dir = path.parent / ".tmp"
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+        tmp_path = tmp_dir / (path.name + ".tmp")
+        data = json.dumps(obj, indent=2).encode("utf-8")
+        with tmp_path.open("wb") as h:
+            h.write(data)
+        try:
+            os.replace(str(tmp_path), str(path))
+        except Exception:
+            tmp_path.rename(path)
+
+    def _canonical_zip_hash(self, outdir: Path) -> tuple[str, int]:
+        """Return (sha256_hex, byte_length) of a canonical zip of outdir.
+
+        Uses deterministic file ordering and a fixed date stamp for entries.
+        Does not persist the zip; used for hashing and telemetry only.
+        """
+        import io
+        import hashlib
+        import zipfile
+        # Build deterministic listing (exclude the same items as /download/zip)
+        excluded_names = {"_last_build.json", ".DS_Store"}
+        excluded_dirs = {"__pycache__", ".pytest_cache", ".git"}
+        files: list[Path] = []
+        for p in outdir.rglob("*"):
+            if not p.is_file():
+                continue
+            rel = p.relative_to(outdir)
+            parts = rel.parts
+            if any(part.startswith(".") for part in parts):
+                continue
+            if any(part in excluded_dirs for part in parts):
+                continue
+            if rel.name in excluded_names:
+                continue
+            files.append(rel)
+        files = sorted(files, key=lambda r: str(r))
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for rel in files:
+                data = (outdir / rel).read_bytes()
+                # Canonical entry
+                info = zipfile.ZipInfo(str(rel).replace("\\", "/"))
+                info.date_time = (1980, 1, 1, 0, 0, 0)
+                info.compress_type = zipfile.ZIP_DEFLATED
+                zf.writestr(info, data)
+        raw = buf.getvalue()
+        sha = hashlib.sha256(raw).hexdigest()
+        return sha, len(raw)
+
+    def _transactional_build(self, profile: Mapping[str, Any], environ: Mapping[str, Any]) -> tuple[int, dict]:
+        """Build into temp path then atomically move to final SoT path.
+
+        Success: (200, {agent_id,outdir,files,ts, parity, integrity_errors})
+        Failure: (500, {status:"error", code:"BUILD_FAILED", message, details:{trace_id}, req_id})
+        """
+        out_root_env = os.environ.get("NEO_REPO_OUTDIR") or str((self.base_dir / "_generated").resolve())
+        out_root = Path(out_root_env)
+        if "onedrive" in str(out_root).lower():
+            out_root = (self.base_dir / "_generated").resolve()
+        out_root.mkdir(parents=True, exist_ok=True)
+
+        ident = profile.get("identity") if isinstance(profile, Mapping) else {}
+        if not isinstance(ident, Mapping):
+            ident = {}
+        # Resolve agent_id or derive deterministically from profile
+        agent_id = str(ident.get("agent_id") or "").strip()
+        if not agent_id:
+            try:
+                naics_code = str(((profile.get("classification") or {}).get("naics") or {}).get("code") or (profile.get("naics") or {}).get("code") or "")
+            except Exception:
+                naics_code = ""
+            try:
+                business_func = str((profile.get("role") or {}).get("function_code") or profile.get("business_function") or "")
+            except Exception:
+                business_func = ""
+            try:
+                role_code = str((profile.get("role") or {}).get("role_code") or (profile.get("role") or {}).get("code") or "")
+            except Exception:
+                role_code = ""
+            try:
+                agent_name = str((profile.get("identity") or {}).get("display_name") or (profile.get("agent") or {}).get("name") or "agent")
+            except Exception:
+                agent_name = "agent"
+            try:
+                agent_id = generate_agent_id(naics_code, business_func, role_code, agent_name)
+            except Exception:
+                # Fallback simple suffix when util unavailable
+                agent_id = f"agent-{int(time.time())}"
+        req_id = str(environ.get("neo.req_id") or "")
+
+        # Acquire per-agent build lock before tmp creation
+        from uuid import uuid4
+        req_id = str(environ.get("neo.req_id") or "")
+        lock_path = out_root / agent_id / ".build.lock"
+        lock = FileLock(lock_path)
+        try:
+            lock_path.parent.mkdir(parents=True, exist_ok=True)
+            lock.acquire()
+        except Exception:
+            # Contention or failure acquiring lock
+            return 423, {"status": "error", "code": "BUILD_LOCKED", "req_id": req_id}
+
+        tmp_dir = out_root / agent_id / ".tmp" / uuid4().hex
+        tmp_dir.mkdir(parents=True, exist_ok=True)
+
+        t0 = time.perf_counter()
+        if emit_event:
+            try:
+                emit_event("build:start", {"agent_id": agent_id, "tmp": str(tmp_dir), "req_id": req_id})
+            except Exception:
+                pass
+
+        err_code = "E_RENDER"
+        try:
+            # Render packs into tmp
+            packs = write_repo_files(profile, tmp_dir)
+            report = integrity_report(profile, packs)
+            (tmp_dir / "INTEGRITY_REPORT.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+
+            ts = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
+            final_dir = out_root / agent_id / ts
+            final_dir.parent.mkdir(parents=True, exist_ok=True)
+            # Move into final location (FS phase)
+            try:
+                tmp_dir.rename(final_dir)
+            except Exception:
+                import shutil
+                try:
+                    shutil.move(str(tmp_dir), str(final_dir))
+                except Exception as _fs_exc:
+                    err_code = "E_FS"
+                    raise _fs_exc
+
+            files = len(list(final_dir.glob("*.json"))) + len(list(final_dir.glob("*.md")))
+
+            # Transactional last-build write with schema and zip hash
+            try:
+                zip_hash, zip_bytes = self._canonical_zip_hash(final_dir)
+            except Exception as _zip_exc:
+                err_code = "E_ZIP"
+                raise _zip_exc
+            last = {
+                "schema_version": "2.1.1",
+                "agent_id": agent_id,
+                "outdir": str(final_dir),
+                "files": int(files),
+                "ts": ts,
+                "zip_hash": zip_hash,
+            }
+            try:
+                self._atomic_write_json(out_root / "_last_build.json", last)
+            except Exception as exc:
+                try:
+                    LOGGER.warning("last_build write failed: %s", exc)
+                except Exception:
+                    pass
+
+            dur_ms = int((time.perf_counter() - t0) * 1000)
+            if emit_event:
+                try:
+                    emit_event(
+                        "build:success",
+                        {
+                            "agent_id": agent_id,
+                            "outdir": str(final_dir),
+                            "files_count": int(files),
+                            "zip_bytes": int(zip_bytes),
+                            "duration_ms": dur_ms,
+                            "outcome": "success",
+                            "req_id": req_id,
+                        },
+                    )
+                except Exception:
+                    pass
+
+            parity_map = (report or {}).get("parity", {}) if isinstance(report, Mapping) else {}
+            integrity_errors = list((report or {}).get("errors", []) or [])
+            return 200, {
+                "agent_id": agent_id,
+                "outdir": str(final_dir),
+                "files": int(files),
+                "ts": ts,
+                "parity": {
+                    "02_vs_14": bool(parity_map.get("02_vs_14", True)),
+                    "11_vs_02": bool(parity_map.get("11_vs_02", True)),
+                    "03_vs_02": bool(parity_map.get("03_vs_02", True)),
+                    "17_vs_02": bool(parity_map.get("17_vs_02", True)),
+                },
+                "integrity_errors": integrity_errors,
+            }
+        except Exception as exc:
+            # Cleanup temp dir
+            try:
+                import shutil
+                shutil.rmtree(tmp_dir, ignore_errors=True)
+            except Exception:
+                pass
+            # Log full stack and telemetry
+            try:
+                LOGGER.error("build_failed: %s", exc, exc_info=True)
+            except Exception:
+                pass
+            if emit_event:
+                try:
+                    emit_event(
+                        "build:error",
+                        {"agent_id": agent_id, "code": err_code, "trace_id": req_id, "req_id": req_id},
+                    )
+                except Exception:
+                    pass
+            return 500, {"status": "error", "code": err_code, "message": str(exc), "req_id": req_id, "trace_id": req_id}
+        finally:
+            try:
+                lock.release()
+            except Exception:
+                pass
 
     def _indent_block(self, content: str, spaces: int = 6) -> str:
         if not content:
@@ -1537,7 +1760,7 @@ window.addEventListener('DOMContentLoaded', function () {
                 "name": _get("agent_name"),
                 "version": _get("agent_version", "1.0.0"),
                 "persona": persona_code,
-                "mbti": self._enrich_persona_metadata(persona_code),
+                "mbti": self._enrich_persona_metadata(persona_code) or ({"mbti_code": persona_code, "axes": _mbti_axes(persona_code)} if persona_code else None),
                 "domain": _get("domain"),
                 "role": _get("role"),
                 "business_function": business_function_value,
@@ -1579,6 +1802,8 @@ window.addEventListener('DOMContentLoaded', function () {
         try:
             from . import telemetry as _telemetry  # type: ignore
             meta = profile["agent"].get("mbti") or self._enrich_persona_metadata(persona_code)
+            if not meta and persona_code:
+                meta = {"mbti_code": persona_code, "axes": _mbti_axes(persona_code)}
             if persona_code and hasattr(_telemetry, "emit_event"):
                 _telemetry.emit_event("persona:selected", meta)
         except Exception:
@@ -1640,6 +1865,17 @@ window.addEventListener('DOMContentLoaded', function () {
         if path in ("/build/zip", "/download/zip") and method == "GET":
             qs = parse_qs(str(environ.get("QUERY_STRING") or ""))
             outdir_q = (qs.get("outdir") or [""])[0]
+            # Sprint-21: default to last-build when not provided
+            if not outdir_q:
+                out_root_env = os.environ.get("NEO_REPO_OUTDIR") or str((self.base_dir / "_generated").resolve())
+                out_root_probe = Path(out_root_env)
+                last_path = out_root_probe / "_last_build.json"
+                if last_path.exists():
+                    try:
+                        obj = json.loads(last_path.read_text(encoding="utf-8"))
+                        outdir_q = str(obj.get("outdir") or "") if isinstance(obj, Mapping) else ""
+                    except Exception:
+                        outdir_q = ""
             if not outdir_q:
                 payload = json.dumps({"status": "invalid", "errors": ["missing outdir"]}).encode("utf-8")
                 start_response("400 Bad Request", _std_headers("application/json", len(payload)))
@@ -1714,7 +1950,11 @@ window.addEventListener('DOMContentLoaded', function () {
                 rels = sorted((p.relative_to(candidate) for p in files), key=lambda r: str(r))
                 for rel in rels:
                     try:
-                        zf.write(candidate / rel, arcname=str(rel))
+                        data = (candidate / rel).read_bytes()
+                        info = zipfile.ZipInfo(str(rel).replace("\\", "/"))
+                        info.date_time = (1980, 1, 1, 0, 0, 0)
+                        info.compress_type = zipfile.ZIP_DEFLATED
+                        zf.writestr(info, data)
                     except Exception:
                         continue
             # Finalize and compute size
@@ -2106,6 +2346,72 @@ window.addEventListener('DOMContentLoaded', function () {
                 start_response("500 Internal Server Error", headers)
                 return [payload]
 
+        # Deterministic build route (Sprint-21 SoT first)
+        if path == "/build" and method == "POST":
+            # Load validated profile
+            if not self.profile_path.exists():
+                payload = json.dumps({"status": "error", "issues": ["agent_profile.json not found. Save a v3 profile first via /save."]}).encode("utf-8")
+                start_response("400 Bad Request", _std_headers("application/json", len(payload)))
+                return [payload]
+            try:
+                profile = json.loads(self.profile_path.read_text(encoding="utf-8"))
+            except Exception as exc:
+                payload = json.dumps({"status": "error", "issues": [f"Failed to read agent_profile.json: {exc}"]}).encode("utf-8")
+                start_response("500 Internal Server Error", _std_headers("application/json", len(payload)))
+                return [payload]
+            try:
+                normalized = normalize_context_role(profile)
+                profile.update(normalized)
+            except Exception:
+                pass
+            status_code, resp = self._transactional_build(profile, environ)
+            # Ensure spec previews are generated under SoT path
+            try:
+                if status_code == 200 and isinstance(resp, Mapping) and resp.get("outdir"):
+                    spec_dir = Path(str(resp.get("outdir"))) / "spec_preview"
+                    generate_agent_specs(profile, spec_dir)
+                
+            except Exception:
+                pass
+            payload = json.dumps(resp).encode("utf-8")
+            if status_code == 200:
+                start_response("200 OK", _std_headers("application/json", len(payload)))
+                return [payload]
+            if status_code == 423:
+                headers = _std_headers("application/json", len(payload), extra=[("Retry-After", "5")])
+                start_response("423 Locked", headers)
+                return [payload]
+            start_response("500 Internal Server Error", _std_headers("application/json", len(payload)))
+            return [payload]
+
+        # Legacy path shim: redirect generated_specs to latest spec_preview
+        if path.startswith("/generated_specs") and method == "GET":
+            out_root_env = os.environ.get("NEO_REPO_OUTDIR") or str((self.base_dir / "_generated").resolve())
+            out_root = Path(out_root_env)
+            last_path = out_root / "_last_build.json"
+            location = "/"
+            agent_id_val = ""
+            if last_path.exists():
+                try:
+                    ob = json.loads(last_path.read_text(encoding="utf-8"))
+                    outdir = Path(str(ob.get("outdir")))
+                    location = str((outdir / "spec_preview").as_posix())
+                    agent_id_val = str(ob.get("agent_id") or "")
+                except Exception:
+                    location = "/"
+            headers = _std_headers("text/plain", 0) + [("Location", location)]
+            # Telemetry + warn on first hit
+            try:
+                self._legacy_redirect_hits += 1
+                if emit_event:
+                    emit_event("redirect.generated_specs.hit", {"agent_id": agent_id_val, "req_id": str(environ.get("neo.req_id") or "")})
+                if self._legacy_redirect_hits == 1:
+                    LOGGER.warning("Legacy generated_specs redirect in use; please migrate to spec_preview")
+            except Exception:
+                pass
+            start_response("307 Temporary Redirect", headers)
+            return [b""]
+
         # Deterministic build route for PR-B
         if path == "/build" and method == "POST":
             warnings: list[str] = []
@@ -2469,57 +2775,40 @@ window.addEventListener('DOMContentLoaded', function () {
                 try:
                     with self.profile_path.open("w", encoding="utf-8") as handle:
                         json.dump(form_profile, handle, indent=2)
-                    from .profile_compiler import compile_profile
-                    compiled = compile_profile(form_profile)
-                    form_profile["_compiled"] = compiled
-                    with self.profile_path.open("w", encoding="utf-8") as handle:
-                        json.dump(form_profile, handle, indent=2)
-                    with (self.profile_path.parent / "agent_profile.compiled.json").open("w", encoding="utf-8") as handle:
-                        json.dump(compiled, handle, indent=2)
-                    generate_agent_specs(form_profile, self.spec_dir)
-                    # Also build and write the 20-pack repo deterministically
-                    repo_built = False
-                    try:
-                        # Create unique repo subdirectory based on agent identity
-                        agent_section = form_profile.get("agent") if isinstance(form_profile, Mapping) else {}
-                        if not isinstance(agent_section, Mapping):
-                            agent_section = {}
-                        identity_section = form_profile.get("identity") if isinstance(form_profile, Mapping) else {}
-                        if not isinstance(identity_section, Mapping):
-                            identity_section = {}
-                        agent_name = str((identity_section.get("display_name") or agent_section.get("name") or "agent"))
-                        agent_version = str(agent_section.get("version", "1-0-0")).replace(".", "-")
-                        
-                        # Slugify agent name
-                        import re
-                        slug_base = re.sub(r"[^a-z0-9\-]+", "-", agent_name.lower().strip()).strip("-") or "agent"
-                        slug = f"{slug_base}-{agent_version}"
-                        
-                        # Find next available directory
-                        repo_dir = self.repo_output_dir / slug
-                        counter = 2
-                        while repo_dir.exists():
-                            repo_dir = self.repo_output_dir / f"{slug}-{counter}"
-                            counter += 1
-                        
-                        # Write repo files to the unique subdirectory
-                        packs = write_repo_files(form_profile, repo_dir)
-                        # Generate and write integrity report
-                        report = integrity_report(form_profile, packs)
-                        integrity_path = repo_dir / "INTEGRITY_REPORT.json"
-                        with integrity_path.open("w", encoding="utf-8") as handle:
-                            json.dump(report, handle, indent=2, ensure_ascii=False)
-                            handle.write("\n")
-                        
-                        checks = report.get("checks", {})
-                        repo_built = True
-                        notice = f"Agent profile generated successfully (repo generated at {repo_dir.name})"
-                        # Optionally append quick parity status to the notice
-                        if checks:
-                            notice += f" (kpi_sync={checks.get('kpi_sync', False)})"
-                    except Exception as repo_exc:
-                        # If repo build fails, keep profile generation success message
-                        LOGGER.warning("Repo build failed: %s", repo_exc)
+                    # Sprint-21: build via transactional SoT first
+                    status_code, resp = self._transactional_build(form_profile, environ)
+                    if status_code == 200 and isinstance(resp, Mapping):
+                        outdir = Path(str(resp.get("outdir")))
+                        # Compile profile (best-effort) and generate spec preview alongside SoT
+                        try:
+                            from .profile_compiler import compile_profile
+                            compiled = compile_profile(form_profile)
+                            form_profile["_compiled"] = compiled
+                            with self.profile_path.open("w", encoding="utf-8") as handle:
+                                json.dump(form_profile, handle, indent=2)
+                            with (self.profile_path.parent / "agent_profile.compiled.json").open("w", encoding="utf-8") as handle:
+                                json.dump(compiled, handle, indent=2)
+                            spec_dir = outdir / "spec_preview"
+                            generate_agent_specs(form_profile, spec_dir)
+                        except Exception:
+                            pass
+                        # Notice with parity badge when available
+                        checks = {}
+                        try:
+                            ir_path = outdir / "INTEGRITY_REPORT.json"
+                            if ir_path.exists():
+                                checks = (json.loads(ir_path.read_text(encoding="utf-8")) or {}).get("checks", {})
+                        except Exception:
+                            checks = {}
+                        notice = f"Agent profile generated successfully (repo generated at {outdir.name})"
+                        if isinstance(checks, Mapping):
+                            try:
+                                notice += f" (kpi_sync={bool(checks.get('kpi_sync'))})"
+                            except Exception:
+                                pass
+                    else:
+                        # Keep profile success; surface build error minimally without blocking save
+                        LOGGER.warning("Transactional build failed during save: %s", resp)
                         notice = "Agent profile generated successfully"
                 except Exception as exc:
                     notice = f"Failed to generate specs: {exc}"
