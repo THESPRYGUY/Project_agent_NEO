@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 from __future__ import annotations
 
 import json
@@ -136,18 +136,15 @@ def main(argv: list[str] | None = None) -> int:
         pass
 
     print(json.dumps(out, indent=2))
-    if not fail and out.get("zip_hash_match") and out.get("no_tmp_residue"):
-        # Emit a concise success line for CI summaries
+    # Ensure single-line success marker for CI (stderr) when gates pass
+    if not fail:
         try:
             print(f"✅ contract-validate: OK (hash={calc_hash})", file=sys.stderr)
         except Exception:
-            pass
-    # Ensure single-line success marker for CI
-    if not fail and out.get("zip_hash_match") and out.get("no_tmp_residue"):
-        try:
-            print(f"✅ contract-validate: OK (hash={calc_hash})", file=sys.stderr)
-        except Exception:
-            pass
+            try:
+                print("contract-validate: OK", file=sys.stderr)
+            except Exception:
+                pass
     return 0 if not fail else 3
 
 
