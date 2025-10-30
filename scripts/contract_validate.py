@@ -1,28 +1,13 @@
-﻿#!/usr/bin/env python3
+#!/usr/bin/env python3
 from __future__ import annotations
 
 import json
 import sys
 from pathlib import Path
-import hashlib
 import io
-import zipfile
 import hashlib
-import io
 import zipfile
 from typing import Any, Dict
-
-
-def _load_pack_dir(path: Path) -> Dict[str, Any]:
-    packs: Dict[str, Any] = {}
-    for p in path.iterdir():
-        if p.suffix == ".json" and p.name != "contract_report.json":
-            try:
-                packs[p.name] = json.loads(p.read_text(encoding="utf-8"))
-            except Exception:
-                # treat unreadable files as missing content; validator will mark keys missing
-                packs.setdefault(p.name, {})
-    return packs
 
 
 def main(argv: list[str] | None = None) -> int:
@@ -36,7 +21,7 @@ def main(argv: list[str] | None = None) -> int:
         print(json.dumps({"error": f"pack_dir not found: {pack_dir}"}))
         return 2
 
-    # Ensure `src/` is importable similar to other CLI helpers
+    # Ensure repository sources are importable
     root = Path(__file__).resolve().parents[1]
     src = root / "src"
     if str(root) not in sys.path:
@@ -44,11 +29,11 @@ def main(argv: list[str] | None = None) -> int:
     if str(src) not in sys.path:
         sys.path.insert(0, str(src))
 
-    # Lazy imports to avoid import errors masking JSON output
+    # Lazy import to avoid masking JSON output on import errors
     from neo_build.validators import integrity_report  # type: ignore
     from neo_build.contracts import CANONICAL_PACK_FILENAMES  # type: ignore
 
-    # Load only canonical 20 files for report
+    # Load only canonical files for report
     built: Dict[str, Any] = {}
     for name in CANONICAL_PACK_FILENAMES:
         p = pack_dir / name
@@ -89,6 +74,7 @@ def main(argv: list[str] | None = None) -> int:
             fail = True
 
     # Optional SoT checks (best-effort): last-build presence and zip hash parity
+    calc_hash = ""
     try:
         # pack_dir expected as .../_generated/<AGENT_ID>/<TS>
         outdir = pack_dir
@@ -139,7 +125,8 @@ def main(argv: list[str] | None = None) -> int:
     # Ensure single-line success marker for CI (stderr) when gates pass
     if not fail:
         try:
-            print(f"✅ contract-validate: OK (hash={calc_hash})", file=sys.stderr)
+            h = calc_hash or "n/a"
+            print(f"✅ contract-validate: OK (hash={h})", file=sys.stderr)
         except Exception:
             try:
                 print("contract-validate: OK", file=sys.stderr)
@@ -150,3 +137,4 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
+
