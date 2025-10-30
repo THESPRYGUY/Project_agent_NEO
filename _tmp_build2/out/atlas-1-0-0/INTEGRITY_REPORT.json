@@ -1,0 +1,59 @@
+{
+  "checks": {
+    "agent_id_consistent": true,
+    "kpi_sync": true,
+    "observability": true,
+    "owners_present": true
+  },
+  "contract_ok": true,
+  "crossref_errors": [],
+  "crossref_ok": true,
+  "missing_keys": {},
+  "missing_sections": {
+    "11_Workflow-Pack_v2.json": [
+      "rollback"
+    ],
+    "12_Tool+Data-Registry_v2.json": [
+      "connectors",
+      "datasets",
+      "secrets"
+    ],
+    "13_Knowledge-Graph+RAG_Config_v2.json": [
+      "chunking",
+      "data_quality",
+      "rerankers",
+      "update_policy"
+    ],
+    "14_KPI+Evaluation-Framework_v2.json": [
+      "eval_cases",
+      "reports"
+    ],
+    "18_Reporting-Pack_v2.json": [
+      "outputs",
+      "publishing",
+      "schedule"
+    ],
+    "19_Overlay-Pack_SME-Domain_v1.json": [
+      "datasets",
+      "eval_cases"
+    ],
+    "20_Overlay-Pack_Enterprise_v1.json": [
+      "escalations"
+    ]
+  },
+  "packs_complete": false,
+  "parity": {
+    "02_vs_14": true,
+    "03_vs_02": true,
+    "11_vs_02": true,
+    "17_vs_02": true
+  },
+  "parity_deltas": {
+    "03": {},
+    "11": {},
+    "14": {},
+    "17": {}
+  },
+  "parity_ok": true,
+  "status": "ok"
+}

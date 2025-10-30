@@ -207,6 +207,252 @@ def enrich_single(profile: Mapping[str, Any], filename: str, payload: Mapping[st
             dfl.setdefault("tone", tone or "crisp, analytical, executive")
             out["defaults"] = dfl
 
+        elif filename == PACK_ID_TO_FILENAME[10]:  # 10_Prompt-Pack_v2.json
+            # Reusable prompt modules and patterns with guarded outputs
+            refs = dict(out.get("refs") or {})
+            refs.setdefault("guardrails", PACK_ID_TO_FILENAME[5])
+            refs.setdefault("workflows", PACK_ID_TO_FILENAME[11])
+            refs.setdefault("governance", PACK_ID_TO_FILENAME[4])
+            out["refs"] = refs
+
+            # Reasoning patterns
+            if not out.get("reasoning_patterns"):
+                out["reasoning_patterns"] = [
+                    "Plan+Execute+Self-Check+Governance+Deliver",
+                    "Society-of-Thought (debate/consensus)",
+                    "Reflection micro-loops",
+                ]
+
+            # Modules (deterministic IDs to link with 11)
+            modules = list(out.get("modules") or [])
+            if not modules:
+                modules = [
+                    {"id": "mod.plan", "name": "Planner", "inputs": ["task_brief"], "outputs": ["plan_spec"]},
+                    {"id": "mod.build", "name": "Builder", "inputs": ["plan_spec"], "outputs": ["artifact"], "retriever": "default_retriever"},
+                    {"id": "mod.evaluate", "name": "Evaluator", "inputs": ["artifact"], "outputs": ["eval_report"]},
+                ]
+            out["modules"] = modules
+
+            # Guardrails and output contracts
+            guard = dict(out.get("guardrails") or {})
+            guard.setdefault("no_impersonation", True)
+            guard.setdefault("classification_default", ((profile.get("governance_eval") or {}).get("classification_default") or "confidential"))
+            out["guardrails"] = guard
+
+            oc = dict(out.get("output_contracts") or {})
+            oc.setdefault("memo", {"sections": ["Summary", "Context", "Analysis", "Recommendations"]})
+            out["output_contracts"] = oc
+
+        elif filename == PACK_ID_TO_FILENAME[11]:  # 11_Workflow-Pack_v2.json
+            # Conventions and micro-loops
+            out.setdefault("conventions", {"prompt_first": True, "eval_before_release": True})
+            if not out.get("micro_loops"):
+                out["micro_loops"] = ["plan+build+evaluate", "reflect+revise"]
+
+            # Gates from KPI and effective autonomy preserved if present
+            gates = dict(out.get("gates") or {})
+            kt = dict(gates.get("kpi_targets") or {})
+            if not kt:
+                kt = dict(KPI_TARGETS)
+            gates["kpi_targets"] = kt
+            out["gates"] = gates
+
+            # Graphs wired to 10.modules IDs and 12 tools by name
+            graphs = list(out.get("graphs") or [])
+            if not graphs:
+                tool_candidates = []
+                try:
+                    tool_candidates = list(((profile.get("capabilities_tools") or {}).get("tool_suggestions") or []))
+                except Exception:
+                    tool_candidates = []
+                tool_name = (tool_candidates[0] if tool_candidates else "email")
+                graphs = [{
+                    "name": "DefaultFlow",
+                    "nodes": [
+                        {"id": "n1", "module_id": "mod.plan"},
+                        {"id": "n2", "module_id": "mod.build", "tool": tool_name},
+                        {"id": "n3", "module_id": "mod.evaluate"},
+                    ],
+                    "edges": [
+                        {"from": "n1", "to": "n2"},
+                        {"from": "n2", "to": "n3"},
+                    ],
+                }]
+            out["graphs"] = graphs
+
+            # Rollback and engine adapters
+            rb = out.get("rollback")
+            if not isinstance(rb, dict) or not rb:
+                out["rollback"] = {"on_gate_fail": "return_to:Plan"}
+            if not out.get("engine_adapters"):
+                out["engine_adapters"] = ["chat-completion", "function-tooling"]
+
+        elif filename == PACK_ID_TO_FILENAME[12]:  # 12_Tool+Data-Registry_v2.json
+            # Tools from suggestions; include invocation contract
+            tools = list(out.get("tools") or [])
+            if not tools:
+                suggestions = list(((profile.get("capabilities_tools") or {}).get("tool_suggestions") or []))
+                if not suggestions:
+                    suggestions = ["email", "calendar"]
+                for name in suggestions:
+                    tools.append({
+                        "name": str(name),
+                        "capabilities": ["read", "write"],
+                        "contract": {"input": {"type": "string"}, "output": {"type": "string"}},
+                    })
+            out["tools"] = tools
+
+            # Datasets from memory/data_sources
+            datasets = list(out.get("datasets") or [])
+            if not datasets:
+                for ds in list(((profile.get("memory") or {}).get("data_sources") or [])):
+                    datasets.append({"name": str(ds), "owner": "CDO"})
+            out["datasets"] = datasets
+
+            # Ensure at least one connector exists in full mode
+            if not out.get("connectors"):
+                out["connectors"] = [{"name": "placeholder", "enabled": False, "scopes": ["read"], "secret_ref": "SET_ME"}]
+
+            # If datasets empty, add default placeholder
+            if not out.get("datasets"):
+                out["datasets"] = [{"name": "default_index", "owner": "CDO"}]
+
+            # Secrets: names only with source hints (after connectors ensured)
+            secrets = list(out.get("secrets") or [])
+            if not secrets:
+                for c in list(out.get("connectors") or []):
+                    nm = str(c.get("name") or "").strip()
+                    if nm:
+                        secrets.append({"name": nm, "source": "secret_manager"})
+            out["secrets"] = secrets
+
+            # Policies
+            pol = dict(out.get("policies") or {})
+            pol.setdefault("least_privilege", True)
+            pol.setdefault("change_control", "CAIO approval for new scopes")
+            out["policies"] = pol
+
+        elif filename == PACK_ID_TO_FILENAME[13]:  # 13_Knowledge-Graph+RAG_Config_v2.json
+            # Indices: default + any known sources
+            indices = list(out.get("indices") or [])
+            if not indices:
+                indices = [{"name": "default_index"}]
+                for ds in list(((profile.get("memory") or {}).get("data_sources") or [])):
+                    indices.append({"name": str(ds)})
+            out["indices"] = indices
+
+            # Chunking / retrievers / rerankers / embeddings / data_quality / update_policy
+            ch = out.get("chunking")
+            if not isinstance(ch, dict) or not ch:
+                out["chunking"] = {"strategy": "semantic", "max_tokens": 800}
+            if not out.get("retrievers"):
+                out["retrievers"] = [{"name": "default_retriever", "index": "default_index", "top_k": 8}]
+            rr = out.get("rerankers")
+            if not isinstance(rr, list) or not rr:
+                out["rerankers"] = [{"name": "cross-encoder", "top_k": 5}]
+            # embeddings: ensure dict shape, fill if missing/empty or wrong type
+            emb = out.get("embeddings")
+            if not isinstance(emb, dict) or not emb:
+                out["embeddings"] = {"model": "text-embedding-3-large"}
+            dq = out.get("data_quality")
+            if not isinstance(dq, dict) or not dq:
+                out["data_quality"] = {"dedupe": True, "lang_filter": ["en"]}
+            up = out.get("update_policy")
+            if not isinstance(up, dict) or not up:
+                out["update_policy"] = {"schedule": "weekly", "owner": "CPA"}
+
+        elif filename == PACK_ID_TO_FILENAME[14]:  # 14_KPI+Evaluation-Framework_v2.json
+            # Metrics and eval pipelines; keep targets in sync with 02
+            if not out.get("metrics"):
+                out["metrics"] = [
+                    {"code": "PRI", "name": "Precision", "threshold_min": KPI_TARGETS.get("PRI_min")},
+                    {"code": "HAL", "name": "Hallucination Rate", "threshold_max": KPI_TARGETS.get("HAL_max")},
+                    {"code": "AUD", "name": "Auditability", "threshold_min": KPI_TARGETS.get("AUD_min")},
+                ]
+            out.setdefault("datasets", [{"name": "eval_set_v1", "split": ["dev", "staging", "prod"]}])
+            if not out.get("eval_pipelines"):
+                out["eval_pipelines"] = [{"name": "pre-release", "metrics": ["PRI", "HAL", "AUD"], "dataset": "eval_set_v1"}]
+            if not isinstance(out.get("reports"), list) or not out.get("reports"):
+                out["reports"] = ["weekly_kpi_report", "release_gate_report"]
+            if not isinstance(out.get("eval_cases"), list) or not out.get("eval_cases"):
+                out["eval_cases"] = ["default_quality_check"]
+            out.setdefault("definition_of_done", ["All targets met", "No critical regressions"])
+
+        elif filename == PACK_ID_TO_FILENAME[18]:  # 18_Reporting-Pack_v2.json
+            # Outputs / publishing / schedule driven by observability fields
+            if not isinstance(out.get("outputs"), list) or not out.get("outputs"):
+                out["outputs"] = ["pdf", "docx", "html"]
+            default_class = ((profile.get("governance_eval") or {}).get("classification_default") or "confidential")
+            pb = out.get("publishing")
+            if not isinstance(pb, dict) or not pb:
+                out["publishing"] = {"channels": ["internal_sharepoint", "email_internal"], "classification": default_class}
+            sc = out.get("schedule")
+            if not isinstance(sc, dict) or not sc:
+                out["schedule"] = {"weekly": True, "on_demand": True}
+            # Template fields mirror decision_event_fields from 15 (canonical set)
+            if not out.get("templates"):
+                fields = [
+                    "step_id",
+                    "persistence_level",
+                    "band_used",
+                    "risk",
+                    "confidence",
+                    "cost_elapsed",
+                    "time_elapsed",
+                    "escalation_flag",
+                    "escalation_reason",
+                ]
+                out["templates"] = [{"id": "kpi_gate", "name": "KPI Gate Report", "fields": fields}]
+            out.setdefault("definition_of_done", ["Templates render", "Distribution works"])
+
+        elif filename == PACK_ID_TO_FILENAME[19]:  # 19_Overlay-Pack_SME-Domain_v1.json
+            pol = dict(out.get("policies") or {})
+            pol.setdefault("risk_tier", ((profile.get("sector_profile") or {}).get("risk_tier") or "high"))
+            pol.setdefault("advisory_scope", list(((profile.get("role_profile") or {}).get("objectives") or [])))
+            out["policies"] = pol
+            if not out.get("datasets"):
+                ds = list(((profile.get("memory") or {}).get("data_sources") or []))
+                out["datasets"] = ds or ["default_index"]
+            if not out.get("prompts"):
+                out["prompts"] = ["Analyst_CDD_Review", "Policy_Alignment_Check"]
+            if not isinstance(out.get("eval_cases"), list) or not out.get("eval_cases"):
+                out["eval_cases"] = ["default_domain_eval"]
+            out.setdefault("definition_of_done", ["Overlay resolves domain/regional parameters"])
+
+        elif filename == PACK_ID_TO_FILENAME[20]:  # 20_Overlay-Pack_Enterprise_v1.json
+            # Expand enterprise overlay with brand/legal/stakeholders/escalations/policies/refs
+            refs = dict(out.get("refs") or {})
+            try:
+                juris = ((profile.get("sector_profile") or {}).get("region") or ["CA"])[0]
+            except Exception:
+                juris = "CA"
+            refs.setdefault("organization", "Enterprise_Default")
+            refs.setdefault("jurisdiction", juris)
+            out["refs"] = refs
+
+            pol = dict(out.get("policies") or {})
+            pol.setdefault("security", ["least_privilege", "need_to_know"])
+            pol.setdefault("documents", {"retention_days": 365})
+            out["policies"] = pol
+
+            brand = dict(out.get("brand") or {})
+            brand.setdefault("style", ((profile.get("persona") or {}).get("formality") or "high"))
+            brand.setdefault("voice", ((profile.get("persona") or {}).get("tone") or "analytical"))
+            out["brand"] = brand
+
+            legal = dict(out.get("legal") or {})
+            legal.setdefault("disclaimers", ["Advisory support only; no legal advice."])
+            legal.setdefault("ip", "All content © enterprise.")
+            out["legal"] = legal
+
+            if not out.get("stakeholders"):
+                owners = list(((profile.get("identity") or {}).get("owners") or [])) or ["CAIO", "CPA", "TeamLead"]
+                out["stakeholders"] = owners
+            es = out.get("escalations")
+            if not isinstance(es, dict) or not es:
+                out["escalations"] = {"primary": "CAIO", "secondary": "TeamLead"}
+            out.setdefault("definition_of_done", ["Brand/legal present", "Escalations defined"])
+
         elif filename == PACK_ID_TO_FILENAME[3]:  # 03_Operating-Rules_v2.json
             owners = []
             ident = profile.get("identity") if isinstance(profile, Mapping) else None

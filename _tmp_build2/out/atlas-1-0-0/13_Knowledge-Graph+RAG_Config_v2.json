@@ -1,0 +1,52 @@
+{
+  "chunking": [],
+  "data_quality": [],
+  "default_index": "default",
+  "embeddings": {
+    "model": "text-embedding-3-large"
+  },
+  "indexes": [],
+  "indices": [
+    {
+      "name": "default_index"
+    }
+  ],
+  "meta": {
+    "agent_id": "atlas",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "2025-10-29T15:41:43Z",
+    "name": "13_Knowledge-Graph+RAG_Config_v2.json",
+    "version": "1.0.0"
+  },
+  "objective": "Contract-scaffolded payload for 13_Knowledge-Graph+RAG_Config_v2.json",
+  "rerankers": [],
+  "retrievers": [
+    {
+      "index": "default_index",
+      "name": "default_retriever",
+      "top_k": 8
+    }
+  ],
+  "schema_keys": [
+    "chunking",
+    "data_quality",
+    "embeddings",
+    "indices",
+    "meta",
+    "objective",
+    "rerankers",
+    "retrievers",
+    "schema_keys",
+    "token_budget",
+    "update_policy"
+  ],
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "update_policy": {},
+  "version": 2
+}

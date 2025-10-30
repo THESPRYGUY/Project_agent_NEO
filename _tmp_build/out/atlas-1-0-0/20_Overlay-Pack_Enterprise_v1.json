@@ -1,0 +1,63 @@
+{
+  "brand": {
+    "style": "high",
+    "voice": "analytical"
+  },
+  "brand_voice": "crisp, analytical, executive",
+  "definition_of_done": [],
+  "disclaimer": "Advisory support only; no legal advice.",
+  "escalations": [],
+  "legal": {
+    "disclaimers": [
+      "Advisory support only; no legal advice."
+    ],
+    "ip": "All content © enterprise."
+  },
+  "meta": {
+    "agent_id": "atlas",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "2025-10-29T15:40:35Z",
+    "name": "20_Overlay-Pack_Enterprise_v1.json",
+    "version": "1.0.0"
+  },
+  "objective": "Contract-scaffolded payload for 20_Overlay-Pack_Enterprise_v1.json",
+  "policies": {
+    "documents": {
+      "retention_days": 365
+    },
+    "security": [
+      "least_privilege",
+      "need_to_know"
+    ]
+  },
+  "refs": {
+    "jurisdiction": "CA",
+    "organization": "Enterprise_Default"
+  },
+  "schema_keys": [
+    "brand",
+    "definition_of_done",
+    "escalations",
+    "legal",
+    "meta",
+    "objective",
+    "policies",
+    "refs",
+    "schema_keys",
+    "stakeholders",
+    "token_budget"
+  ],
+  "stakeholders": [
+    "CAIO",
+    "CPA",
+    "TeamLead"
+  ],
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "version": 1
+}

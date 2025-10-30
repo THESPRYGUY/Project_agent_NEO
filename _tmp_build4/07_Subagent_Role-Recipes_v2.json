@@ -1,0 +1,28 @@
+{
+  "auto_plan_step": true,
+  "meta": {
+    "agent_id": "atlas",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "2025-10-29T15:48:37Z",
+    "name": "07_Subagent_Role-Recipes_v2.json",
+    "version": "1.0.0"
+  },
+  "objective": "Contract-scaffolded payload for 07_Subagent_Role-Recipes_v2.json",
+  "planner_builder_evaluator": false,
+  "recipes": [],
+  "schema_keys": [
+    "meta",
+    "objective",
+    "recipes",
+    "schema_keys",
+    "token_budget"
+  ],
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "version": 2
+}

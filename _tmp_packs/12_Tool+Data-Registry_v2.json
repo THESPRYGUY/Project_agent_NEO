@@ -1,0 +1,87 @@
+{
+  "connectors": [
+    {
+      "enabled": false,
+      "name": "placeholder",
+      "scopes": [
+        "read"
+      ],
+      "secret_ref": "SET_ME"
+    }
+  ],
+  "datasets": [
+    {
+      "name": "default_index",
+      "owner": "CDO"
+    }
+  ],
+  "meta": {
+    "agent_id": "atlas",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "2025-10-29T15:48:25Z",
+    "name": "12_Tool+Data-Registry_v2.json",
+    "version": "v2"
+  },
+  "objective": "Contract-scaffolded payload for 12_Tool+Data-Registry_v2.json",
+  "policies": {
+    "change_control": "CAIO approval for new scopes",
+    "least_privilege": true
+  },
+  "schema_keys": [
+    "connectors",
+    "datasets",
+    "meta",
+    "objective",
+    "policies",
+    "schema_keys",
+    "secrets",
+    "token_budget",
+    "tools"
+  ],
+  "secrets": [
+    {
+      "name": "placeholder",
+      "source": "secret_manager"
+    }
+  ],
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "tools": [
+    {
+      "capabilities": [
+        "read",
+        "write"
+      ],
+      "contract": {
+        "input": {
+          "type": "string"
+        },
+        "output": {
+          "type": "string"
+        }
+      },
+      "name": "calendar"
+    },
+    {
+      "capabilities": [
+        "read",
+        "write"
+      ],
+      "contract": {
+        "input": {
+          "type": "string"
+        },
+        "output": {
+          "type": "string"
+        }
+      },
+      "name": "email"
+    }
+  ],
+  "version": 2
+}

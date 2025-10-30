@@ -1,0 +1,56 @@
+{
+  "datasets": [],
+  "definition_of_done": [],
+  "eval_cases": [],
+  "industry": "",
+  "meta": {
+    "agent_id": "atlas",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "2025-10-29T15:42:00Z",
+    "name": "19_Overlay-Pack_SME-Domain_v1.json",
+    "version": "1.0.0"
+  },
+  "naics": {
+    "code": "",
+    "level": null,
+    "lineage": [],
+    "title": ""
+  },
+  "objective": "Contract-scaffolded payload for 19_Overlay-Pack_SME-Domain_v1.json",
+  "policies": {
+    "advisory_scope": [],
+    "risk_tier": "high"
+  },
+  "prompts": [
+    "Analyst_CDD_Review",
+    "Policy_Alignment_Check"
+  ],
+  "refs": {
+    "region": [],
+    "regulators": [],
+    "sector": ""
+  },
+  "region": [],
+  "regulators": [],
+  "schema_keys": [
+    "datasets",
+    "definition_of_done",
+    "eval_cases",
+    "meta",
+    "objective",
+    "policies",
+    "prompts",
+    "refs",
+    "schema_keys",
+    "token_budget"
+  ],
+  "sector": "",
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "version": 1
+}

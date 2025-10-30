@@ -1,0 +1,61 @@
+{
+  "approvals": {
+    "policy_owner": "CAIO",
+    "release_manager": "TeamLead"
+  },
+  "classification_default": "confidential",
+  "compliance_mapping": {},
+  "definition_of_done": [],
+  "frameworks": {
+    "regulators": []
+  },
+  "meta": {
+    "agent_id": "atlas",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "2025-10-29T15:48:37Z",
+    "name": "04_Governance+Risk-Register_v2.json",
+    "version": "1.0.0"
+  },
+  "objective": "Contract-scaffolded payload for 04_Governance+Risk-Register_v2.json",
+  "pii_flags": [],
+  "policy": {
+    "classification_default": "confidential",
+    "no_impersonation": true
+  },
+  "regulators": [],
+  "risk_register": [
+    {
+      "id": "RK-001",
+      "mitigation": "TBD",
+      "owner": "CAIO",
+      "tag": "model_quality"
+    },
+    {
+      "id": "RK-002",
+      "mitigation": "TBD",
+      "owner": "CAIO",
+      "tag": "data_privacy"
+    }
+  ],
+  "risk_register_tags": [],
+  "schema_keys": [
+    "approvals",
+    "compliance_mapping",
+    "definition_of_done",
+    "frameworks",
+    "meta",
+    "objective",
+    "policy",
+    "risk_register",
+    "schema_keys",
+    "token_budget"
+  ],
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "version": 2
+}
