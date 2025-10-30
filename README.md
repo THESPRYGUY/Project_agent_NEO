@@ -116,7 +116,11 @@ python -m neo_agent.intake_app
 Open http://127.0.0.1:5000/ to select the agent domain, role, toolsets, attributes,
 and behavioral sliders. The form also accepts a LinkedIn profile URL; available
 metadata is scraped and merged with the manual selections. Submitting the form
-creates `agent_profile.json` alongside a `generated_specs/` directory containing the
+creates `agent_profile.json` and, after Build, writes the single source of truth (SoT)
+pack under `_generated/<AGENT_ID>/<UTC_TS>/`. Spec previews are written alongside the
+SoT under `<outdir>/spec_preview/`. Deprecation: references to `generated_specs/` are
+deprecated for one release. A 307 shim redirects legacy requests to the latest
+`<outdir>/spec_preview/`.
 derived configuration and metadata artifacts used by the generator.
 
 #### Intake Section Order & Gating
