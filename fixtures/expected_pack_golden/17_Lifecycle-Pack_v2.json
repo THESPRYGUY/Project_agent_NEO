@@ -1,4 +1,9 @@
 {
+  "change_mgmt": {
+    "approver": "CAIO",
+    "record": "change_log.md"
+  },
+  "definition_of_done": [],
   "gates": {
     "activation": [
       "AUD>=0.9",
@@ -13,9 +18,37 @@
     },
     "rollback": true
   },
+  "meta": {
+    "agent_id": "golden-agent",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "2025-10-30T03:31:36Z",
+    "name": "17_Lifecycle-Pack_v2.json",
+    "version": "3.0.0"
+  },
+  "objective": "Contract-scaffolded payload for 17_Lifecycle-Pack_v2.json",
+  "rollback": {
+    "on_failure": "revert_to:staging"
+  },
+  "schema_keys": [
+    "change_mgmt",
+    "definition_of_done",
+    "gates",
+    "meta",
+    "objective",
+    "rollback",
+    "schema_keys",
+    "stages",
+    "token_budget"
+  ],
   "stages": [
     "dev"
   ],
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
   "version": 2
 }
-

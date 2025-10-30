@@ -1,9 +1,22 @@
 {
   "archetype": "",
+  "definition_of_done": [],
   "mapping": {
     "agent_id": "golden-agent",
     "primary_role_code": ""
   },
+  "meta": {
+    "agent_id": "golden-agent",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "2025-10-30T03:31:36Z",
+    "name": "06_Role-Recipes_Index_v2.json",
+    "version": "3.0.0"
+  },
+  "objective": "Contract-scaffolded payload for 06_Role-Recipes_Index_v2.json",
   "objectives": [],
   "role_recipe_ref": "",
   "role_title": "",
@@ -14,6 +27,17 @@
       "title": ""
     }
   ],
+  "schema_keys": [
+    "definition_of_done",
+    "mapping",
+    "meta",
+    "objective",
+    "roles_index",
+    "schema_keys",
+    "token_budget"
+  ],
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
   "version": 2
 }
-

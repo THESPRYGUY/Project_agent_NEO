@@ -1,5 +1,87 @@
 {
+  "guardrails": {
+    "classification_default": "confidential",
+    "no_impersonation": true
+  },
+  "meta": {
+    "agent_id": "golden-agent",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "2025-10-30T03:31:36Z",
+    "name": "10_Prompt-Pack_v2.json",
+    "version": "3.0.0"
+  },
+  "modules": [
+    {
+      "id": "mod.build",
+      "inputs": [
+        "plan_spec"
+      ],
+      "name": "Builder",
+      "outputs": [
+        "artifact"
+      ],
+      "retriever": "default_retriever"
+    },
+    {
+      "id": "mod.evaluate",
+      "inputs": [
+        "artifact"
+      ],
+      "name": "Evaluator",
+      "outputs": [
+        "eval_report"
+      ]
+    },
+    {
+      "id": "mod.plan",
+      "inputs": [
+        "task_brief"
+      ],
+      "name": "Planner",
+      "outputs": [
+        "plan_spec"
+      ]
+    }
+  ],
+  "objective": "Contract-scaffolded payload for 10_Prompt-Pack_v2.json",
+  "output_contracts": {
+    "memo": {
+      "sections": [
+        "Analysis",
+        "Context",
+        "Recommendations",
+        "Summary"
+      ]
+    }
+  },
   "prompts": [],
+  "reasoning_patterns": [
+    "Plan+Execute+Self-Check+Governance+Deliver",
+    "Reflection micro-loops",
+    "Society-of-Thought (debate/consensus)"
+  ],
+  "refs": {
+    "governance": "04_Governance+Risk-Register_v2.json",
+    "guardrails": "05_Safety+Privacy_Guardrails_v2.json",
+    "workflows": "11_Workflow-Pack_v2.json"
+  },
+  "schema_keys": [
+    "guardrails",
+    "meta",
+    "modules",
+    "objective",
+    "output_contracts",
+    "reasoning_patterns",
+    "refs",
+    "schema_keys",
+    "token_budget"
+  ],
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
   "version": 2
 }
-

@@ -11,10 +11,33 @@
       "role_title": "IT Ops Lead"
     }
   ],
+  "definition_of_done": [],
+  "meta": {
+    "agent_id": "golden-agent",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "2025-10-30T03:31:36Z",
+    "name": "09_Agent-Manifests_Catalog_v2.json",
+    "version": "3.0.0"
+  },
+  "objective": "Contract-scaffolded payload for 09_Agent-Manifests_Catalog_v2.json",
   "owners": [
     "CAIO",
     "CPA",
     "TeamLead"
+  ],
+  "policy": {},
+  "schema_keys": [
+    "agents",
+    "definition_of_done",
+    "meta",
+    "objective",
+    "policy",
+    "schema_keys",
+    "token_budget"
   ],
   "summary": {
     "languages": [],
@@ -38,6 +61,8 @@
     ],
     "sector": "Technology"
   },
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
   "version": 2
 }
-
