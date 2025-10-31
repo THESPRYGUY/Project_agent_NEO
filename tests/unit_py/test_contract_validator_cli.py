@@ -5,6 +5,38 @@ import os
 import subprocess
 import sys
 from pathlib import Path
+import io
+import zipfile
+
+
+def _canonical_zip_hash(outdir: Path) -> str:
+    excluded_names = {"_last_build.json", ".DS_Store", "contract_report.json"}
+    excluded_dirs = {"__pycache__", ".pytest_cache", ".git", "spec_preview"}
+    rels = []
+    for p in outdir.rglob("*"):
+        if not p.is_file():
+            continue
+        rel = p.relative_to(outdir)
+        parts = rel.parts
+        if any(part.startswith(".") for part in parts):
+            continue
+        if any(part in excluded_dirs for part in parts):
+            continue
+        if rel.name in excluded_names:
+            continue
+        rels.append(rel)
+    rels = sorted(rels, key=lambda r: str(r))
+    buf = io.BytesIO()
+    with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+        for rel in rels:
+            data = (outdir / rel).read_bytes()
+            info = zipfile.ZipInfo(str(rel).replace("\\", "/"))
+            info.date_time = (1980, 1, 1, 0, 0, 0)
+            info.compress_type = zipfile.ZIP_DEFLATED
+            zf.writestr(info, data)
+    import hashlib
+
+    return hashlib.sha256(buf.getvalue()).hexdigest()
 
 
 def _build_repo(tmp_path: Path) -> Path:
@@ -22,10 +54,23 @@ def _build_repo(tmp_path: Path) -> Path:
         "governance_eval": {"gates": {"PRI_min": 0.95, "hallucination_max": 0.02, "audit_min": 0.9}, "classification_default": "confidential"},
         "preferences": {"sliders": {"autonomy": 70}},
     }
-    outdir = tmp_path / "repo"
-    outdir.mkdir(parents=True, exist_ok=True)
-    write_repo_files(profile, outdir)
-    return outdir
+    out_root = tmp_path / "_generated"
+    agent_dir = out_root / "validator-agent"
+    ts_dir = agent_dir / "20250101T000000Z"
+    ts_dir.mkdir(parents=True, exist_ok=True)
+    write_repo_files(profile, ts_dir)
+    # Write last_build.json in minimal v2.1.1 shape with zip hash
+    z = _canonical_zip_hash(ts_dir)
+    last = {
+        "schema_version": "2.1.1",
+        "agent_id": "validator-agent",
+        "outdir": str(ts_dir),
+        "files": len([p for p in ts_dir.glob("*.json")]) + len([p for p in ts_dir.glob("*.md")]),
+        "ts": ts_dir.name,
+        "zip_hash": z,
+    }
+    (out_root / "_last_build.json").write_text(json.dumps(last, indent=2), encoding="utf-8")
+    return ts_dir
 
 
 def test_contract_validate_cli_good(tmp_path: Path) -> None:
@@ -53,4 +98,3 @@ def test_contract_validate_cli_bad(tmp_path: Path) -> None:
     data = json.loads(cp.stdout)
     assert data.get("contract_ok") is False
     assert "02_Global-Instructions_v2.json" in data.get("missing_keys", {})
-
