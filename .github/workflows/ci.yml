@@ -371,6 +371,26 @@ jobs:
           name: docs-check
           path: docs-check.txt
 
+  lint-type:
+    name: lint/type
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Install linters
+        run: |
+          python -m pip install -U pip
+          pip install ruff mypy
+      - name: Ruff (syntax/undefined checks only)
+        run: |
+          ruff --version
+          ruff check . --select E9,F63,F7,F82
+      - name: Mypy (scripts only)
+        run: |
+          mypy --version
+          mypy --ignore-missing-imports scripts/contract_validate.py scripts/release.py
+
   contract-validate:
     name: contract-validate
     runs-on: ubuntu-latest
