@@ -5,6 +5,8 @@ on:
     branches: [ main, chore/**, feature/** ]
   pull_request:
     branches: [ main ]
+  schedule:
+    - cron: '0 3 * * *'
 
 permissions:
   contents: read
@@ -159,7 +161,39 @@ jobs:
       - run: python -m pip install -U pip && pip install -e .[dev]
       - run: npm ci
       - name: Smoke (blocking)
-        run: python ci/smoke.py
+        run: |
+          set -o pipefail
+          python ci/smoke.py 2>&1 | tee smoke_run.log
+      - name: Collect telemetry events to JSONL
+        if: always()
+        run: |
+          python - << 'PY'
+          import json, re, ast, sys
+          p = 'smoke_run.log'
+          out = 'telemetry.jsonl'
+          patt = re.compile(r"event=([^\s]+)\s+payload=(\{.*\})")
+          n=0
+          with open(p, 'r', encoding='utf-8', errors='ignore') as f, open(out, 'w', encoding='utf-8') as w:
+              for line in f:
+                  m = patt.search(line)
+                  if not m:
+                      continue
+                  name, payload = m.group(1), m.group(2)
+                  try:
+                      obj = ast.literal_eval(payload)
+                  except Exception:
+                      obj = { 'raw': payload }
+                  rec = { 'event': name, **{k: v for k, v in obj.items()} }
+                  w.write(json.dumps(rec) + "\n")
+                  n+=1
+          print(f"wrote {n} telemetry lines to {out}")
+          PY
+      - name: Upload telemetry artifact (JSONL)
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: telemetry.jsonl
+          path: telemetry.jsonl
       - name: Echo smoke summary
         if: always()
         run: |
@@ -272,6 +306,28 @@ jobs:
             ${{ steps.build.outputs.outdir }}/INTEGRITY_REPORT.json
             ${{ steps.build.outputs.outdir }}/contract_report.json
             ${{ runner.temp }}/_generated/repo.zip
+
+  shim-redirect-guard:
+    name: shim-redirect-guard
+    runs-on: ubuntu-latest
+    needs: [smoke]
+    steps:
+      - name: Download telemetry artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: telemetry.jsonl
+          path: .
+      - name: Check generated_specs shim usage
+        run: |
+          file=telemetry.jsonl
+          if [ ! -f "$file" ]; then echo "no telemetry.jsonl; assuming 0 hits"; exit 0; fi
+          hits=$(grep -c '"event":"redirect.generated_specs.hit"' "$file" || true)
+          echo "redirect.generated_specs.hit count: $hits"
+          if [ "$hits" -gt 0 ]; then
+            echo "Shim still in use; failing CI" >&2
+            exit 1
+          fi
+          echo "No shim hits detected; passing"
 
   shim-guard:
     name: Shim Redirect Guard
