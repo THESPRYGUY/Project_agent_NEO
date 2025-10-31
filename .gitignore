@@ -31,3 +31,14 @@ snapshots/
 .pytest-tmp/
 _artifacts/
 .pytest_cache/
+# build outputs & telemetry
+_generated/
+reports/
+telemetry*.jsonl
+before_after_diff.zip
+*.zip
+# previews & local scratch
+**/spec_preview/
+*.bak
+rebase_safety.diff
+agent_profile.json
