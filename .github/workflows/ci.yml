@@ -168,25 +168,50 @@ jobs:
         if: always()
         run: |
           python - << 'PY'
-          import json, re, ast, sys
+          import json, re, ast
           p = 'smoke_run.log'
           out = 'telemetry.jsonl'
           patt = re.compile(r"event=([^\s]+)\s+payload=(\{.*\})")
-          n=0
-          with open(p, 'r', encoding='utf-8', errors='ignore') as f, open(out, 'w', encoding='utf-8') as w:
-              for line in f:
-                  m = patt.search(line)
-                  if not m:
-                      continue
-                  name, payload = m.group(1), m.group(2)
-                  try:
-                      obj = ast.literal_eval(payload)
-                  except Exception:
-                      obj = { 'raw': payload }
-                  rec = { 'event': name, **{k: v for k, v in obj.items()} }
+          recs=[]
+          try:
+              lines = open(p, 'r', encoding='utf-8', errors='ignore').read().splitlines()
+          except Exception:
+              lines = []
+          for line in lines:
+              m = patt.search(line)
+              if not m:
+                  continue
+              name, payload = m.group(1), m.group(2)
+              try:
+                  obj = ast.literal_eval(payload)
+              except Exception:
+                  obj = { 'raw': payload }
+              recs.append({ 'event': name, **{k: v for k, v in obj.items()} })
+          with open(out, 'w', encoding='utf-8') as w:
+              for rec in recs:
                   w.write(json.dumps(rec) + "\n")
-                  n+=1
-          print(f"wrote {n} telemetry lines to {out}")
+          # Append per-run aggregates (p50/p95)
+          import statistics as stats
+          def p50(v):
+              return float(stats.median(v)) if v else None
+          def p95(v):
+              if not v:
+                  return None
+              v2 = sorted(v)
+              idx = max(0, int(round(0.95*(len(v2)-1))))
+              return float(v2[idx])
+          durs=[float(r.get('duration_ms')) for r in recs if r.get('event')=='build:success' and isinstance(r.get('duration_ms'), (int,float))]
+          zips=[float(r.get('zip_bytes')) for r in recs if r.get('event')=='build:success' and isinstance(r.get('zip_bytes'), (int,float))]
+          agg={
+            'event':'run_aggregates',
+            'build_duration_ms_p50': p50(durs),
+            'build_duration_ms_p95': p95(durs),
+            'zip_bytes_p50': p50(zips),
+            'zip_bytes_p95': p95(zips),
+          }
+          with open(out, 'a', encoding='utf-8') as w:
+              w.write(json.dumps(agg) + "\n")
+          print(f"wrote {len(recs)} telemetry lines + aggregates to {out}")
           PY
       - name: Upload telemetry artifact (JSONL)
         if: always()
@@ -194,6 +219,34 @@ jobs:
         with:
           name: telemetry.jsonl
           path: telemetry.jsonl
+      - name: SLOs (warn-only)
+        if: always()
+        run: |
+          python - << 'PY'
+          import json, os
+          thr_dur_ms = float(os.environ.get('SLO_BUILD_P95_MS') or 1500)
+          thr_zip_b  = float(os.environ.get('SLO_ZIP_P95_BYTES') or 52428800)
+          agg=None
+          for line in open('telemetry.jsonl','r',encoding='utf-8',errors='ignore'):
+              try:
+                  obj=json.loads(line)
+              except Exception:
+                  continue
+              if obj.get('event')=='run_aggregates':
+                  agg=obj
+          if not agg:
+              print('::warning::No aggregates found in telemetry.jsonl')
+          else:
+              p50=agg.get('build_duration_ms_p50')
+              p95=agg.get('build_duration_ms_p95')
+              zp50=agg.get('zip_bytes_p50')
+              zp95=agg.get('zip_bytes_p95')
+              print(f"SLOs build.duration_ms p50={p50} p95={p95} (thr_p95<{thr_dur_ms}); zip_bytes p50={zp50} p95={zp95} (thr_p95<{thr_zip_b})")
+              if p95 is not None and p95 > thr_dur_ms:
+                  print(f"::warning::SLO breach: build.duration_ms p95={p95} > {thr_dur_ms}")
+              if zp95 is not None and zp95 > thr_zip_b:
+                  print(f"::warning::SLO breach: zip_bytes p95={zp95} > {thr_zip_b}")
+          PY
       - name: Echo smoke summary
         if: always()
         run: |
@@ -308,7 +361,7 @@ jobs:
             ${{ runner.temp }}/_generated/repo.zip
 
   shim-redirect-guard:
-    name: shim-redirect-guard
+    name: Shim Redirect Guard
     runs-on: ubuntu-latest
     needs: [smoke]
     steps:
@@ -320,7 +373,10 @@ jobs:
       - name: Check generated_specs shim usage
         run: |
           file=telemetry.jsonl
-          if [ ! -f "$file" ]; then echo "no telemetry.jsonl; assuming 0 hits"; exit 0; fi
+          if [ ! -f "$file" ]; then
+            echo "telemetry.jsonl missing; treating as potential bypass. Failing guard." >&2
+            exit 1
+          fi
           hits=$(grep -c '"event":"redirect.generated_specs.hit"' "$file" || true)
           echo "redirect.generated_specs.hit count: $hits"
           if [ "$hits" -gt 0 ]; then
@@ -329,22 +385,4 @@ jobs:
           fi
           echo "No shim hits detected; passing"
 
-  shim-guard:
-    name: Shim Redirect Guard
-    runs-on: ubuntu-latest
-    steps:
-      - name: Fail if generated_specs shim hits > 0 (stub)
-        run: |
-          hits=
-          if [ -n "" ]; then
-            hits=""
-          else
-            # TODO: wire metrics source; default to 0 for now
-            hits=0
-          fi
-          echo "generated_specs redirect hits (last 24h): "
-          if [ "" -gt 0 ]; then
-            echo "Shim still in use; failing CI" >&2
-            exit 1
-          fi
-          echo "No shim hits detected; passing"
+  

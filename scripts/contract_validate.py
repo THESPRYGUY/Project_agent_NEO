@@ -80,12 +80,21 @@ def main(argv: list[str] | None = None) -> int:
         outdir = pack_dir
         out_root = outdir.parents[1]
         last_path = out_root / "_last_build.json"
+        required_keys = {"schema_version", "agent_id", "outdir", "files", "ts", "zip_hash"}
         if last_path.exists():
             last = json.loads(last_path.read_text(encoding="utf-8"))
+            # Validate minimal schema and version >= 2.1.1
+            try:
+                parts = str((last or {}).get("schema_version") or "0.0.0").split(".")
+                ver_tuple = (int(parts[0]), int(parts[1]), int(parts[2]))
+            except Exception:
+                ver_tuple = (0, 0, 0)
+            has_keys = required_keys.issubset(set(last.keys()) if isinstance(last, dict) else set())
+            out["last_build_schema_ok"] = bool(has_keys and (ver_tuple >= (2, 1, 1)))
             stored_hash = str(last.get("zip_hash") or "")
             # Build canonical zip bytes (fixed date_time)
-            excluded_names = {"_last_build.json", ".DS_Store"}
-            excluded_dirs = {"__pycache__", ".pytest_cache", ".git"}
+            excluded_names = {"_last_build.json", ".DS_Store", "contract_report.json"}
+            excluded_dirs = {"__pycache__", ".pytest_cache", ".git", "spec_preview"}
             rels = []
             for p in outdir.rglob("*"):
                 if not p.is_file():
@@ -117,8 +126,18 @@ def main(argv: list[str] | None = None) -> int:
         else:
             out["zip_hash_match"] = False
             out["no_tmp_residue"] = True
+            out["last_build_schema_ok"] = False
     except Exception:
         # Ignore SoT extras if unavailable
+        pass
+
+    # Hardened gates: require last-build minimal schema and zip parity
+    try:
+        if not out.get("last_build_schema_ok", True):
+            fail = True
+        if not out.get("zip_hash_match", True):
+            fail = True
+    except Exception:
         pass
 
     print(json.dumps(out, indent=2))
@@ -137,4 +156,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-
