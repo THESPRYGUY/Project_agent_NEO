@@ -97,6 +97,20 @@ jobs:
         run: |
           coverage run -m pytest
           coverage report
+      - name: Emit telemetry (unit)
+        if: always()
+        run: |
+          python - << 'PY'
+          import json
+          agg={'event':'run_aggregates','build_duration_ms_p50':None,'build_duration_ms_p95':None,'zip_bytes_p50':None,'zip_bytes_p95':None,'redirect_generated_specs_hit_total':0,'build_locked_count_total':0}
+          open('telemetry-unit.jsonl','w',encoding='utf-8').write(json.dumps(agg)+'\n')
+          PY
+      - name: Upload unit telemetry
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: telemetry-unit.jsonl
+          path: telemetry-unit.jsonl
 
   unit-js:
     runs-on: ubuntu-latest
@@ -202,12 +216,16 @@ jobs:
               return float(v2[idx])
           durs=[float(r.get('duration_ms')) for r in recs if r.get('event')=='build:success' and isinstance(r.get('duration_ms'), (int,float))]
           zips=[float(r.get('zip_bytes')) for r in recs if r.get('event')=='build:success' and isinstance(r.get('zip_bytes'), (int,float))]
+          redirect_hits = sum(1 for r in recs if r.get('event')=='redirect.generated_specs.hit')
+          build_locked = sum(1 for r in recs if r.get('event')=='build.locked.count')
           agg={
             'event':'run_aggregates',
             'build_duration_ms_p50': p50(durs),
             'build_duration_ms_p95': p95(durs),
             'zip_bytes_p50': p50(zips),
             'zip_bytes_p95': p95(zips),
+            'redirect_generated_specs_hit_total': int(redirect_hits),
+            'build_locked_count_total': int(build_locked),
           }
           with open(out, 'a', encoding='utf-8') as w:
               w.write(json.dumps(agg) + "\n")
@@ -219,6 +237,43 @@ jobs:
         with:
           name: telemetry.jsonl
           path: telemetry.jsonl
+      - name: SLOs (enforceable)
+        if: always()
+        env:
+          ENFORCE_SLOS: ${{ github.ref == 'refs/heads/main' }}
+        run: |
+          python - << 'PY'
+          import json, os, sys
+          thr_dur_ms = float(os.environ.get('SLO_BUILD_P95_MS') or 1500)
+          thr_zip_b  = float(os.environ.get('SLO_ZIP_P95_BYTES') or 52428800)
+          enforce = str(os.environ.get('ENFORCE_SLOS') or '').lower() in ('1','true','yes')
+          agg=None
+          for line in open('telemetry.jsonl','r',encoding='utf-8',errors='ignore'):
+              try:
+                  obj=json.loads(line)
+              except Exception:
+                  continue
+              if obj.get('event')=='run_aggregates':
+                  agg=obj
+          if not agg:
+              print('::warning::No aggregates found in telemetry.jsonl')
+              sys.exit(0)
+          p50=agg.get('build_duration_ms_p50')
+          p95=agg.get('build_duration_ms_p95')
+          zp50=agg.get('zip_bytes_p50')
+          zp95=agg.get('zip_bytes_p95')
+          print(f"SLOs build.duration_ms p50={p50} p95={p95} (thr_p95<{thr_dur_ms}); zip_bytes p50={zp50} p95={zp95} (thr_p95<{thr_zip_b})")
+          breach=False
+          if p95 is not None and p95 > thr_dur_ms:
+              print(f"::warning::SLO breach: build.duration_ms p95={p95} > {thr_dur_ms}")
+              breach=True
+          if zp95 is not None and zp95 > thr_zip_b:
+              print(f"::warning::SLO breach: zip_bytes p95={zp95} > {thr_zip_b}")
+              breach=True
+          if enforce and breach:
+              print('SLO enforcement active: failing job', file=sys.stderr)
+              sys.exit(1)
+          PY
       - name: SLOs (warn-only)
         if: always()
         run: |
@@ -350,6 +405,25 @@ jobs:
       - name: Zip repo
         run: |
           cd "${{ steps.build.outputs.outdir }}" && zip -r ../repo.zip . && cd -
+      - name: Emit telemetry (contract)
+        if: always()
+        run: |
+          python - << 'PY'
+          import json, os
+          zp = os.path.join(os.environ.get('RUNNER_TEMP',''), '_generated', 'repo.zip')
+          try:
+            size = os.path.getsize(zp)
+          except Exception:
+            size = None
+          agg={'event':'run_aggregates','build_duration_ms_p50':None,'build_duration_ms_p95':None,'zip_bytes_p50':size,'zip_bytes_p95':size,'redirect_generated_specs_hit_total':0,'build_locked_count_total':0}
+          open('telemetry-contract.jsonl','w',encoding='utf-8').write(json.dumps(agg)+'\n')
+          PY
+      - name: Upload contract telemetry
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: telemetry-contract.jsonl
+          path: telemetry-contract.jsonl
       - name: Upload contract artifacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -386,3 +460,4 @@ jobs:
           echo "No shim hits detected; passing"
 
   
+
