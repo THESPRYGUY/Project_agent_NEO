@@ -1,11 +1,17 @@
 ﻿name: CI (Unit + Integ/Smoke)
 
 on:
-  workflow_dispatch:
   push:
-    branches: [ main, chore/**, feature/** ]
+    branches:
+      - main
+      - feature/**
+      - feat/**
+      - chore/**
+      - hotfix/**
   pull_request:
     branches: [ main ]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch: {}
   schedule:
     - cron: '0 3 * * *'
 
@@ -481,4 +487,3 @@ jobs:
           echo "No shim hits detected; passing"
 
   
-
