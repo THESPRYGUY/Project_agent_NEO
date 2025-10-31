@@ -345,4 +345,8 @@ Diagnostics example (unknowns are dropped):
 }
 ```
 
+## Operational Checklists
+
+- Release checklist: see RELEASE_CHECKLIST.md
+- Hotfix template: see HOTFIX_TEMPLATE.md
 
