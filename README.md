@@ -349,4 +349,7 @@ Diagnostics example (unknowns are dropped):
 
 - Release checklist: see RELEASE_CHECKLIST.md
 - Hotfix template: see HOTFIX_TEMPLATE.md
+\n### CI Status (main)
+\n+[![CI (Unit + Integ/Smoke)](https://github.com/THESPRYGUY/Project_agent_NEO/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/THESPRYGUY/Project_agent_NEO/actions/workflows/ci.yml)
+\n+CI filter note (v2.1.2): Added `feat/**` and `hotfix/**` to workflow push filters; `pull_request` remains on `main` (types: opened, synchronize, reopened). Job names unchanged for Branch Protection.
 

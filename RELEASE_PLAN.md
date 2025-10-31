@@ -12,3 +12,7 @@ Owners & Targets
 - #58 NFS lock semantics — Owner: @THESPRYGUY — Target: 2025-11-21
 - #59 Windows long-paths — Owner: @THESPRYGUY — Target: 2025-11-30
 - #60 Dashboard v1 — Owner: @THESPRYGUY — Target: 2025-11-30
+
+Changelog (CI notes)
+- Added eat/** and hotfix/** to workflow push filters; pull_request unchanged (main only; types: opened, synchronize, reopened). Job names preserved for Branch Protection.
+
