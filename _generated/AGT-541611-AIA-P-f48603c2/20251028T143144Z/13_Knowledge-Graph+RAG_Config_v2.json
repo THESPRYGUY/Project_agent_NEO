@@ -1,7 +1,0 @@
-{
-  "default_index": "default",
-  "indexes": [
-    "index:docs_v1"
-  ],
-  "version": 2
-}

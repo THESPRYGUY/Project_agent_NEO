@@ -1,0 +1,78 @@
+name: generated-repos-autofix
+
+on:
+  workflow_dispatch:
+
+jobs:
+  autofix:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          python -m pip install -U pip
+          python -m pip install -e .
+
+      - name: Resolve root
+        id: root
+        shell: pwsh
+        run: |
+          $default = "C:\\Users\\spryg\\OneDrive\\Documents\\GitHub\\Project_agent_NEO\\generated_repos"
+          if (Test-Path $default) { echo "root=$default" >> $env:GITHUB_OUTPUT }
+          else {
+            $fallback = Join-Path (Get-Location) 'generated_repos'
+            echo "root=$fallback" >> $env:GITHUB_OUTPUT
+            if (!(Test-Path $fallback)) { New-Item -ItemType Directory -Force -Path $fallback | Out-Null }
+          }
+
+      - name: Autofix (write)
+        shell: pwsh
+        run: |
+          $root = '${{ steps.root.outputs.root }}'
+          python scripts/generated_autofix.py --root "$root" --write | Tee-Object -FilePath autofix.log
+
+      - name: Audit after autofix (fail on critical)
+        shell: pwsh
+        run: |
+          $root = '${{ steps.root.outputs.root }}'
+          python scripts/repo_audit.py --root "$root" --format md,json,csv --fail-on critical
+
+      - name: Print summary footer
+        if: always()
+        shell: pwsh
+        run: |
+          $root = '${{ steps.root.outputs.root }}'
+          $jsonPath = Join-Path $root 'reports' 'blanks_audit.json'
+          if (Test-Path $jsonPath) {
+            $items = Get-Content $jsonPath -Raw | ConvertFrom-Json
+            $p0 = ($items | Where-Object { $_.severity -eq 'CRITICAL' }).Count
+            $p2 = ($items | Where-Object { $_.key_path -like '*suggested_traits*' }).Count
+            $p1 = ($items | Where-Object { $_.severity -in @('HIGH','MEDIUM') }).Count - $p2
+            Write-Host ("AUTOFIX SUMMARY: P0={0} P1={1} P2={2}" -f $p0,$p1,$p2)
+          } else {
+            Write-Host 'AUTOFIX SUMMARY: P0=0 P1=0 P2=0'
+          }
+
+      - name: Package before/after diff
+        if: always()
+        shell: pwsh
+        run: |
+          Compress-Archive -Path "${{ steps.root.outputs.root }}\reports\*","${{ steps.root.outputs.root }}\docs\*" -DestinationPath before_after_diff.zip -Force
+
+      - name: Upload artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-repos-autofix
+          path: |
+            before_after_diff.zip
+            autofix.log
+            ${{ steps.root.outputs.root }}\reports\**
+            ${{ steps.root.outputs.root }}\docs\**

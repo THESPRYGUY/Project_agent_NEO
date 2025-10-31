@@ -1,0 +1,55 @@
+name: generated-repos-audit
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - 'scripts/**'
+      - '.github/workflows/generated-repos-audit.yml'
+
+jobs:
+  audit:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install deps
+        run: |
+          python -m pip install -U pip
+          python -m pip install -e .
+
+      - name: Resolve root
+        id: root
+        shell: pwsh
+        run: |
+          $default = "C:\\Users\\spryg\\OneDrive\\Documents\\GitHub\\Project_agent_NEO\\generated_repos"
+          if (Test-Path $default) { echo "root=$default" >> $env:GITHUB_OUTPUT }
+          else {
+            $fallback = Join-Path (Get-Location) 'generated_repos'
+            echo "root=$fallback" >> $env:GITHUB_OUTPUT
+            if (!(Test-Path $fallback)) { New-Item -ItemType Directory -Force -Path $fallback | Out-Null }
+          }
+
+      - name: Run auditor (non-blocking)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $root = '${{ steps.root.outputs.root }}'
+          python scripts/repo_audit.py --root "$root" --format md,json,csv
+
+      - name: Upload audit artifacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: generated-repos-audit
+          path: |
+            ${{ steps.root.outputs.root }}\reports\**
+            ${{ steps.root.outputs.root }}\docs\BLANKS_AUDIT.md
+            ${{ steps.root.outputs.root }}\docs\BLANKS_REMEDIATION_PLAN.md
+
