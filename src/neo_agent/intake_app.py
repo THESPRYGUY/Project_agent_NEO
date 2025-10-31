@@ -803,6 +803,11 @@ class IntakeApplication:
             lock.acquire()
         except Exception:
             # Contention or failure acquiring lock
+            try:
+                if emit_event:
+                    emit_event("build.locked.count", {"agent_id": agent_id, "req_id": req_id})
+            except Exception:
+                pass
             return 423, {"status": "error", "code": "BUILD_LOCKED", "req_id": req_id}
 
         tmp_dir = out_root / agent_id / ".tmp" / uuid4().hex
@@ -875,6 +880,9 @@ class IntakeApplication:
                             "req_id": req_id,
                         },
                     )
+                    # Explicit counter-style events for dashboards
+                    emit_event("build.success.time_ms", {"value": dur_ms, "agent_id": agent_id})
+                    emit_event("build.zip_bytes", {"value": int(zip_bytes), "agent_id": agent_id})
                 except Exception:
                     pass
 

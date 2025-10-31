@@ -1,0 +1,4 @@
+{"event":"redirect.generated_specs.hit","agent_id":"AGT-541512-AIA-P-aaaaaaaa","req_id":"req-123","ts":"2025-10-30T21:40:00Z"}
+{"event":"build.locked.count","agent_id":"AGT-541512-AIA-P-aaaaaaaa","req_id":"req-456","ts":"2025-10-30T21:40:02Z"}
+{"event":"build.success.time_ms","value":842,"agent_id":"AGT-541512-AIA-P-aaaaaaaa","ts":"2025-10-30T21:40:05Z"}
+{"event":"build.zip_bytes","value":16342,"agent_id":"AGT-541512-AIA-P-aaaaaaaa","ts":"2025-10-30T21:40:05Z"}

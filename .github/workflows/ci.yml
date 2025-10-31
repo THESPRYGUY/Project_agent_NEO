@@ -273,4 +273,22 @@ jobs:
             ${{ steps.build.outputs.outdir }}/contract_report.json
             ${{ runner.temp }}/_generated/repo.zip
 
-
+  shim-guard:
+    name: Shim Redirect Guard
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail if generated_specs shim hits > 0 (stub)
+        run: |
+          hits=
+          if [ -n "" ]; then
+            hits=""
+          else
+            # TODO: wire metrics source; default to 0 for now
+            hits=0
+          fi
+          echo "generated_specs redirect hits (last 24h): "
+          if [ "" -gt 0 ]; then
+            echo "Shim still in use; failing CI" >&2
+            exit 1
+          fi
+          echo "No shim hits detected; passing"

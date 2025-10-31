@@ -1,5 +1,7 @@
 ﻿# Project Agent NEO â€” Quickstart & Onboarding
 
+Status: Release 2.1.2-dev (post v2.1.1)
+
 Project Agent NEO is a governed, test-driven scaffold for generating and validating a 20-pack agent repository from a v3 intake. It emphasizes strict KPI parity, observability, and safe reasoning footprints while remaining model/vendor agnostic.
 
 ## 1) What is Project Agent NEO
