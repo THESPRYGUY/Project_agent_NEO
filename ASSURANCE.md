@@ -84,21 +84,16 @@ Result: 02 finalized.
 - 06.primary_role_code present: TURKEY_RND_LEAD; 07.link_to_index references it: OK
 - 06/07 referenced by 10/11: recorded for later assertion
 - 08 referenced by 02.memory_schema and future 10/11: OK (02.references.memory_schema set)
-<<<<<<< HEAD
-- repo_audit(_generated): 0 CRITICAL/HIGH � PASS
+- repo_audit(_generated): 0 CRITICAL/HIGH � PASS
 
 ### Pack 19 — 19_Overlay-Pack_SME-Domain_v1.json (@ 2025-11-01T19:26:57Z)
-=======
 - repo_audit(_generated): 0 CRITICAL/HIGH — PASS
 
 ### Pack 16 — 16_Reasoning-Footprints_Schema_v1.json (@ 2025-11-01T19:24:25Z)
->>>>>>> origin/main
 - Deterministic overlay from SSOT
 - No artifacts staged
 - Review: schema & cross-refs match canon
 
-<<<<<<< HEAD
-=======
 ### Pack 17 — 17_Lifecycle-Pack_v2.json (@ 2025-11-01T19:25:26Z)
 - Deterministic overlay from SSOT
 - No artifacts staged
@@ -109,4 +104,4 @@ Result: 02 finalized.
 - Review: schema & cross-refs match canon
 
 
->>>>>>> origin/main
+
