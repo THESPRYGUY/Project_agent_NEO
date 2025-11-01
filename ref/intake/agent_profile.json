@@ -1,0 +1,88 @@
+{
+  "agent": {
+    "agent_id": "AGT-112330-TURKEY-RND-0001",
+    "display_name": "Turkey R&D Agent",
+    "slug": "turkey-rnd"
+  },
+  "determinism": {
+    "deep_sort_keys": true,
+    "fixed_timestamp": "1970-01-01T00:00:00Z",
+    "stable_seed": 1337
+  },
+  "governance_eval": {
+    "classification_default": "confidential",
+    "gates": {
+      "PRI_min": 0.95,
+      "audit_min": 0.9,
+      "hallucination_max": 0.02
+    },
+    "no_impersonation": true,
+    "risk_register_tags": []
+  },
+  "identity": {
+    "owners": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ]
+  },
+  "memory": {
+    "initial_memory_packs": [
+      {
+        "id": "poultry_microbio_glossary_v1",
+        "scope": "semantic"
+      },
+      {
+        "id": "cfia_usda_food_safety_refs_v1",
+        "scope": "semantic"
+      },
+      {
+        "id": "turkey_process_SOPs_v1",
+        "scope": "procedural"
+      }
+    ]
+  },
+  "naics": {
+    "code": "112330"
+  },
+  "observability": {
+    "channels": [
+      {
+        "events": [
+          "workflow.start",
+          "workflow.end",
+          "guardrail.refusal",
+          "error"
+        ],
+        "id": "agentops://turkey-rnd-001",
+        "pii_scrub": true
+      }
+    ],
+    "retention_days": 180
+  },
+  "packaging": {
+    "output_paths": {
+      "governance": "04_Governance+Risk-Register_v2.json",
+      "kpi": "14_KPI+Evaluation-Framework_v2.json",
+      "observability": "15_Observability+Telemetry_Spec_v2.json",
+      "prompts": "10_Prompt-Pack_v2.json",
+      "workflows": "11_Workflow-Pack_v2.json"
+    }
+  },
+  "persona": {
+    "agent": {
+      "code": "ENTJ"
+    },
+    "locked": true
+  },
+  "provenance": {
+    "attribution_policy": "inspired-by",
+    "no_impersonation": true
+  },
+  "role": {
+    "archetype": "AIA-P",
+    "description": "Turkey production R&D: food safety, processing, welfare & performance.",
+    "title": "AGENT"
+  },
+  "scope": "Turkey production R&D: food safety, processing, welfare & performance."
+}
