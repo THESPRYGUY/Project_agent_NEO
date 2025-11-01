@@ -1,12 +1,9 @@
 name: docker-build-smoke
-
 on: [pull_request]
-
 jobs:
   docker-build-smoke:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
       - run: |
-          if [ -f Dockerfile ]; then docker build -t neo-ci-smoke .; echo "Built image"; else echo "No Dockerfile; passing stub"; fi
-
+          if [ -f Dockerfile ]; then docker build -t neo-ci-smoke .; echo "Built image (stub)"; else echo "No Dockerfile; stub pass"; fi

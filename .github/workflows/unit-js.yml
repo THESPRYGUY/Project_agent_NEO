@@ -1,7 +1,5 @@
 name: unit-js
-
 on: [pull_request]
-
 jobs:
   unit-js:
     runs-on: ubuntu-latest
@@ -11,5 +9,4 @@ jobs:
         with:
           node-version: '20'
       - run: |
-          if [ -f package.json ]; then npm ci; npx vitest run || echo "No JS tests; passing stub"; else echo "No JS project; passing stub"; fi
-
+          if [ -f package.json ]; then npm ci; npx vitest run || echo "No JS tests or failures ignored (stub)"; else echo "No JS project; stub pass"; fi
