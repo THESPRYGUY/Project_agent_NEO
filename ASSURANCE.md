@@ -87,6 +87,9 @@ Result: 02 finalized.
 - repo_audit(_generated): 0 CRITICAL/HIGH � PASS
 
 ### Pack 01 — 01_README+Directory-Map_v2.json (@ 2025-11-01T19:28:26Z)
+- repo_audit(_generated): 0 CRITICAL/HIGH � PASS
+
+### Pack 18 — 18_Reporting-Pack_v2.json (@ 2025-11-01T19:26:14Z)
 - repo_audit(_generated): 0 CRITICAL/HIGH — PASS
 
 ### Pack 16 — 16_Reasoning-Footprints_Schema_v1.json (@ 2025-11-01T19:24:25Z)
