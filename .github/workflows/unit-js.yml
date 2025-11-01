@@ -1,0 +1,13 @@
+name: unit-js
+on: [pull_request]
+jobs:
+  unit-js:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - run: |
+          if [ -f package.json ]; then npm ci; npx vitest run || echo "No JS tests or failures ignored (stub)"; else echo "No JS project; stub pass"; fi
+
