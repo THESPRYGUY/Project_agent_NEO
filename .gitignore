@@ -33,6 +33,9 @@ _artifacts/
 .pytest_cache/
 # build outputs & telemetry
 _generated/
+_diffs/
+_archive/
+_tmp_validate_02/
 reports/
 telemetry*.jsonl
 before_after_diff.zip
