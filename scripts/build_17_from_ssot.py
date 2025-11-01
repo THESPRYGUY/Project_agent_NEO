@@ -1,8 +1,8 @@
 ﻿import json, os
 SRC_SSOT='ref/intake/agent_profile.json'
-TEMPLATE='canon/20_Overlay-Pack_Enterprise_v1.json'
-OUT='_generated/20_Overlay-Pack_Enterprise_v1.json'
-DIFF='_diffs/20_Overlay-Pack_Enterprise_v1.diff'
+TEMPLATE='canon/17_Lifecycle-Pack_v2.json'
+OUT='_generated/17_Lifecycle-Pack_v2.json'
+DIFF='_diffs/17_Lifecycle-Pack_v2.diff'
 FIXED_TS='1970-01-01T00:00:00Z'; STABLE_SEED=1337
 
 def deep_sort(obj):
@@ -27,4 +27,3 @@ def main():
     print(f'Wrote {OUT} ({len(cur)} bytes)')
 if __name__=='__main__':
     main()
-
