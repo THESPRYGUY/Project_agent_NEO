@@ -1,4 +1,4 @@
-# Assurance Report
+﻿# Assurance Report
 
 ## Phase-0 Fixed & Hydrated
 - agent_id: AGT-000000-NEO-FINANCIAL-CRIME-ADVISOR-INSPIRED-BY-N-BELL-0001
@@ -8,12 +8,12 @@
 - canon_count: 20
 - determinism: { ts: 1970-01-01T00:00:00Z, seed: 1337, sort: true }
 
-READY: PHASE-0 GREEN — SSOT + CANON OK
+READY: PHASE-0 GREEN â€” SSOT + CANON OK
 
 ## Compatibility Matrix (After 09)
 - Packs processed: [09]
 - Audit scope: `_generated/turkey_rnd`
-- repo_audit: 0 CRITICAL / 0 HIGH — PASS
+- repo_audit: 0 CRITICAL / 0 HIGH â€” PASS
 
 
 ## Phase-0.1 SSOT Correction (Turkey R&D)
@@ -37,7 +37,7 @@ Inputs: SSOT(ref/intake/agent_profile.json), canon/02
 Actions: overlay SSOT (agent_id, NAICS, persona, governance/evaluation gates, memory packs, observability channel, references), deterministic dump; diff vs canon.
 Checks:
 - contract_validate_one: ?
-- repo_audit(_generated): 0 CRITICAL/HIGH � PASS
+- repo_audit(_generated): 0 CRITICAL/HIGH — PASS
 Result: 02 finalized.
 
 ## Compatibility Matrix (After {04,05,03})
@@ -45,7 +45,7 @@ Result: 02 finalized.
 - 03.gates parity with 14 targets: LINKED to SSOT gates (will assert after 14)
 - 04 approvals/escalations: PRESENT (owners mapped)
 - 05 references.governance ? 04: OK
-- repo_audit(_generated): 0 CRITICAL/HIGH � PASS
+- repo_audit(_generated): 0 CRITICAL/HIGH — PASS
 
 ### Rationale: 04_Governance+Risk-Register_v2.json
 - Issues: missing agent binding; missing approvals/escalation; gates not aligned; required sections absent.
@@ -84,10 +84,29 @@ Result: 02 finalized.
 - 06.primary_role_code present: TURKEY_RND_LEAD; 07.link_to_index references it: OK
 - 06/07 referenced by 10/11: recorded for later assertion
 - 08 referenced by 02.memory_schema and future 10/11: OK (02.references.memory_schema set)
+<<<<<<< HEAD
 - repo_audit(_generated): 0 CRITICAL/HIGH � PASS
 
 ### Pack 18 — 18_Reporting-Pack_v2.json (@ 2025-11-01T19:26:14Z)
+=======
+- repo_audit(_generated): 0 CRITICAL/HIGH — PASS
+
+### Pack 16 — 16_Reasoning-Footprints_Schema_v1.json (@ 2025-11-01T19:24:25Z)
+>>>>>>> origin/main
 - Deterministic overlay from SSOT
 - No artifacts staged
 - Review: schema & cross-refs match canon
 
+<<<<<<< HEAD
+=======
+### Pack 17 — 17_Lifecycle-Pack_v2.json (@ 2025-11-01T19:25:26Z)
+- Deterministic overlay from SSOT
+- No artifacts staged
+- Review: schema & cross-refs match canon
+
+- Deterministic overlay from SSOT
+- No artifacts staged
+- Review: schema & cross-refs match canon
+
+
+>>>>>>> origin/main
