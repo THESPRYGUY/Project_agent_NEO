@@ -16,3 +16,13 @@
 | 17_Lifecycle-Pack_v2.json | SSOTâ†’meta.agent_id | Deterministic overlay + schema guard | contract_validate/repo_audit | READY |
 | 16_Reasoning-Footprints_Schema_v1.json | SSOTâ†’meta.agent_id | Deterministic overlay + schema guard | contract_validate/repo_audit | READY |
 
+| 19_Overlay-Pack_SME-Domain_v1.json | SSOT→meta.agent_id | Deterministic overlay + schema guard | contract_validate/repo_audit | READY |
+| 17_Lifecycle-Pack_v2.json | SSOTâ†’meta.agent_id | Deterministic overlay + schema guard | contract_validate/repo_audit | READY |
+| 16_Reasoning-Footprints_Schema_v1.json | SSOTâ†’meta.agent_id | Deterministic overlay + schema guard | contract_validate/repo_audit | READY |
+
+
+| 18_Reporting-Pack_v2.json | SSOT→meta.agent_id | Deterministic overlay + schema guard | contract_validate/repo_audit | READY |
+| 17_Lifecycle-Pack_v2.json | SSOTâ†’meta.agent_id | Deterministic overlay + schema guard | contract_validate/repo_audit | READY |
+| 16_Reasoning-Footprints_Schema_v1.json | SSOTâ†’meta.agent_id | Deterministic overlay + schema guard | contract_validate/repo_audit | READY |
+
+
