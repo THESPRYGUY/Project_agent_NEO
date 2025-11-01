@@ -11,6 +11,10 @@
 | 06_Role-Recipes_Index_v2.json | primary_role, pack_links, roles_index/mapping | SSOT overlay; ensure objectives; add required keys | contract_validate_one + repo_audit | ? |
 | 07_Subagent_Role-Recipes_v2.json | planner/builder/evaluator IO + budgets | SSOT overlay; link_to_index; add recipes | contract_validate_one + repo_audit | ? |
 | 08_Memory-Schema_v2.json | packs.initial, scopes, retrieval.defaults | SSOT overlay; add storage/redaction/sync | contract_validate_one + repo_audit | ? |
+<<<<<<< HEAD
+| 18_Reporting-Pack_v2.json | SSOT→meta.agent_id | Deterministic overlay + schema guard | contract_validate/repo_audit | READY |
+=======
 | 17_Lifecycle-Pack_v2.json | SSOTâ†’meta.agent_id | Deterministic overlay + schema guard | contract_validate/repo_audit | READY |
 | 16_Reasoning-Footprints_Schema_v1.json | SSOTâ†’meta.agent_id | Deterministic overlay + schema guard | contract_validate/repo_audit | READY |
 
+>>>>>>> origin/main
