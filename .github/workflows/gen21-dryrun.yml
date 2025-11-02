@@ -1,0 +1,21 @@
+﻿name: gen21-dryrun
+on:
+  pull_request:
+    paths:
+      - "scripts/**"
+      - "canon/**"
+      - "docs/**"
+      - "ASSURANCE.md"
+jobs:
+  dryrun:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - run: |
+          set -e
+          mkdir -p _generated _diffs
+          for s in scripts/build_{16,17,18,19,20,01}_from_ssot.py; do [ -f "$s" ] && python "$s" || echo "missing $s (ok)"; done
+          if [ -f scripts/repo_audit.py ]; then python scripts/repo_audit.py _generated --severity-threshold=HIGH; else echo "repo_audit.py missing"; fi
