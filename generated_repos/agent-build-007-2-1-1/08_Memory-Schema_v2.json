@@ -39,7 +39,12 @@
       "scope": "procedural"
     }
   ],
-  "memory_scopes": [],
+  "memory_scopes": [
+    "episodic:self/*",
+    "episodic:eval/*",
+    "procedural:policy/*",
+    "semantic:index/*"
+  ],
   "meta": {
     "agent_id": "AGT-112330-TURKEY-RND-0001",
     "authors": [
@@ -175,6 +180,12 @@
   "retention": {
     "episodic": {
       "retention_days": 180
+    },
+    "procedural": {
+      "retention_days": 730
+    },
+    "semantic": {
+      "retention_days": 365
     }
   },
   "retrieval": {
@@ -289,7 +300,7 @@
     "semantic_item": {
       "actor": "CPA",
       "classification": "internal",
-      "content": "Short entries A–Z with links to canonical references.",
+      "content": "Short entries A\u2013Z with links to canonical references.",
       "created_at": "2025-09-12T00:00:00Z",
       "hash": "blake3:6dbee96d4ef90af0d3cbb664f645dd5bb58b2f9b2585fa1313dcd95263c8799e",
       "id": "sem-0001",

@@ -1,0 +1,92 @@
+{
+  "intake_version": "v1",
+  "metadata": {
+    "agent_id": "AGT-112330-TURKEY-RND-0001",
+    "project_code": "AB007",
+    "environment": "prod",
+    "submitted_at": "2025-11-03T12:00:00Z",
+    "owners": ["CAIO", "CPA", "TeamLead"],
+    "notes": "Baseline intake payload aligned with AB007 pack set."
+  },
+  "determinism": {
+    "fixed_timestamp": true,
+    "stable_seed": true,
+    "deep_sort_keys": true,
+    "timestamp_value": "1970-01-01T00:00:00Z",
+    "seed_value": 1337
+  },
+  "rbac": {
+    "roles": ["Agent", "CAIO", "CDO/SRE", "CISO/Legal", "COO/PMO", "CPA", "Evaluator"]
+  },
+  "memory": {
+    "scopes": [
+      "episodic:self/*",
+      "episodic:eval/*",
+      "procedural:policy/*",
+      "semantic:index/*"
+    ],
+    "retention": {
+      "episodic": 180,
+      "semantic": 365,
+      "procedural": 730
+    },
+    "permissions": {
+      "Agent": {
+        "read": ["episodic:self/*", "procedural:*", "semantic:*"],
+        "write": ["episodic:self/*", "procedural:builds/*"]
+      },
+      "CAIO": {
+        "read": ["episodic:*", "procedural:*", "semantic:*"],
+        "write": ["episodic:exec/*", "procedural:*", "semantic:policy/*"]
+      },
+      "CDO/SRE": {
+        "read": ["episodic:*", "procedural:*", "semantic:*"],
+        "write": ["episodic:telemetry/*", "procedural:observability/*", "semantic:index/*"]
+      },
+      "CISO/Legal": {
+        "read": ["episodic:*", "procedural:policy/*"],
+        "write": ["episodic:exceptions/*", "procedural:policy/*"]
+      },
+      "COO/PMO": {
+        "read": ["episodic:projects/*", "procedural:*", "semantic:*"],
+        "write": ["episodic:projects/*", "procedural:ops/*"]
+      },
+      "CPA": {
+        "read": ["episodic:eval/*", "procedural:*", "semantic:*"],
+        "write": ["episodic:eval/*", "procedural:prompt-guides/*"]
+      },
+      "Evaluator": {
+        "read": ["episodic:eval/*", "semantic:policy/*"],
+        "write": ["episodic:eval/*"]
+      }
+    },
+    "writeback_rules": [
+      "All writes validate against corresponding JSON Schemas; log result to episodic memory",
+      "Include actor, change_reason, sources, checksum (e.g., blake3) on updates",
+      "Reject duplicate content unless explicitly version-bumped"
+    ]
+  },
+  "connectors": [
+    {
+      "name": "sharepoint",
+      "enabled": true,
+      "scopes": ["read"],
+      "secret_ref": "vault://connectors/sharepoint"
+    },
+    {
+      "name": "vectorstore",
+      "enabled": true,
+      "scopes": ["embedding_index"],
+      "secret_ref": "vault://connectors/vectorstore"
+    }
+  ],
+  "data_sources": ["SRC-DSPY-01", "SRC-LANGGRAPH-01", "SRC-OPENAI-01"],
+  "governance": {
+    "classification_default": "confidential",
+    "pii_flags": ["basic_contact", "customer_record", "none"],
+    "risk_register_tags": ["safety", "compliance", "governance"]
+  },
+  "human_gate": {
+    "actions": ["legal_advice", "regulatory_interpretation", "financial_commitment"]
+  }
+}

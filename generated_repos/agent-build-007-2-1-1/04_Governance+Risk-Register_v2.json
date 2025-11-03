@@ -175,7 +175,11 @@
       "tag": "data_privacy"
     }
   ],
-  "risk_register_tags": [],
+  "risk_register_tags": [
+    "safety",
+    "compliance",
+    "governance"
+  ],
   "risk_taxonomy": {
     "categories": [
       "bias_fairness",
