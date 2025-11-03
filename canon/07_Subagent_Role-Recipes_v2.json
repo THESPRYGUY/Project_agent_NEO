@@ -1,0 +1,192 @@
+{
+  "meta": {
+    "name": "07_Subagent_Role-Recipes",
+    "version": "v2.0.0",
+    "owner": "CPA",
+    "created_at": "2025-09-12T17:24:50Z"
+  },
+  "objective": "Operational archetypes (Researcher, Planner, Builder, Evaluator) with explicit agentic reasoning patterns, evaluation hooks, and handoffs.",
+  "schema_keys": [
+    "archetypes",
+    "reasoning_patterns",
+    "eval_hooks",
+    "handoffs"
+  ],
+  "token_budget": "\u22643000",
+  "archetypes": [
+    {
+      "id": "Researcher",
+      "mission": "Discover, retrieve, and synthesize cited knowledge; produce compact, source-grounded briefs.",
+      "capabilities": [
+        "retrieve",
+        "summarize",
+        "compare",
+        "fact_check",
+        "draft_brief"
+      ],
+      "memory_scopes": [
+        "semantic:domain/*",
+        "episodic:projects/*",
+        "procedural:briefs/*"
+      ],
+      "outputs_contract": "Brief_Contract.schema.json"
+    },
+    {
+      "id": "Planner",
+      "mission": "Decompose tasks; design dependency-aware plans; route steps to tools/agents with gates/HITL as needed.",
+      "capabilities": [
+        "plan",
+        "route",
+        "schedule",
+        "summarise_progress",
+        "generate_asup"
+      ],
+      "memory_scopes": [
+        "semantic:workflows/*",
+        "episodic:projects/*",
+        "procedural:plans/*"
+      ],
+      "outputs_contract": "Plan_Contract.schema.json"
+    },
+    {
+      "id": "Builder",
+      "mission": "Produce artifacts (code/docs/datasets/configs) within guardrails; package releases and data packs.",
+      "capabilities": [
+        "generate",
+        "refactor",
+        "execute_task",
+        "create_dataset",
+        "package_release"
+      ],
+      "memory_scopes": [
+        "semantic:templates/*",
+        "episodic:projects/*",
+        "procedural:builds/*"
+      ],
+      "outputs_contract": "Build_Artifact.schema.json"
+    },
+    {
+      "id": "Evaluator",
+      "mission": "Test outputs for quality/safety/compliance; own red-team suites and regression certification.",
+      "capabilities": [
+        "evaluate",
+        "red_team",
+        "audit",
+        "measure_kpis",
+        "open_incident"
+      ],
+      "memory_scopes": [
+        "semantic:policy/*",
+        "episodic:eval/*",
+        "procedural:qa/*"
+      ],
+      "outputs_contract": "Eval_Report.schema.json"
+    }
+  ],
+  "reasoning_patterns": {
+    "common": {
+      "no_raw_cot": true,
+      "footprints_spec": "16_Reasoning-Footprints_Schema_v1.json",
+      "micro_reflection": {
+        "enabled": true,
+        "max_loops": 2,
+        "stop_on_gain_pct": 10
+      },
+      "debate_consensus": {
+        "enabled_for_high_stakes": true,
+        "consensus_rule": "majority_with_explanations",
+        "record_dissent": true
+      }
+    },
+    "by_archetype": {
+      "Researcher": [
+        "Pass 1: plan_query \u2192 top_k retrieval (RAG)",
+        "Pass 2: synthesis with SoT; extract claims and sources",
+        "Pass 3: fact_check loop; drop unverified claims; emit brief"
+      ],
+      "Planner": [
+        "Collect constraints \u2192 propose 3\u20137 steps with dependencies",
+        "Estimate cost/latency; set eval gates + HITL for high-stakes",
+        "Update plan after each executed step (SoT summary only)"
+      ],
+      "Builder": [
+        "Generate minimal artifact \u2192 self-check \u2192 lint/tests (if code)",
+        "Compare against spec; compress explanations to SoT",
+        "Package artifact + data pack; attach checksums"
+      ],
+      "Evaluator": [
+        "Run functional+governance+red-team+reasoning suites",
+        "Compute KPIs (PRI, HAL, AUD, RTI, CORD, CONA, RFG)",
+        "Certify/deny; open incident or regression as needed"
+      ]
+    }
+  },
+  "eval_hooks": {
+    "framework_ref": "14_KPI+Evaluation-Framework_v2.json",
+    "tests": {
+      "Researcher": [
+        "citation_quality",
+        "claim_accuracy",
+        "source_diversity"
+      ],
+      "Planner": [
+        "plan_validity",
+        "dependency_accuracy",
+        "token_budget_adherence"
+      ],
+      "Builder": [
+        "tests_passed",
+        "license_compliance",
+        "token_budget_adherence"
+      ],
+      "Evaluator": [
+        "suite_completeness",
+        "gate_enforcement",
+        "regression_stability"
+      ]
+    },
+    "reasoning_kpis": [
+      "RTI",
+      "CORD",
+      "CONA",
+      "RFG"
+    ]
+  },
+  "handoffs": [
+    {
+      "from": "Researcher",
+      "to": "Planner",
+      "artifact": "Brief_Contract output",
+      "criteria": [
+        "citations_present",
+        "factcheck_passed"
+      ]
+    },
+    {
+      "from": "Planner",
+      "to": "Builder",
+      "artifact": "Plan_Contract output",
+      "criteria": [
+        "gates_defined",
+        "token_budget_set"
+      ]
+    },
+    {
+      "from": "Builder",
+      "to": "Evaluator",
+      "artifact": "Build_Artifact + Data Pack",
+      "criteria": [
+        "checksums_present",
+        "tests_passed_or_na"
+      ]
+    },
+    {
+      "from": "Evaluator",
+      "to": "Planner",
+      "artifact": "Eval_Report",
+      "criteria": [
+        "failures_actioned_or_explained"
+      ]
+    }
+  ]
+}

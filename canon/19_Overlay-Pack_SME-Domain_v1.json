@@ -1,0 +1,86 @@
+{
+  "meta": {
+    "name": "19_Overlay-Pack_SME-Domain",
+    "version": "v1.0.0",
+    "owner": "Domain Lead",
+    "created_at": "2025-09-12T19:28:14Z"
+  },
+  "objective": "Pluggable SME/domain overlay: terminology, standards, datasets, prompts, eval cases (no core edits).",
+  "schema_keys": [
+    "terminology",
+    "standards",
+    "datasets",
+    "prompts",
+    "eval_cases"
+  ],
+  "token_budget": "\u22642000",
+  "refs": {
+    "tool_data_registry": "12_Tool+Data-Registry_v2.json",
+    "rag_config": "13_Knowledge-Graph+RAG_Config_v2.json",
+    "prompt_pack": "10_Prompt-Pack_v2.json",
+    "workflow_pack": "11_Workflow-Pack_v2.json",
+    "kpi_framework": "14_KPI+Evaluation-Framework_v2.json"
+  },
+  "terminology": [
+    {
+      "term": "EXAMPLE_TERM",
+      "definition": "Domain-specific definition",
+      "source": "authoritative_ref"
+    }
+  ],
+  "standards": [
+    {
+      "id": "STD-001",
+      "name": "Example Standard",
+      "publisher": "StandardsBody",
+      "scope": "domain",
+      "url": "https://example.org/std-001"
+    }
+  ],
+  "datasets": [
+    {
+      "id": "ds.domain.ref",
+      "name": "Domain Reference Corpus",
+      "description": "Curated domain materials",
+      "classification": "internal",
+      "pii_flags": [
+        "none"
+      ],
+      "retention_days": 1825,
+      "owner": "Domain Lead",
+      "contract_ref": "12_Tool+Data-Registry_v2.json#dataset_item_min"
+    }
+  ],
+  "prompts": [
+    {
+      "id": "TT_Domain_Task_v1",
+      "archetype": "Researcher",
+      "flow": [
+        "CoR_SoT_v1"
+      ],
+      "contract": "Brief_Contract.schema.json",
+      "output_fields": [
+        "objective",
+        "findings",
+        "sources",
+        "SoT_summary"
+      ]
+    }
+  ],
+  "eval_cases": [
+    {
+      "id": "EC_Domain_Compliance_v1",
+      "suite": "governance",
+      "description": "Domain compliance scenario",
+      "expected": {
+        "AUD": ">=0.90"
+      }
+    }
+  ],
+  "definition_of_done": [
+    "Overlay loads with no core file edits",
+    "Datasets registered with classification and PII flags",
+    "Domain prompts reference Prompt-Pack v2 modules",
+    "Eval cases mapped to KPI framework"
+  ]
+}

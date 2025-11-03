@@ -1,0 +1,107 @@
+{
+  "agents": [
+    {
+      "agent_id": "AGT-112330-TURKEY-RND-0001",
+      "capabilities": [
+        "build",
+        "evaluate",
+        "plan",
+        "research"
+      ],
+      "display_name": "Turkey R&D Agent",
+      "notes": "Primary GEN2 agent manifest entry.",
+      "owner": "CAIO",
+      "owners": [
+        "CAIO",
+        "CPA",
+        "TeamLead"
+      ],
+      "role_title": "AGENT"
+    }
+  ],
+  "definition_of_done": [
+    "Each agent card lists capabilities, models, tooling, budgets, and owner",
+    "Eval profile KPIs present with thresholds",
+    "Safety flags set per tool; memory scopes declared",
+    "Token budgets and cost budgets per task encoded"
+  ],
+  "meta": {
+    "agent_id": "AGT-112330-TURKEY-RND-0001",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "1970-01-01T00:00:00Z",
+    "name": "09_Agent-Manifests_Catalog_v2.json",
+    "owner": "CAIO+CPA",
+    "version": "v2.0.0"
+  },
+  "objective": "Catalog of agent manifests (cards) for GEN2: capabilities, models, tools, budgets, owner.",
+  "owners": [
+    "CAIO",
+    "CPA",
+    "TeamLead"
+  ],
+  "policy": {
+    "global_instructions": "02_Global-Instructions_v2.json",
+    "governance_file": "04_Governance+Risk-Register_v2.json",
+    "memory_schema": "08_Memory-Schema_v2.json",
+    "operating_rules": "03_Operating-Rules_v2.json",
+    "prompt_pack": "10_Prompt-Pack_v2.json",
+    "workflow_pack": "11_Workflow-Pack_v2.json"
+  },
+  "schema_keys": [
+    "agents",
+    "definition_of_done",
+    "meta",
+    "objective",
+    "owners",
+    "policy",
+    "summary",
+    "token_budget",
+    "version"
+  ],
+  "summary": {
+    "languages": [],
+    "naics": {
+      "code": "112330",
+      "level": 6,
+      "lineage": [
+        {
+          "code": "11",
+          "level": 2,
+          "title": "Agriculture, Forestry, Fishing and Hunting"
+        },
+        {
+          "code": "112",
+          "level": 3,
+          "title": "Animal Production and Aquaculture"
+        },
+        {
+          "code": "1123",
+          "level": 4,
+          "title": "Poultry and Egg Production"
+        },
+        {
+          "code": "11233",
+          "level": 5,
+          "title": "Turkey Production"
+        }
+      ],
+      "title": "Turkey Production"
+    },
+    "region": [
+      "CA"
+    ],
+    "regulators": [
+      "ISO_IEC_42001",
+      "PIPEDA"
+    ],
+    "sector": "Turkey production R&D: food safety, processing, welfare & performance."
+  },
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "version": 2
+}

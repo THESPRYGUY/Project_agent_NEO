@@ -1,0 +1,211 @@
+{
+  "archetypes": [
+    {
+      "capabilities": [
+        "audit",
+        "evaluate",
+        "measure_kpis",
+        "open_incident",
+        "red_team"
+      ],
+      "id": "Evaluator",
+      "memory_scopes": [
+        "episodic:eval/*",
+        "procedural:qa/*",
+        "semantic:policy/*"
+      ],
+      "mission": "Test outputs for quality/safety/compliance; own red-team suites and regression certification.",
+      "outputs_contract": "Eval_Report.schema.json"
+    },
+    {
+      "capabilities": [
+        "create_dataset",
+        "execute_task",
+        "generate",
+        "package_release",
+        "refactor"
+      ],
+      "id": "Builder",
+      "memory_scopes": [
+        "episodic:projects/*",
+        "procedural:builds/*",
+        "semantic:templates/*"
+      ],
+      "mission": "Produce artifacts (code/docs/datasets/configs) within guardrails; package releases and data packs.",
+      "outputs_contract": "Build_Artifact.schema.json"
+    },
+    {
+      "capabilities": [
+        "generate_asup",
+        "plan",
+        "route",
+        "schedule",
+        "summarise_progress"
+      ],
+      "id": "Planner",
+      "memory_scopes": [
+        "episodic:projects/*",
+        "procedural:plans/*",
+        "semantic:workflows/*"
+      ],
+      "mission": "Decompose tasks; design dependency-aware plans; route steps to tools/agents with gates/HITL as needed.",
+      "outputs_contract": "Plan_Contract.schema.json"
+    },
+    {
+      "capabilities": [
+        "compare",
+        "draft_brief",
+        "fact_check",
+        "retrieve",
+        "summarize"
+      ],
+      "id": "Researcher",
+      "memory_scopes": [
+        "episodic:projects/*",
+        "procedural:briefs/*",
+        "semantic:domain/*"
+      ],
+      "mission": "Discover, retrieve, and synthesize cited knowledge; produce compact, source-grounded briefs.",
+      "outputs_contract": "Brief_Contract.schema.json"
+    }
+  ],
+  "auto_plan_step": true,
+  "eval_hooks": {
+    "framework_ref": "14_KPI+Evaluation-Framework_v2.json",
+    "reasoning_kpis": [
+      "CONA",
+      "CORD",
+      "RFG",
+      "RTI"
+    ],
+    "tests": {
+      "Builder": [
+        "license_compliance",
+        "tests_passed",
+        "token_budget_adherence"
+      ],
+      "Evaluator": [
+        "gate_enforcement",
+        "regression_stability",
+        "suite_completeness"
+      ],
+      "Planner": [
+        "dependency_accuracy",
+        "plan_validity",
+        "token_budget_adherence"
+      ],
+      "Researcher": [
+        "citation_quality",
+        "claim_accuracy",
+        "source_diversity"
+      ]
+    }
+  },
+  "handoffs": [
+    {
+      "artifact": "Brief_Contract output",
+      "criteria": [
+        "citations_present",
+        "factcheck_passed"
+      ],
+      "from": "Researcher",
+      "to": "Planner"
+    },
+    {
+      "artifact": "Build_Artifact + Data Pack",
+      "criteria": [
+        "checksums_present",
+        "tests_passed_or_na"
+      ],
+      "from": "Builder",
+      "to": "Evaluator"
+    },
+    {
+      "artifact": "Eval_Report",
+      "criteria": [
+        "failures_actioned_or_explained"
+      ],
+      "from": "Evaluator",
+      "to": "Planner"
+    },
+    {
+      "artifact": "Plan_Contract output",
+      "criteria": [
+        "gates_defined",
+        "token_budget_set"
+      ],
+      "from": "Planner",
+      "to": "Builder"
+    }
+  ],
+  "meta": {
+    "agent_id": "AGT-112330-TURKEY-RND-0001",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "1970-01-01T00:00:00Z",
+    "name": "07_Subagent_Role-Recipes_v2.json",
+    "owner": "CPA",
+    "version": "v2.0.0"
+  },
+  "objective": "Operational archetypes (Researcher, Planner, Builder, Evaluator) with explicit agentic reasoning patterns, evaluation hooks, and handoffs.",
+  "planner_builder_evaluator": false,
+  "reasoning_patterns": {
+    "by_archetype": {
+      "Builder": [
+        "Compare against spec; compress explanations to SoT",
+        "Generate minimal artifact → self-check → lint/tests (if code)",
+        "Package artifact + data pack; attach checksums"
+      ],
+      "Evaluator": [
+        "Certify/deny; open incident or regression as needed",
+        "Compute KPIs (PRI, HAL, AUD, RTI, CORD, CONA, RFG)",
+        "Run functional+governance+red-team+reasoning suites"
+      ],
+      "Planner": [
+        "Collect constraints → propose 3–7 steps with dependencies",
+        "Estimate cost/latency; set eval gates + HITL for high-stakes",
+        "Update plan after each executed step (SoT summary only)"
+      ],
+      "Researcher": [
+        "Pass 1: plan_query → top_k retrieval (RAG)",
+        "Pass 2: synthesis with SoT; extract claims and sources",
+        "Pass 3: fact_check loop; drop unverified claims; emit brief"
+      ]
+    },
+    "common": {
+      "debate_consensus": {
+        "consensus_rule": "majority_with_explanations",
+        "enabled_for_high_stakes": true,
+        "record_dissent": true
+      },
+      "footprints_spec": "16_Reasoning-Footprints_Schema_v1.json",
+      "micro_reflection": {
+        "enabled": true,
+        "max_loops": 2,
+        "stop_on_gain_pct": 10
+      },
+      "no_raw_cot": true
+    }
+  },
+  "recipes": [],
+  "schema_keys": [
+    "archetypes",
+    "auto_plan_step",
+    "eval_hooks",
+    "handoffs",
+    "meta",
+    "objective",
+    "planner_builder_evaluator",
+    "reasoning_patterns",
+    "recipes",
+    "token_budget",
+    "version"
+  ],
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "version": 2
+}

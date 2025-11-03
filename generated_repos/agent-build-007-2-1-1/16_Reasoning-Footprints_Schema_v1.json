@@ -1,0 +1,98 @@
+{
+  "access": {},
+  "artifacts": {},
+  "compliance": {},
+  "decision_factors": {
+    "fields": [
+      "alternatives_shortlist",
+      "constraints_considered",
+      "selected_option",
+      "tradeoffs"
+    ],
+    "record_consensus": true,
+    "record_dissent": true
+  },
+  "error_taxonomy": [
+    "math_error",
+    "policy_violation",
+    "reasoning_gap",
+    "retrieval_miss",
+    "safety_flag",
+    "unsupported_claim"
+  ],
+  "kpi_bindings": {
+    "CONA_ref": "decision_factors.consensus_vs_truth",
+    "CORD_ref": "decision_factors.steps_depth",
+    "RFG_ref": "lessons_learned.fix_applied_effect",
+    "RTI_ref": "rationale_summary"
+  },
+  "lessons_learned": {
+    "fields": [
+      "fix_applied",
+      "regression_test_added",
+      "root_cause"
+    ],
+    "write_scope": "episodic:eval/*"
+  },
+  "meta": {
+    "agent_id": "AGT-112330-TURKEY-RND-0001",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "1970-01-01T00:00:00Z",
+    "name": "16_Reasoning-Footprints_Schema_v1.json",
+    "owner": "CPA+Evaluator",
+    "version": "v1.0.0"
+  },
+  "objective": "Sanitized rationale summaries (no raw CoT), decision factors, error taxonomy, and lessons learned.",
+  "policy": {
+    "max_summary_tokens": 120,
+    "no_raw_chain_of_thought": true,
+    "store_links_only": [
+      "artifacts",
+      "sources",
+      "workflow_nodes"
+    ]
+  },
+  "rationale_summary": {
+    "constraints": [
+      "no_PII",
+      "no_verbatim_user_content",
+      "≤120_tokens"
+    ],
+    "fields": [
+      "assumptions",
+      "steps",
+      "validation_checks"
+    ]
+  },
+  "redaction": {},
+  "retention": [],
+  "schema_keys": [
+    "access",
+    "artifacts",
+    "compliance",
+    "decision_factors",
+    "error_taxonomy",
+    "kpi_bindings",
+    "lessons_learned",
+    "meta",
+    "objective",
+    "policy",
+    "rationale_summary",
+    "redaction",
+    "retention",
+    "storage",
+    "store_raw_cot",
+    "token_budget",
+    "version"
+  ],
+  "storage": {},
+  "store_raw_cot": false,
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "version": 1
+}

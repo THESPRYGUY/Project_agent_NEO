@@ -6,6 +6,7 @@ from typing import Any, Dict, Mapping
 
 from .contracts import CANONICAL_PACK_FILENAMES, PACK_ID_TO_FILENAME, KPI_TARGETS
 from .schemas import required_keys_map
+from .ssot import merge_with_ssot
 
 
 def get_contract_mode() -> str:
@@ -572,6 +573,7 @@ def enrich_single(profile: Mapping[str, Any], filename: str, payload: Mapping[st
         # Non-fatal; enrichment should never crash writes
         pass
 
+    out = merge_with_ssot(profile, filename, out)
     return out
 
 

@@ -1,0 +1,511 @@
+{
+  "meta": {
+    "name": "01_README+Directory-Map",
+    "version": "v2.0.0",
+    "owner": "CPA",
+    "created_at": "2025-09-12T16:27:41Z",
+    "objective": "Authoritative directory map and file contracts for the GEN2 scaffold (20-slot). Token-light, contract-heavy."
+  },
+  "principles": [
+    "Token-light, attribute/performance-rich",
+    "Industry/domain-agnostic core with adaptive overlays",
+    "Governance-by-design with measurable KPI gates",
+    "Agentic-by-design (CoR/SoT/HITL) with sanitized Reasoning Footprints (no raw CoT)",
+    "Observability-first: cost, latency, quality, reasoning telemetry"
+  ],
+  "structure": [
+    {
+      "slot": 1,
+      "file": "01_README+Directory-Map_v2.json",
+      "path": "/02_project_agent/",
+      "layer": "Core"
+    },
+    {
+      "slot": 2,
+      "file": "02_Global-Instructions_v2.json",
+      "path": "/02_project_agent/",
+      "layer": "Core"
+    },
+    {
+      "slot": 3,
+      "file": "03_Operating-Rules_v2.json",
+      "path": "/02_project_agent/",
+      "layer": "Core"
+    },
+    {
+      "slot": 4,
+      "file": "04_Governance+Risk-Register_v2.json",
+      "path": "/10_risks_compliance/",
+      "layer": "Core"
+    },
+    {
+      "slot": 5,
+      "file": "05_Safety+Privacy_Guardrails_v2.json",
+      "path": "/10_risks_compliance/",
+      "layer": "Core"
+    },
+    {
+      "slot": 6,
+      "file": "06_Role-Recipes_Index_v2.json",
+      "path": "/02_project_agent/",
+      "layer": "Role+Memory"
+    },
+    {
+      "slot": 7,
+      "file": "07_Subagent_Role-Recipes_v2.json",
+      "path": "/02_project_agent/",
+      "layer": "Role+Memory"
+    },
+    {
+      "slot": 8,
+      "file": "08_Memory-Schema_v2.json",
+      "path": "/03_agent_runtime/",
+      "layer": "Role+Memory"
+    },
+    {
+      "slot": 9,
+      "file": "09_Agent-Manifests_Catalog_v2.json",
+      "path": "/03_agent_runtime/",
+      "layer": "Role+Memory"
+    },
+    {
+      "slot": 10,
+      "file": "10_Prompt-Pack_v2.json",
+      "path": "/04_prompts/",
+      "layer": "Intelligence"
+    },
+    {
+      "slot": 11,
+      "file": "11_Workflow-Pack_v2.json",
+      "path": "/05_workflows/",
+      "layer": "Intelligence"
+    },
+    {
+      "slot": 12,
+      "file": "12_Tool+Data-Registry_v2.json",
+      "path": "/06_data_sources/",
+      "layer": "Intelligence"
+    },
+    {
+      "slot": 13,
+      "file": "13_Knowledge-Graph+RAG_Config_v2.json",
+      "path": "/06_data_sources/",
+      "layer": "Intelligence"
+    },
+    {
+      "slot": 14,
+      "file": "14_KPI+Evaluation-Framework_v2.json",
+      "path": "/09_kpi_eval/",
+      "layer": "Observability"
+    },
+    {
+      "slot": 15,
+      "file": "15_Observability+Telemetry_Spec_v2.json",
+      "path": "/09_kpi_eval/",
+      "layer": "Observability"
+    },
+    {
+      "slot": 16,
+      "file": "16_Reasoning-Footprints_Schema_v1.json",
+      "path": "/09_kpi_eval/",
+      "layer": "Observability"
+    },
+    {
+      "slot": 17,
+      "file": "17_Lifecycle-Pack_v2.json",
+      "path": "/12_changelog/",
+      "layer": "Lifecycle"
+    },
+    {
+      "slot": 18,
+      "file": "18_Reporting-Pack_v2.json",
+      "path": "/08_reports_templates/",
+      "layer": "Lifecycle"
+    },
+    {
+      "slot": 19,
+      "file": "19_Overlay-Pack_SME-Domain_v1.json",
+      "path": "/11_references/",
+      "layer": "Overlays"
+    },
+    {
+      "slot": 20,
+      "file": "20_Overlay-Pack_Enterprise_v1.json",
+      "path": "/11_references/",
+      "layer": "Overlays"
+    }
+  ],
+  "contracts": {
+    "common_min_keys": [
+      "meta",
+      "objective",
+      "owner",
+      "schema_keys",
+      "token_budget"
+    ],
+    "slots": [
+      {
+        "slot": 1,
+        "schema_keys": [
+          "structure",
+          "contracts",
+          "naming",
+          "update_policy"
+        ],
+        "token_budget": "\u22642000"
+      },
+      {
+        "slot": 2,
+        "schema_keys": [
+          "archetypes",
+          "constraints",
+          "refusals",
+          "safety",
+          "time_prefs"
+        ],
+        "token_budget": "\u22642000"
+      },
+      {
+        "slot": 3,
+        "schema_keys": [
+          "lifecycle",
+          "rbac",
+          "escalation",
+          "gates"
+        ],
+        "token_budget": "\u22642000"
+      },
+      {
+        "slot": 4,
+        "schema_keys": [
+          "risk_taxonomy",
+          "controls",
+          "thresholds",
+          "exceptions"
+        ],
+        "token_budget": "\u22643000"
+      },
+      {
+        "slot": 5,
+        "schema_keys": [
+          "refusal_playbooks",
+          "privacy_policies",
+          "redlines",
+          "jurisdictional_rules"
+        ],
+        "token_budget": "\u22642000"
+      },
+      {
+        "slot": 6,
+        "schema_keys": [
+          "roles",
+          "decision_rights",
+          "kpis",
+          "handoffs"
+        ],
+        "token_budget": "\u22642000"
+      },
+      {
+        "slot": 7,
+        "schema_keys": [
+          "archetypes",
+          "reasoning_patterns",
+          "eval_hooks",
+          "handoffs"
+        ],
+        "token_budget": "\u22643000"
+      },
+      {
+        "slot": 8,
+        "schema_keys": [
+          "semantic",
+          "episodic",
+          "procedural",
+          "footprint_refs",
+          "retention"
+        ],
+        "token_budget": "\u22642500"
+      },
+      {
+        "slot": 9,
+        "schema_keys": [
+          "agent_id",
+          "capabilities",
+          "models",
+          "tooling",
+          "budgets",
+          "owner"
+        ],
+        "token_budget": "\u22642000"
+      },
+      {
+        "slot": 10,
+        "schema_keys": [
+          "modules",
+          "guardrails",
+          "reasoning_patterns",
+          "output_contracts"
+        ],
+        "token_budget": "\u22643000"
+      },
+      {
+        "slot": 11,
+        "schema_keys": [
+          "graphs",
+          "micro_loops",
+          "gates",
+          "rollback"
+        ],
+        "token_budget": "\u22643000"
+      },
+      {
+        "slot": 12,
+        "schema_keys": [
+          "tools",
+          "connectors",
+          "datasets",
+          "source_registry",
+          "contracts"
+        ],
+        "token_budget": "\u22642500"
+      },
+      {
+        "slot": 13,
+        "schema_keys": [
+          "indices",
+          "chunking",
+          "embeddings",
+          "retrieval",
+          "caching"
+        ],
+        "token_budget": "\u22642000"
+      },
+      {
+        "slot": 14,
+        "schema_keys": [
+          "kpis",
+          "metrics",
+          "benchmarks",
+          "reasoning_kpis"
+        ],
+        "token_budget": "\u22642500"
+      },
+      {
+        "slot": 15,
+        "schema_keys": [
+          "log_schema",
+          "privacy_controls",
+          "dashboards",
+          "alerts"
+        ],
+        "token_budget": "\u22642000"
+      },
+      {
+        "slot": 16,
+        "schema_keys": [
+          "rationale_summary",
+          "decision_factors",
+          "error_taxonomy",
+          "lessons_learned"
+        ],
+        "token_budget": "\u22641500"
+      },
+      {
+        "slot": 17,
+        "schema_keys": [
+          "go_live",
+          "change_log",
+          "approvals",
+          "rollback"
+        ],
+        "token_budget": "\u22642000"
+      },
+      {
+        "slot": 18,
+        "schema_keys": [
+          "exec_brief",
+          "compliance_report",
+          "data_pack",
+          "kpi_views"
+        ],
+        "token_budget": "\u22642500"
+      },
+      {
+        "slot": 19,
+        "schema_keys": [
+          "terminology",
+          "standards",
+          "datasets",
+          "prompts",
+          "eval_cases"
+        ],
+        "token_budget": "\u22642000"
+      },
+      {
+        "slot": 20,
+        "schema_keys": [
+          "policies",
+          "brand",
+          "legal",
+          "stakeholders",
+          "escalations"
+        ],
+        "token_budget": "\u22642000"
+      }
+    ]
+  },
+  "dependency_map": {
+    "edges": [
+      [
+        1,
+        2
+      ],
+      [
+        1,
+        3
+      ],
+      [
+        1,
+        4
+      ],
+      [
+        1,
+        5
+      ],
+      [
+        1,
+        6
+      ],
+      [
+        1,
+        7
+      ],
+      [
+        1,
+        8
+      ],
+      [
+        1,
+        9
+      ],
+      [
+        1,
+        10
+      ],
+      [
+        1,
+        11
+      ],
+      [
+        1,
+        12
+      ],
+      [
+        1,
+        13
+      ],
+      [
+        1,
+        14
+      ],
+      [
+        1,
+        15
+      ],
+      [
+        1,
+        16
+      ],
+      [
+        1,
+        17
+      ],
+      [
+        1,
+        18
+      ],
+      [
+        1,
+        19
+      ],
+      [
+        1,
+        20
+      ],
+      [
+        4,
+        2
+      ],
+      [
+        5,
+        2
+      ],
+      [
+        2,
+        10
+      ],
+      [
+        2,
+        11
+      ],
+      [
+        3,
+        17
+      ],
+      [
+        6,
+        7
+      ],
+      [
+        8,
+        9
+      ],
+      [
+        12,
+        10
+      ],
+      [
+        12,
+        11
+      ],
+      [
+        13,
+        10
+      ],
+      [
+        13,
+        11
+      ],
+      [
+        14,
+        10
+      ],
+      [
+        14,
+        11
+      ],
+      [
+        15,
+        8
+      ],
+      [
+        16,
+        10
+      ],
+      [
+        16,
+        11
+      ]
+    ],
+    "notes": "Ordering heuristic: 1 \u2192 (4 & 5) \u2192 2 \u2192 3 \u2192 (6\u20139) \u2192 (10\u201313) \u2192 (14\u201316) \u2192 (17\u201318) \u2192 (19\u201320)"
+  },
+  "naming": {
+    "files": "NN_Snake-Case_vMAJOR.MINOR.patch.json (e.g., 10_Prompt-Pack_v2.json)",
+    "paths": "folders are canonical as per `structure` above"
+  },
+  "update_policy": {
+    "versioning": "Semantic: MAJOR for breaking policy/workflow changes; MINOR for compatible improvements; PATCH for fixes/docs",
+    "release": "Require gates to pass (PRI\u22650.95, HAL\u22640.02, AUD\u22650.90) before tagging; record to 17_Lifecycle-Pack_v2.change_log",
+    "token_budget": "Hard ceilings per slot; move verbose content to data packs/references"
+  }
+}

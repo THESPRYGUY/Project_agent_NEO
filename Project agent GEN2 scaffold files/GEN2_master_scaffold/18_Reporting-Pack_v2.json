@@ -1,0 +1,154 @@
+{
+  "meta": {
+    "name": "18_Reporting-Pack",
+    "version": "v2.0.0",
+    "owner": "CAIO+PMO",
+    "created_at": "2025-09-12T19:23:37Z"
+  },
+  "objective": "Executive briefs, compliance updates, data pack spec, and KPI dashboard views for GEN2.",
+  "schema_keys": [
+    "exec_brief",
+    "compliance_report",
+    "data_pack",
+    "kpi_views"
+  ],
+  "token_budget": "\u22642500",
+  "refs": {
+    "role_index": "06_Role-Recipes_Index_v2.json",
+    "kpi_framework": "14_KPI+Evaluation-Framework_v2.json",
+    "observability": "15_Observability+Telemetry_Spec_v2.json",
+    "lifecycle": "17_Lifecycle-Pack_v2.json",
+    "governance": "04_Governance+Risk-Register_v2.json"
+  },
+  "exec_brief": {
+    "id": "Executive_Summary_v2",
+    "audience": [
+      "Executive leadership",
+      "Business units"
+    ],
+    "contract": {
+      "fields_min": [
+        "status",
+        "highlights",
+        "risks",
+        "kpi_deltas",
+        "next_actions"
+      ],
+      "status_enum": [
+        "on_track",
+        "at_risk",
+        "blocked"
+      ],
+      "max_tokens": 600
+    },
+    "kpi_rollup": [
+      "ADR",
+      "PRI",
+      "HAL",
+      "AUD",
+      "LAT_p95",
+      "CST",
+      "INC"
+    ],
+    "notes": "Token-light summary; link to data packs and dashboards; cite concisely when non-trivial."
+  },
+  "compliance_report": {
+    "id": "Compliance_Governance_Update_v2",
+    "audience": [
+      "Compliance",
+      "Legal",
+      "CAIO",
+      "Audit"
+    ],
+    "contract": {
+      "fields_min": [
+        "policies_changed",
+        "exceptions_open",
+        "incidents_summary",
+        "audit_findings",
+        "actions_due",
+        "owners"
+      ],
+      "max_tokens": 800
+    },
+    "gates_reference": "14_KPI+Evaluation-Framework_v2.json#gates",
+    "incident_source": "episodic:eval/*",
+    "notes": "Summarize exceptions & incidents; map to governance controls; reference evidence paths."
+  },
+  "data_pack": {
+    "id": "Data_Pack_Spec_v2",
+    "contract": {
+      "fields_min": [
+        "artifacts",
+        "datasets",
+        "pii_flags",
+        "hashes",
+        "retention",
+        "owner"
+      ],
+      "artifact_types": [
+        "exec_brief_md",
+        "eval_results_jsonl",
+        "kpi_csv",
+        "telemetry_parquet",
+        "footprints_jsonl"
+      ]
+    },
+    "retention": {
+      "days": 365,
+      "jurisdiction_overrides_ref": "05_Safety+Privacy_Guardrails_v2.json#jurisdictional_rules"
+    },
+    "delivery": {
+      "formats": [
+        "md",
+        "csv",
+        "jsonl",
+        "parquet"
+      ],
+      "path_hint": "08_reports_templates/data_packs/*"
+    }
+  },
+  "kpi_views": {
+    "dashboards": {
+      "exec_overview": [
+        "ADR",
+        "PRI",
+        "HAL",
+        "AUD",
+        "LAT_p95",
+        "CST",
+        "INC"
+      ],
+      "reasoning_quality": [
+        "RTI",
+        "CORD",
+        "CONA",
+        "RFG"
+      ],
+      "release_cert": [
+        "gates_passed",
+        "exceptions_open",
+        "incidents_S2plus"
+      ]
+    },
+    "report_bindings": {
+      "cert_report": {
+        "source": "episodic:eval/*",
+        "fields": [
+          "suite_results",
+          "gates_outcome",
+          "kpi_deltas",
+          "incidents",
+          "decision"
+        ],
+        "owner": "Evaluator"
+      }
+    }
+  },
+  "definition_of_done": [
+    "Executive brief template available and token-light",
+    "Compliance report maps incidents/exceptions to gates and controls",
+    "Data pack spec enumerates artifacts, retention, and formats",
+    "KPI views align to Observability dashboards and Evaluator cert report"
+  ]
+}

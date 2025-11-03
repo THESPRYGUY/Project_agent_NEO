@@ -1,0 +1,112 @@
+{
+  "datasets": [
+    "default_index"
+  ],
+  "definition_of_done": [
+    "Datasets registered with classification and PII flags",
+    "Domain prompts reference Prompt-Pack v2 modules",
+    "Eval cases mapped to KPI framework",
+    "Overlay loads with no core file edits"
+  ],
+  "eval_cases": [
+    "default_domain_eval"
+  ],
+  "industry": "Turkey production R&D",
+  "meta": {
+    "agent_id": "AGT-112330-TURKEY-RND-0001",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "1970-01-01T00:00:00Z",
+    "name": "19_Overlay-Pack_SME-Domain_v1.json",
+    "owner": "Domain Lead",
+    "version": "v1.0.0"
+  },
+  "naics": {
+    "code": "112330",
+    "level": 6,
+    "lineage": [
+      {
+        "code": "11",
+        "level": 2,
+        "title": "Agriculture, Forestry, Fishing and Hunting"
+      },
+      {
+        "code": "112",
+        "level": 3,
+        "title": "Animal Production and Aquaculture"
+      },
+      {
+        "code": "1123",
+        "level": 4,
+        "title": "Poultry and Egg Production"
+      },
+      {
+        "code": "11233",
+        "level": 5,
+        "title": "Turkey Production"
+      }
+    ],
+    "title": "Turkey Production"
+  },
+  "objective": "Pluggable SME/domain overlay: terminology, standards, datasets, prompts, eval cases (no core edits).",
+  "policies": {
+    "advisory_scope": [],
+    "risk_tier": "high"
+  },
+  "prompts": [
+    "Analyst_CDD_Review",
+    "Policy_Alignment_Check"
+  ],
+  "refs": {
+    "kpi_framework": "14_KPI+Evaluation-Framework_v2.json",
+    "prompt_pack": "10_Prompt-Pack_v2.json",
+    "rag_config": "13_Knowledge-Graph+RAG_Config_v2.json",
+    "tool_data_registry": "12_Tool+Data-Registry_v2.json",
+    "workflow_pack": "11_Workflow-Pack_v2.json"
+  },
+  "region": [],
+  "regulators": [],
+  "schema_keys": [
+    "datasets",
+    "definition_of_done",
+    "eval_cases",
+    "industry",
+    "meta",
+    "naics",
+    "objective",
+    "policies",
+    "prompts",
+    "refs",
+    "region",
+    "regulators",
+    "sector",
+    "standards",
+    "terminology",
+    "token_budget",
+    "version"
+  ],
+  "sector": "Turkey production R&D: food safety, processing, welfare & performance.",
+  "standards": [
+    {
+      "id": "STD-001",
+      "name": "Example Standard",
+      "publisher": "StandardsBody",
+      "scope": "domain",
+      "url": "https://example.org/std-001"
+    }
+  ],
+  "terminology": [
+    {
+      "definition": "Domain-specific definition",
+      "source": "authoritative_ref",
+      "term": "EXAMPLE_TERM"
+    }
+  ],
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "version": 1
+}

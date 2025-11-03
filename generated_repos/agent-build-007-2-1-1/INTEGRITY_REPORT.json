@@ -1,0 +1,28 @@
+{
+  "status": "ok",
+  "checks": {
+    "kpi_sync": true,
+    "observability": true,
+    "owners_present": true,
+    "agent_id_consistent": true
+  },
+  "parity": {
+    "02_vs_14": true,
+    "11_vs_02": true,
+    "03_vs_02": true,
+    "17_vs_02": true
+  },
+  "parity_deltas": {
+    "03": {},
+    "17": {},
+    "11": {},
+    "14": {}
+  },
+  "parity_ok": true,
+  "missing_keys": {},
+  "contract_ok": true,
+  "crossref_errors": [],
+  "crossref_ok": true,
+  "missing_sections": {},
+  "packs_complete": true
+}

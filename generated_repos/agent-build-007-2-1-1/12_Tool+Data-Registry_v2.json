@@ -1,0 +1,193 @@
+{
+  "connectors": [
+    {
+      "auth_method": "none_or_api_key",
+      "id": "conn.http",
+      "name": "HTTP Client",
+      "notes": "Respect jurisdictional export controls per Safety+Privacy",
+      "owner": "CDO/SRE",
+      "pii_flags": [
+        "none"
+      ],
+      "scope": "outbound_http"
+    },
+    {
+      "auth_method": "service_account",
+      "id": "conn.vectorstore",
+      "name": "Vector Store",
+      "notes": "Index policies defined in 13_Knowledge-Graph+RAG_Config_v2.json",
+      "owner": "CDO/SRE",
+      "pii_flags": [
+        "PII",
+        "none"
+      ],
+      "scope": "embedding_index"
+    }
+  ],
+  "contracts": {
+    "connector_item_min": [
+      "auth_method",
+      "id",
+      "name",
+      "owner",
+      "pii_flags",
+      "scope"
+    ],
+    "dataset_item_min": [
+      "classification",
+      "contract_ref",
+      "description",
+      "id",
+      "name",
+      "owner",
+      "pii_flags",
+      "retention_days"
+    ],
+    "source_item_min": [
+      "date_accessed",
+      "id",
+      "publisher",
+      "title",
+      "topics",
+      "type",
+      "url"
+    ],
+    "tool_item_min": [
+      "capability",
+      "id",
+      "io_contract",
+      "name",
+      "owner",
+      "safety"
+    ]
+  },
+  "datasets": [
+    {
+      "name": "default_index",
+      "owner": "CDO"
+    }
+  ],
+  "definition_of_done": [
+    "All entries conform to min item contracts",
+    "Datasets list classification, PII flags, retention and owners",
+    "Safety/privacy and governance references present",
+    "Source registry carries authoritative references"
+  ],
+  "meta": {
+    "agent_id": "AGT-112330-TURKEY-RND-0001",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "1970-01-01T00:00:00Z",
+    "name": "12_Tool+Data-Registry_v2.json",
+    "owner": "CDO",
+    "version": "v2.0.0"
+  },
+  "objective": "Authoritative registry of tools, connectors, datasets, and source registry for GEN2.",
+  "policies": {
+    "change_control": "CAIO approval for new scopes",
+    "least_privilege": true
+  },
+  "schema_keys": [
+    "connectors",
+    "contracts",
+    "datasets",
+    "definition_of_done",
+    "meta",
+    "objective",
+    "policies",
+    "secrets",
+    "source_registry",
+    "token_budget",
+    "tools",
+    "version"
+  ],
+  "secrets": [
+    {
+      "name": "tool_registry_api",
+      "source": "vault://tooling/registry"
+    },
+    {
+      "name": "vector_store_service",
+      "source": "vault://tooling/vectorstore"
+    }
+  ],
+  "source_registry": [
+    {
+      "date_accessed": "2025-09-12T00:00:00Z",
+      "id": "SRC-DSPY-01",
+      "publisher": "Stanford NLP / DSPy",
+      "title": "DSPy — Programming Language Models",
+      "topics": [
+        "eval",
+        "training",
+        "workflows"
+      ],
+      "type": "framework_docs",
+      "url": "https://dspy-docs.org/"
+    },
+    {
+      "date_accessed": "2025-09-12T00:00:00Z",
+      "id": "SRC-LANGGRAPH-01",
+      "publisher": "LangChain",
+      "title": "LangGraph — Stateful Agent Workflows",
+      "topics": [
+        "agents",
+        "workflows"
+      ],
+      "type": "framework_docs",
+      "url": "https://langchain-ai.github.io/langgraph/"
+    },
+    {
+      "date_accessed": "2025-09-12T00:00:00Z",
+      "id": "SRC-OPENAI-01",
+      "publisher": "OpenAI",
+      "title": "OpenAI Docs — System Instructions & Structured Outputs",
+      "topics": [
+        "instructions",
+        "prompts",
+        "tools"
+      ],
+      "type": "official_docs",
+      "url": "https://platform.openai.com/docs"
+    }
+  ],
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "tools": [
+    {
+      "capabilities": [
+        "read",
+        "write"
+      ],
+      "contract": {
+        "input": {
+          "type": "string"
+        },
+        "output": {
+          "type": "string"
+        }
+      },
+      "name": "calendar"
+    },
+    {
+      "capabilities": [
+        "read",
+        "write"
+      ],
+      "contract": {
+        "input": {
+          "type": "string"
+        },
+        "output": {
+          "type": "string"
+        }
+      },
+      "name": "email"
+    }
+  ],
+  "version": 2
+}

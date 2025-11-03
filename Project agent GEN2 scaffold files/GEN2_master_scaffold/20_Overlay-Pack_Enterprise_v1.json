@@ -1,0 +1,97 @@
+{
+  "meta": {
+    "name": "20_Overlay-Pack_Enterprise",
+    "version": "v1.0.0",
+    "owner": "Client Exec Sponsor",
+    "created_at": "2025-09-12T19:28:14Z"
+  },
+  "objective": "Enterprise overlay: policies, brand, legal positions, stakeholder map, escalation list.",
+  "schema_keys": [
+    "policies",
+    "brand",
+    "legal",
+    "stakeholders",
+    "escalations"
+  ],
+  "token_budget": "\u22642000",
+  "refs": {
+    "governance": "04_Governance+Risk-Register_v2.json",
+    "safety_privacy": "05_Safety+Privacy_Guardrails_v2.json",
+    "observability": "15_Observability+Telemetry_Spec_v2.json",
+    "reporting": "18_Reporting-Pack_v2.json"
+  },
+  "policies": [
+    {
+      "id": "POL-001",
+      "name": "Enterprise AI Use Policy",
+      "status": "active",
+      "summary": "Allowlisted use-cases; prohibited categories inherit from Safety+Privacy."
+    }
+  ],
+  "brand": {
+    "style_notes": "Tone, naming, and formatting preferences for reports and briefs.",
+    "templates": [
+      "exec_brief_md",
+      "slide_deck_md"
+    ]
+  },
+  "legal": {
+    "positions": [
+      {
+        "topic": "Data Residency",
+        "stance": "Prefer in-region processing; SCC/IDTA for cross-border transfers."
+      },
+      {
+        "topic": "IP Ownership",
+        "stance": "Artifacts produced by Builder under enterprise license."
+      }
+    ],
+    "terms_addenda": [
+      "vendor_sccs",
+      "model_terms_overrides_if_any"
+    ]
+  },
+  "stakeholders": [
+    {
+      "role": "Sponsor",
+      "name": "TBD",
+      "email": "tbd@example.com"
+    },
+    {
+      "role": "CISO",
+      "name": "TBD",
+      "email": "tbd@example.com"
+    },
+    {
+      "role": "PMO Lead",
+      "name": "TBD",
+      "email": "tbd@example.com"
+    }
+  ],
+  "escalations": {
+    "p1": [
+      "security_incident",
+      "policy_conflict_high",
+      "gate_fail_persistent"
+    ],
+    "contacts": [
+      {
+        "role": "CISO",
+        "sla_hours": 4
+      },
+      {
+        "role": "CAIO",
+        "sla_hours": 8
+      },
+      {
+        "role": "PMO",
+        "sla_hours": 8
+      }
+    ]
+  },
+  "definition_of_done": [
+    "Enterprise policies captured; conflicts resolved against Governance and Safety+Privacy",
+    "Brand and report templates available",
+    "Stakeholders and escalation contacts defined with SLAs"
+  ]
+}

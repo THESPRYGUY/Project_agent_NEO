@@ -527,14 +527,26 @@ def _parse_args(argv: Sequence[str]) -> argparse.Namespace:
     p.add_argument("--root", default=WINDOWS_TARGET_ROOT, help="Root folder containing generated repos")
     p.add_argument("--format", default="md,json,csv", help="Comma-separated output formats: md,json,csv")
     p.add_argument("--fail-on", default="", help="Severity threshold to fail the process (e.g., 'critical', 'high')")
+    p.add_argument(
+        "--severity-threshold",
+        default="",
+        help="Alias for --fail-on (kept for backward compatibility)",
+    )
+    p.add_argument("root_arg", nargs="?", help="Optional root path (back-compat positional)")
     return p.parse_args(argv)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     ns = _parse_args(argv or sys.argv[1:])
+    root_value = ns.root
+    if ns.root_arg and (ns.root == WINDOWS_TARGET_ROOT or ns.root == ""):
+        root_value = ns.root_arg
+    fail_on = (ns.fail_on or "").strip()
+    if not fail_on and ns.severity_threshold:
+        fail_on = ns.severity_threshold.strip()
     formats = [f.strip() for f in (ns.format or "md,json,csv").split(",") if f.strip()]
-    findings = run_audit(ns.root, formats)
-    threshold = (ns.fail_on or "").strip().upper()
+    findings = run_audit(root_value, formats)
+    threshold = fail_on.upper()
     if threshold:
         worst = max([severity_rank(f.severity) for f in findings], default=0)
         if worst >= severity_rank(threshold):
