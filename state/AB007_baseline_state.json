@@ -1,0 +1,20 @@
+﻿{
+    "branch":  "feature/sprint-ab007-hydration",
+    "commit":  "58ae754d3bb37c5f6bd6126318b5b3b798e1bc93",
+    "pr":  "90",
+    "build_root":  "generated_repos/agent-build-007-2-1-1",
+    "schema_version":  "2.1.1",
+    "packs":  {
+                  "count":  20,
+                  "hash":  "33d15fb01a5984e14f44f777871f4555be5c5881e0030aff069b22cd1325ff5b"
+              },
+    "ci":  {
+               "schema_validate":  "green",
+               "placeholder_sweep":  "green",
+               "repo_audit":  "green"
+           },
+    "notes":  [
+                  "NAICS lineage seeded in neo_build/ssot.py; monitor for taxonomy changes.",
+                  "Provider/secret fallbacks present; extend tables as new vendors onboard."
+              ]
+}
