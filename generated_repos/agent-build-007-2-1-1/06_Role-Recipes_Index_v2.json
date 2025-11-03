@@ -1,0 +1,307 @@
+{
+  "archetype": "AIA-P",
+  "decision_rights": {
+    "global_instructions": {
+      "approvers": [
+        "CAIO",
+        "CPA"
+      ],
+      "owner": "CAIO"
+    },
+    "guardrails_change": {
+      "approvers": [
+        "CAIO",
+        "CISO/Legal"
+      ],
+      "owner": "CISO/Legal"
+    },
+    "observability_spec": {
+      "approvers": [
+        "CAIO",
+        "CDO/SRE"
+      ],
+      "owner": "CDO/SRE"
+    },
+    "prompt_pack_major": {
+      "approvers": [
+        "CAIO",
+        "CPA"
+      ],
+      "owner": "CPA"
+    },
+    "release_certification": {
+      "approvers": [
+        "CAIO",
+        "Evaluator"
+      ],
+      "owner": "Evaluator"
+    },
+    "workflow_major": {
+      "approvers": [
+        "CAIO",
+        "COO/PMO"
+      ],
+      "owner": "COO/PMO"
+    }
+  },
+  "definition_of_done": [
+    "Executive roles mapped with decision rights and KPIs",
+    "Handoffs established with gating criteria",
+    "Role recipes aligned to subagent archetypes"
+  ],
+  "handoffs": [
+    {
+      "artifact": "05_Safety+Privacy_Guardrails_v2.json#exceptions",
+      "criteria": [
+        "extra_telemetry",
+        "time_bound"
+      ],
+      "from": "CISO/Legal",
+      "to": "COO/PMO"
+    },
+    {
+      "artifact": "10_Prompt-Pack_v2.json",
+      "criteria": [
+        "HAL_local<=0.02",
+        "PRI_local>=0.95"
+      ],
+      "from": "CPA",
+      "to": "COO/PMO"
+    },
+    {
+      "artifact": "11_Workflow-Pack_v2.json",
+      "criteria": [
+        "gates_set",
+        "tests_configured"
+      ],
+      "from": "COO/PMO",
+      "to": "Evaluator"
+    },
+    {
+      "artifact": "12_Tool+Data-Registry_v2.json",
+      "criteria": [
+        "contracts_signed",
+        "pii_flags_set"
+      ],
+      "from": "CDO/SRE",
+      "to": "CPA"
+    },
+    {
+      "artifact": "18_Reporting-Pack_v2.json#cert_report",
+      "criteria": [
+        "gates_passed",
+        "no_S1_S2_incidents"
+      ],
+      "from": "Evaluator",
+      "to": "CAIO"
+    }
+  ],
+  "kpis": {
+    "definitions_ref": "14_KPI+Evaluation-Framework_v2.json",
+    "role_targets": {
+      "CAIO": {
+        "ADR_min": 1,
+        "AUD_min": 0.9,
+        "PRI_min": 0.95
+      },
+      "CDO/SRE": {
+        "COV_min": 0.8,
+        "LAT_p95_ms_max": 15000,
+        "pipeline_success_rate_min": 0.99
+      },
+      "CISO/Legal": {
+        "AUD_min": 0.9,
+        "INC_score_max": 5
+      },
+      "COO/PMO": {
+        "CST_within_budget": true,
+        "LAT_p95_ms_max": 15000,
+        "RST_min": 0.95
+      },
+      "CPA": {
+        "HAL_max": 0.02,
+        "PRI_min": 0.95,
+        "RTI_min": 0.85
+      },
+      "Evaluator": {
+        "AUD_min": 0.9,
+        "CONA_min": 0.9,
+        "PRI_min": 0.95
+      }
+    }
+  },
+  "mapping": {
+    "agent_id": "AGT-112330-TURKEY-RND-0001",
+    "primary_role_code": "CAIO"
+  },
+  "meta": {
+    "agent_id": "AGT-112330-TURKEY-RND-0001",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "1970-01-01T00:00:00Z",
+    "name": "06_Role-Recipes_Index_v2.json",
+    "owner": "CAIO",
+    "version": "v2.0.0"
+  },
+  "objective": "Executive role recipes (missions, decision rights, KPIs, handoffs) for the GEN2 scaffold.",
+  "objectives": [
+    "Align executive roles with governance decision rights",
+    "Trace KPIs to evaluation framework and observability hooks"
+  ],
+  "role_recipe_ref": "AIA-P:Planner-Builder-Evaluator",
+  "role_title": "AGENT",
+  "roles": [
+    {
+      "capabilities": [
+        "approve_major_release",
+        "approve_policy",
+        "orggraph_edit",
+        "publish_exec_guidance",
+        "risk_acceptance_high"
+      ],
+      "handoffs_to": [
+        "COO/PMO",
+        "CPA",
+        "Evaluator"
+      ],
+      "id": "CAIO",
+      "kpis": [
+        "ADR",
+        "AUD",
+        "Innovation_Index",
+        "PRI"
+      ],
+      "mission": "Own AI policy, Global-Instructions, and fleet strategy; approve high-risk capabilities and go-lives."
+    },
+    {
+      "capabilities": [
+        "approve_exceptions_S3plus",
+        "guardrails_edit",
+        "privacy_rule_edit"
+      ],
+      "handoffs_to": [
+        "CAIO",
+        "COO/PMO"
+      ],
+      "id": "CISO/Legal",
+      "kpis": [
+        "AUD",
+        "INC"
+      ],
+      "mission": "Own safety/privacy guardrails, jurisdictional controls, and exceptions for regulated contexts."
+    },
+    {
+      "capabilities": [
+        "eval_matrix_edit",
+        "pause_capability_on_eval_fail",
+        "prompt_pack_edit",
+        "reasoning_policy_edit"
+      ],
+      "handoffs_to": [
+        "COO/PMO",
+        "Evaluator"
+      ],
+      "id": "CPA",
+      "kpis": [
+        "CORD",
+        "HAL",
+        "PRI",
+        "RFG",
+        "RTI"
+      ],
+      "mission": "Own prompt packs, role recipes, and reasoning quality; enforce token hygiene and safe agentic patterns."
+    },
+    {
+      "capabilities": [
+        "certify_release",
+        "open_incident_on_fail",
+        "run_eval_suites"
+      ],
+      "handoffs_to": [
+        "CAIO",
+        "COO/PMO"
+      ],
+      "id": "Evaluator",
+      "kpis": [
+        "AUD",
+        "CONA",
+        "PRI",
+        "RST"
+      ],
+      "mission": "Own test matrices and certification; run functional, governance, red-team, reasoning-quality suites."
+    },
+    {
+      "capabilities": [
+        "dataset_contracts",
+        "indexing_policy",
+        "observability_dashboard_admin",
+        "telemetry_config"
+      ],
+      "handoffs_to": [
+        "CPA",
+        "Evaluator"
+      ],
+      "id": "CDO/SRE",
+      "kpis": [
+        "COV",
+        "CST",
+        "LAT",
+        "pipeline_success_rate"
+      ],
+      "mission": "Own data/tool registries, memory schema, observability stack, and reliability SLAs."
+    },
+    {
+      "capabilities": [
+        "freeze_on_incident",
+        "run_regression",
+        "schedule_release",
+        "workflow_edit"
+      ],
+      "handoffs_to": [
+        "CAIO",
+        "Evaluator"
+      ],
+      "id": "COO/PMO",
+      "kpis": [
+        "ADR",
+        "CST",
+        "LAT",
+        "RST"
+      ],
+      "mission": "Own workflows and lifecycle; ensure gates, schedules, and change control."
+    }
+  ],
+  "roles_index": [
+    {
+      "code": "AGENT",
+      "objectives": [
+        "Turkey production R&D: food safety, processing, welfare & performance."
+      ],
+      "title": "AGENT"
+    }
+  ],
+  "schema_keys": [
+    "archetype",
+    "decision_rights",
+    "definition_of_done",
+    "handoffs",
+    "kpis",
+    "mapping",
+    "meta",
+    "objective",
+    "objectives",
+    "role_recipe_ref",
+    "role_title",
+    "roles",
+    "roles_index",
+    "token_budget",
+    "version"
+  ],
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "version": 2
+}

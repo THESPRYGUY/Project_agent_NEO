@@ -1,0 +1,173 @@
+{
+  "alerts": [
+    "HAL_breach",
+    "PRI_drop"
+  ],
+  "dashboards": {
+    "compliance_view": [
+      "AUD",
+      "INC",
+      "exceptions_open",
+      "time_to_close_incidents"
+    ],
+    "exec_overview": [
+      "ADR",
+      "AUD",
+      "CST",
+      "HAL",
+      "INC",
+      "LAT_p95",
+      "PRI"
+    ],
+    "reasoning_quality": [
+      "CONA",
+      "CORD",
+      "RFG",
+      "RTI",
+      "debate_usage_rate",
+      "reflection_loops"
+    ],
+    "reliability_sre": [
+      "error_code_breakdown",
+      "latency_p50_p95",
+      "pipeline_success_rate",
+      "tool_error_rates"
+    ]
+  },
+  "decision_event_field_types": {
+    "band_used": "string",
+    "confidence": "number",
+    "cost_elapsed": "number",
+    "escalation_flag": "boolean",
+    "escalation_reason": "string",
+    "persistence_level": "string",
+    "risk": "number",
+    "step_id": "string",
+    "time_elapsed": "number"
+  },
+  "decision_event_fields": [
+    "band_used",
+    "confidence",
+    "cost_elapsed",
+    "escalation_flag",
+    "escalation_reason",
+    "persistence_level",
+    "risk",
+    "step_id",
+    "time_elapsed"
+  ],
+  "definition_of_done": [],
+  "events": [
+    "gate_evaluation",
+    "intake_loaded",
+    "naics_confirmed",
+    "profile_generated",
+    "repo_generated"
+  ],
+  "log_schema": {
+    "rag_event": [
+      "hits",
+      "index_id",
+      "latency_ms",
+      "passages_returned",
+      "query_hash",
+      "reranker_used",
+      "timestamp",
+      "tokens_saved_cached"
+    ],
+    "reasoning_event": [
+      "agent_id",
+      "cona",
+      "cord",
+      "debate_participants",
+      "footprint_id",
+      "reflection_loops",
+      "rfg",
+      "rti",
+      "task_id",
+      "timestamp"
+    ],
+    "task_event": [
+      "agent_id",
+      "archetype",
+      "citations_count",
+      "cost_estimate_usd",
+      "error_code",
+      "kpi_local_AUD",
+      "kpi_local_HAL",
+      "kpi_local_PRI",
+      "latency_ms",
+      "role",
+      "status",
+      "task_id",
+      "timestamp",
+      "tokens_input",
+      "tokens_output",
+      "tool_calls"
+    ]
+  },
+  "meta": {
+    "agent_id": "AGT-112330-TURKEY-RND-0001",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "1970-01-01T00:00:00Z",
+    "name": "15_Observability+Telemetry_Spec_v2.json",
+    "owner": "SRE+CDO",
+    "version": "v2.0.0"
+  },
+  "objective": "Privacy-aware telemetry schema, dashboards, and alerts for GEN2 agents.",
+  "pii_redaction": {},
+  "privacy_controls": {
+    "jurisdiction_overrides_ref": "05_Safety+Privacy_Guardrails_v2.json#jurisdictional_rules",
+    "no_content_logging": true,
+    "pii_in_logs": "forbidden",
+    "selectors_only": [
+      "counts",
+      "hash_ids",
+      "scores"
+    ]
+  },
+  "refs": {
+    "footprints_spec": "16_Reasoning-Footprints_Schema_v1.json",
+    "global_instructions": "02_Global-Instructions_v2.json",
+    "governance": "04_Governance+Risk-Register_v2.json",
+    "kpi_framework": "14_KPI+Evaluation-Framework_v2.json",
+    "safety_privacy": "05_Safety+Privacy_Guardrails_v2.json"
+  },
+  "sampling": {},
+  "schema_keys": [
+    "alerts",
+    "dashboards",
+    "decision_event_field_types",
+    "decision_event_fields",
+    "definition_of_done",
+    "events",
+    "log_schema",
+    "meta",
+    "objective",
+    "pii_redaction",
+    "privacy_controls",
+    "refs",
+    "sampling",
+    "sinks",
+    "storage",
+    "token_budget",
+    "version"
+  ],
+  "sinks": [],
+  "storage": {
+    "episodic_scope": "episodic:telemetry/*",
+    "export": [
+      "csv",
+      "parquet_optional"
+    ],
+    "retention_days": 365
+  },
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "version": 2
+}

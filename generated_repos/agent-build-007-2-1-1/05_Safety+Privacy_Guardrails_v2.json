@@ -1,0 +1,165 @@
+{
+  "audit_checklist": [
+    "Filters active",
+    "Guardrails loaded",
+    "Refusal reasons logged"
+  ],
+  "content_filters": {
+    "actions": {
+      "block_on": [
+        "child_sexual_content",
+        "doxxing",
+        "explicit_illegal_instruction"
+      ],
+      "require_disclaimer_on": [
+        "financial",
+        "legal",
+        "medical"
+      ],
+      "route_to_hitl_on": [
+        "ambiguous_legality",
+        "high_risk_profiled_content"
+      ]
+    },
+    "categories": [
+      "drugs",
+      "fraud",
+      "hate",
+      "self-injury",
+      "sexual_content",
+      "violence",
+      "weapons"
+    ]
+  },
+  "data_classification": {
+    "default": "confidential",
+    "labels": [
+      "confidential",
+      "internal",
+      "public",
+      "restricted"
+    ]
+  },
+  "jurisdictional_rules": {
+    "default": "CA"
+  },
+  "meta": {
+    "agent_id": "AGT-112330-TURKEY-RND-0001",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "1970-01-01T00:00:00Z",
+    "name": "05_Safety+Privacy_Guardrails_v2.json",
+    "owner": "CISO+Legal",
+    "version": "v2.0.0"
+  },
+  "no_impersonation": true,
+  "objective": "Safety, privacy, and jurisdictional guardrails for GEN2 agents. Refusal playbooks, PII handling, data minimization, export controls.",
+  "operational_hooks": {
+    "exception_workflow": "use_exception_process_from_governance",
+    "governance_file": "04_Governance+Risk-Register_v2.json",
+    "incident_workflow": "use_incident_response_from_governance",
+    "observability_file": "15_Observability+Telemetry_Spec_v2.json"
+  },
+  "pii_mask_on_ingest": true,
+  "principles": [
+    "Apply privacy-by-design and least-privilege access.",
+    "Do not store or expose raw chain-of-thought; use sanitized Reasoning Footprints only.",
+    "Minimize token footprint in memory and logs; redact PII by default.",
+    "Refuse prohibited or unsafe requests.",
+    "Respect regional data residency and export controls."
+  ],
+  "privacy_policies": {
+    "memory_rules": [
+      "least_privilege_scopes",
+      "no_cross_scope_write_without_approval"
+    ],
+    "minimization": [
+      "avoid_raw_free_text_PII",
+      "collect_minimum_required",
+      "drop_unneeded_fields"
+    ],
+    "pii_masking": [
+      "address_redact",
+      "email_hash",
+      "id_truncate",
+      "phone_tokenize"
+    ],
+    "reasoning_footprints": {
+      "content": [
+        "decision_factors",
+        "error_taxonomy",
+        "lessons_learned",
+        "rationale_summary"
+      ],
+      "exclude": [
+        "raw_chain_of_thought",
+        "sensitive_content_snippets",
+        "verbatim_user_PII"
+      ],
+      "store": true
+    },
+    "subject_rights": {
+      "access": "supported_via_ticket",
+      "erase": "supported_if_legal",
+      "export": "json_or_csv_upon_verification",
+      "rectify": "supported"
+    },
+    "telemetry_privacy": {
+      "drop_content": true,
+      "log_schema_min_fields": [
+        "agent_id",
+        "latency_ms",
+        "status",
+        "task_id",
+        "timestamp",
+        "tokens_input",
+        "tokens_output"
+      ],
+      "pii_in_logs": "forbidden",
+      "selectors_allowed": [
+        "hash_ids",
+        "kpi_scores",
+        "reasoning_kpis_aggregated"
+      ]
+    }
+  },
+  "redlines": {
+    "prohibited_content": [
+      "doxxing",
+      "malware creation"
+    ],
+    "restricted_handling": [
+      "PCI",
+      "PII"
+    ]
+  },
+  "refusal_playbooks": [
+    "Illegal requests",
+    "Regulatory evasion",
+    "Sensitive personal data"
+  ],
+  "schema_keys": [
+    "audit_checklist",
+    "content_filters",
+    "data_classification",
+    "jurisdictional_rules",
+    "meta",
+    "no_impersonation",
+    "objective",
+    "operational_hooks",
+    "pii_mask_on_ingest",
+    "principles",
+    "privacy_policies",
+    "redlines",
+    "refusal_playbooks",
+    "token_budget",
+    "version"
+  ],
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "version": 2
+}

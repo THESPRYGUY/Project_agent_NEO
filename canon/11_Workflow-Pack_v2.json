@@ -1,0 +1,692 @@
+{
+  "meta": {
+    "name": "11_Workflow-Pack",
+    "version": "v2.0.0",
+    "owner": "COO/PMO+CPA",
+    "created_at": "2025-09-12T18:12:11Z"
+  },
+  "objective": "Engine-agnostic orchestration graphs with debate/consensus, reflection micro-loops, HITL gates, KPI enforcement, and rollback.",
+  "schema_keys": [
+    "graphs",
+    "micro_loops",
+    "gates",
+    "rollback"
+  ],
+  "token_budget": "\u22643000",
+  "conventions": {
+    "node_types": [
+      "action",
+      "tool",
+      "decision",
+      "human_gate",
+      "end"
+    ],
+    "state_store": "minimized JSON state object passed between nodes",
+    "hitl_default_role": "TeamLead (COO/PMO)",
+    "retry_policy_default": {
+      "max_retries": 2,
+      "backoff_ms": 500,
+      "jitter_ms": 200
+    },
+    "timeout_ms_default": 120000
+  },
+  "micro_loops": {
+    "reflection": {
+      "id": "Reflection_Microloop_v2",
+      "max_loops": 2,
+      "stop_on_gain_pct": 10,
+      "footprints_spec": "16_Reasoning-Footprints_Schema_v1.json"
+    },
+    "debate_consensus": {
+      "id": "Debate_Consensus_v2",
+      "enabled_for_high_stakes": true,
+      "consensus_rule": "majority_with_explanations",
+      "record_dissent": true,
+      "footprints_spec": "16_Reasoning-Footprints_Schema_v1.json"
+    }
+  },
+  "gates": {
+    "activation": {
+      "PRI_min": 0.95,
+      "HAL_max": 0.02,
+      "AUD_min": 0.9
+    },
+    "change": {
+      "require_regression": true,
+      "no_severity_downgrade": true,
+      "allow_latency_increase_pct": 10
+    },
+    "high_stakes_rule": "Use debate_consensus + HITL approval; log to Reasoning Footprints"
+  },
+  "graphs": [
+    {
+      "id": "WF_Onboarding_NewAgent_v2.0",
+      "purpose": "Validate manifest, register OrgGraph, seed memory, attach prompts, baseline eval, and activate.",
+      "memory_scopes": {
+        "read": [
+          "procedural:playbook/onboarding/*"
+        ],
+        "write": [
+          "episodic:projects/*"
+        ]
+      },
+      "eval_gates": {
+        "PRI_min": 0.95,
+        "HAL_max": 0.02,
+        "AUD_min": 0.9
+      },
+      "nodes": [
+        {
+          "id": "validate_manifest",
+          "type": "action",
+          "name": "Validate Manifest",
+          "component_ref": "Schema.validate",
+          "params": {
+            "schema_ref": "schemas/Agent_Manifest.schema.json"
+          }
+        },
+        {
+          "id": "register_orggraph",
+          "type": "action",
+          "name": "Register OrgGraph",
+          "component_ref": "OrgGraph.add",
+          "params": {}
+        },
+        {
+          "id": "seed_memory",
+          "type": "action",
+          "name": "Seed Memory",
+          "component_ref": "Memory.seed",
+          "params": {
+            "packs": [
+              "core_glossary",
+              "policies_min"
+            ]
+          }
+        },
+        {
+          "id": "attach_prompts",
+          "type": "action",
+          "name": "Attach Prompts",
+          "component_ref": "Prompts.attach",
+          "params": {
+            "pack_ref": "10_Prompt-Pack_v2.json"
+          }
+        },
+        {
+          "id": "baseline_eval",
+          "type": "tool",
+          "name": "Baseline Eval",
+          "component_ref": "Eval.run",
+          "params": {
+            "matrix": "baseline"
+          }
+        },
+        {
+          "id": "hitl_approve",
+          "type": "human_gate",
+          "name": "Activate Approval",
+          "params": {
+            "role": "COO/PMO",
+            "timeout_ms": 86400000
+          }
+        },
+        {
+          "id": "activation_decision",
+          "type": "decision",
+          "name": "Activation Decision",
+          "params": {
+            "rules": "eval>=gates && approval==true"
+          }
+        },
+        {
+          "id": "emit_event",
+          "type": "action",
+          "name": "Emit Activation Event",
+          "component_ref": "EventBus.publish",
+          "params": {
+            "event": "AGENT_ACTIVATED"
+          }
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "name": "End",
+          "params": {}
+        }
+      ],
+      "edges": [
+        {
+          "from": "validate_manifest",
+          "to": "register_orggraph"
+        },
+        {
+          "from": "register_orggraph",
+          "to": "seed_memory"
+        },
+        {
+          "from": "seed_memory",
+          "to": "attach_prompts"
+        },
+        {
+          "from": "attach_prompts",
+          "to": "baseline_eval"
+        },
+        {
+          "from": "baseline_eval",
+          "to": "hitl_approve"
+        },
+        {
+          "from": "hitl_approve",
+          "to": "activation_decision"
+        },
+        {
+          "from": "activation_decision",
+          "to": "emit_event",
+          "condition": "pass"
+        },
+        {
+          "from": "activation_decision",
+          "to": "end",
+          "condition": "fail"
+        },
+        {
+          "from": "emit_event",
+          "to": "end"
+        }
+      ]
+    },
+    {
+      "id": "WF_PlanAndAct_v2.0",
+      "purpose": "Decompose task and execute steps with reflection and governance gates.",
+      "memory_scopes": {
+        "read": [
+          "semantic:*",
+          "procedural:*"
+        ],
+        "write": [
+          "episodic:projects/*"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "intake",
+          "type": "action",
+          "name": "Intake & Constraints",
+          "component_ref": "Intake.capture",
+          "params": {
+            "budget_tokens": 800
+          }
+        },
+        {
+          "id": "plan",
+          "type": "action",
+          "name": "Create Plan",
+          "component_ref": "Planning.create",
+          "params": {
+            "template": "DECOMP_PlanAndAct_v2"
+          }
+        },
+        {
+          "id": "exec_step",
+          "type": "tool",
+          "name": "Execute Next Step",
+          "component_ref": "Executor.run",
+          "params": {
+            "loop": "until_done"
+          }
+        },
+        {
+          "id": "reflect",
+          "type": "action",
+          "name": "Reflection Micro-loop",
+          "component_ref": "QA.self_reflect",
+          "params": {
+            "profile": "Reflection_Microloop_v2"
+          }
+        },
+        {
+          "id": "gov",
+          "type": "action",
+          "name": "Governance Gate",
+          "component_ref": "QA.governance",
+          "params": {
+            "policy": "QA_Governance_v2"
+          }
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "name": "End"
+        }
+      ],
+      "edges": [
+        {
+          "from": "intake",
+          "to": "plan"
+        },
+        {
+          "from": "plan",
+          "to": "exec_step"
+        },
+        {
+          "from": "exec_step",
+          "to": "reflect"
+        },
+        {
+          "from": "reflect",
+          "to": "gov"
+        },
+        {
+          "from": "gov",
+          "to": "end"
+        }
+      ]
+    },
+    {
+      "id": "WF_RAG_Brief_v2.0",
+      "purpose": "Produce a concise, cited brief using retrieval with filters and budgets; include reflection loop.",
+      "memory_scopes": {
+        "read": [
+          "semantic:*"
+        ],
+        "write": [
+          "episodic:projects/*"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "plan_query",
+          "type": "action",
+          "name": "Plan Query",
+          "component_ref": "Planning.query",
+          "params": {
+            "top_k": 6,
+            "mmr": true
+          }
+        },
+        {
+          "id": "rag",
+          "type": "tool",
+          "name": "RAG Query",
+          "component_ref": "RAG.query",
+          "params": {
+            "filters": {
+              "classification_max": "confidential"
+            }
+          }
+        },
+        {
+          "id": "synth",
+          "type": "action",
+          "name": "Synthesis",
+          "component_ref": "Synthesis.brief",
+          "params": {
+            "contract": "schemas/Brief_Contract.schema.json"
+          }
+        },
+        {
+          "id": "factcheck",
+          "type": "action",
+          "name": "Fact Check",
+          "component_ref": "QA.factcheck",
+          "params": {
+            "profile": "QA_FactCheck_v2"
+          }
+        },
+        {
+          "id": "reflect",
+          "type": "action",
+          "name": "Reflection Micro-loop",
+          "component_ref": "QA.self_reflect",
+          "params": {
+            "profile": "Reflection_Microloop_v2"
+          }
+        },
+        {
+          "id": "gov",
+          "type": "action",
+          "name": "Governance Gate",
+          "component_ref": "QA.governance",
+          "params": {
+            "policy": "QA_Governance_v2"
+          }
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "name": "End"
+        }
+      ],
+      "edges": [
+        {
+          "from": "plan_query",
+          "to": "rag"
+        },
+        {
+          "from": "rag",
+          "to": "synth"
+        },
+        {
+          "from": "synth",
+          "to": "factcheck"
+        },
+        {
+          "from": "factcheck",
+          "to": "reflect"
+        },
+        {
+          "from": "reflect",
+          "to": "gov"
+        },
+        {
+          "from": "gov",
+          "to": "end"
+        }
+      ]
+    },
+    {
+      "id": "WF_Eval_Gate_v2.0",
+      "purpose": "Run evaluation suites and enforce activation/change gates with rollback.",
+      "memory_scopes": {
+        "read": [
+          "episodic:eval/*",
+          "procedural:policy/*"
+        ],
+        "write": [
+          "episodic:eval/*"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "select_tests",
+          "type": "action",
+          "name": "Select Tests",
+          "component_ref": "Eval.select",
+          "params": {
+            "matrix": "baseline"
+          }
+        },
+        {
+          "id": "run",
+          "type": "tool",
+          "name": "Run Tests",
+          "component_ref": "Eval.run",
+          "params": {}
+        },
+        {
+          "id": "aggregate",
+          "type": "action",
+          "name": "Aggregate",
+          "component_ref": "Eval.aggregate",
+          "params": {}
+        },
+        {
+          "id": "decision",
+          "type": "decision",
+          "name": "Gate Decision",
+          "params": {
+            "rules": "pri>=0.95 && hallucination<=0.02 && audit>=0.90"
+          }
+        },
+        {
+          "id": "report",
+          "type": "action",
+          "name": "Report",
+          "component_ref": "Eval.report",
+          "params": {
+            "write_ep": "episodic:eval/*"
+          }
+        },
+        {
+          "id": "rollback",
+          "type": "action",
+          "name": "Block/Rollback",
+          "component_ref": "Change.rollback",
+          "params": {}
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "name": "End"
+        }
+      ],
+      "edges": [
+        {
+          "from": "select_tests",
+          "to": "run"
+        },
+        {
+          "from": "run",
+          "to": "aggregate"
+        },
+        {
+          "from": "aggregate",
+          "to": "decision"
+        },
+        {
+          "from": "decision",
+          "to": "report",
+          "condition": "pass"
+        },
+        {
+          "from": "decision",
+          "to": "rollback",
+          "condition": "fail"
+        },
+        {
+          "from": "report",
+          "to": "end"
+        },
+        {
+          "from": "rollback",
+          "to": "end"
+        }
+      ]
+    },
+    {
+      "id": "WF_Governance_Incident_v2.0",
+      "purpose": "Handle policy conflicts or safety events with escalation and remediation; archive Reasoning Footprints.",
+      "memory_scopes": {
+        "read": [
+          "episodic:*",
+          "procedural:policy/*"
+        ],
+        "write": [
+          "episodic:*",
+          "procedural:policy/*"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "open_incident",
+          "type": "action",
+          "name": "Open Incident",
+          "component_ref": "Incidents.open",
+          "params": {}
+        },
+        {
+          "id": "freeze",
+          "type": "action",
+          "name": "Freeze Capability",
+          "component_ref": "Change.freeze",
+          "params": {}
+        },
+        {
+          "id": "rca",
+          "type": "action",
+          "name": "Root Cause",
+          "component_ref": "RCA.run",
+          "params": {}
+        },
+        {
+          "id": "remediate",
+          "type": "action",
+          "name": "Remediate",
+          "component_ref": "Change.apply",
+          "params": {}
+        },
+        {
+          "id": "exec_review",
+          "type": "human_gate",
+          "name": "Executive Review",
+          "params": {
+            "role": "CAIO",
+            "timeout_ms": 604800000
+          }
+        },
+        {
+          "id": "close_incident",
+          "type": "action",
+          "name": "Close Incident",
+          "component_ref": "Incidents.close",
+          "params": {}
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "name": "End"
+        }
+      ],
+      "edges": [
+        {
+          "from": "open_incident",
+          "to": "freeze"
+        },
+        {
+          "from": "freeze",
+          "to": "rca"
+        },
+        {
+          "from": "rca",
+          "to": "remediate"
+        },
+        {
+          "from": "remediate",
+          "to": "exec_review"
+        },
+        {
+          "from": "exec_review",
+          "to": "close_incident"
+        },
+        {
+          "from": "close_incident",
+          "to": "end"
+        }
+      ]
+    },
+    {
+      "id": "WF_ASUP_Lifecycle_v2.0",
+      "purpose": "Manage Agent Strategy Update Proposals from draft to implemented with evaluation & notes.",
+      "memory_scopes": {
+        "read": [
+          "episodic:*",
+          "procedural:*"
+        ],
+        "write": [
+          "episodic:*"
+        ]
+      },
+      "nodes": [
+        {
+          "id": "draft",
+          "type": "action",
+          "name": "Draft",
+          "component_ref": "ASUP.create",
+          "params": {}
+        },
+        {
+          "id": "review",
+          "type": "human_gate",
+          "name": "Review",
+          "params": {
+            "role": "TeamLead",
+            "timeout_ms": 259200000
+          }
+        },
+        {
+          "id": "exec_sign",
+          "type": "human_gate",
+          "name": "Exec Sign-off",
+          "params": {
+            "role": "CAIO",
+            "timeout_ms": 259200000
+          }
+        },
+        {
+          "id": "implement",
+          "type": "action",
+          "name": "Implement",
+          "component_ref": "Change.apply",
+          "params": {}
+        },
+        {
+          "id": "evaluate",
+          "type": "tool",
+          "name": "Evaluate",
+          "component_ref": "Eval.run",
+          "params": {
+            "matrix": "change_regression"
+          }
+        },
+        {
+          "id": "publish",
+          "type": "action",
+          "name": "Publish Notes",
+          "component_ref": "Deliver.guidance",
+          "params": {}
+        },
+        {
+          "id": "end",
+          "type": "end",
+          "name": "End"
+        }
+      ],
+      "edges": [
+        {
+          "from": "draft",
+          "to": "review"
+        },
+        {
+          "from": "review",
+          "to": "exec_sign"
+        },
+        {
+          "from": "exec_sign",
+          "to": "implement"
+        },
+        {
+          "from": "implement",
+          "to": "evaluate"
+        },
+        {
+          "from": "evaluate",
+          "to": "publish"
+        },
+        {
+          "from": "publish",
+          "to": "end"
+        }
+      ]
+    }
+  ],
+  "rollback": {
+    "conditions": [
+      "gate_fail",
+      "policy_conflict",
+      "security_incident",
+      "performance_regression>10%"
+    ],
+    "actions": [
+      "freeze_capability",
+      "revert_to_last_good",
+      "open_incident",
+      "notify_exec"
+    ]
+  },
+  "engine_adapters": {
+    "langgraph_hint": "Map nodes to functions(state)->state; add edges; compile; run(state).",
+    "crewai_hint": "Map nodes to Tasks; use event hooks for decisions/HITL; run crew flow.",
+    "dspy_hint": "Compose Modules; add training/telemetry wrappers; run pipeline with evaluation loops."
+  }
+}

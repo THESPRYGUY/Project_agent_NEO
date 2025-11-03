@@ -1,0 +1,127 @@
+{
+  "meta": {
+    "name": "15_Observability+Telemetry_Spec",
+    "version": "v2.0.0",
+    "owner": "SRE+CDO",
+    "created_at": "2025-09-12T18:52:28Z"
+  },
+  "objective": "Privacy-aware telemetry schema, dashboards, and alerts for GEN2 agents.",
+  "schema_keys": [
+    "log_schema",
+    "privacy_controls",
+    "dashboards",
+    "alerts"
+  ],
+  "token_budget": "\u22642000",
+  "refs": {
+    "global_instructions": "02_Global-Instructions_v2.json",
+    "governance": "04_Governance+Risk-Register_v2.json",
+    "safety_privacy": "05_Safety+Privacy_Guardrails_v2.json",
+    "kpi_framework": "14_KPI+Evaluation-Framework_v2.json",
+    "footprints_spec": "16_Reasoning-Footprints_Schema_v1.json"
+  },
+  "log_schema": {
+    "task_event": [
+      "timestamp",
+      "agent_id",
+      "task_id",
+      "role",
+      "archetype",
+      "tokens_input",
+      "tokens_output",
+      "latency_ms",
+      "tool_calls",
+      "cost_estimate_usd",
+      "citations_count",
+      "kpi_local_PRI",
+      "kpi_local_HAL",
+      "kpi_local_AUD",
+      "status",
+      "error_code"
+    ],
+    "rag_event": [
+      "timestamp",
+      "query_hash",
+      "index_id",
+      "hits",
+      "latency_ms",
+      "reranker_used",
+      "passages_returned",
+      "tokens_saved_cached"
+    ],
+    "reasoning_event": [
+      "timestamp",
+      "agent_id",
+      "task_id",
+      "footprint_id",
+      "rti",
+      "cord",
+      "cona",
+      "rfg",
+      "reflection_loops",
+      "debate_participants"
+    ]
+  },
+  "privacy_controls": {
+    "no_content_logging": true,
+    "pii_in_logs": "forbidden",
+    "selectors_only": [
+      "hash_ids",
+      "counts",
+      "scores"
+    ],
+    "jurisdiction_overrides_ref": "05_Safety+Privacy_Guardrails_v2.json#jurisdictional_rules"
+  },
+  "dashboards": {
+    "exec_overview": [
+      "ADR",
+      "PRI",
+      "HAL",
+      "AUD",
+      "LAT_p95",
+      "CST",
+      "INC"
+    ],
+    "reliability_sre": [
+      "pipeline_success_rate",
+      "error_code_breakdown",
+      "latency_p50_p95",
+      "tool_error_rates"
+    ],
+    "reasoning_quality": [
+      "RTI",
+      "CORD",
+      "CONA",
+      "RFG",
+      "reflection_loops",
+      "debate_usage_rate"
+    ],
+    "compliance_view": [
+      "AUD",
+      "INC",
+      "exceptions_open",
+      "time_to_close_incidents"
+    ]
+  },
+  "alerts": {
+    "p1": [
+      "pipeline_fail_rate>1%",
+      "HAL>0.02",
+      "AUD<0.90",
+      "incident_S2_or_higher"
+    ],
+    "p2": [
+      "LAT_p95>15000ms",
+      "PRI<0.95",
+      "cost_budget_exceeded"
+    ]
+  },
+  "storage": {
+    "episodic_scope": "episodic:telemetry/*",
+    "retention_days": 365,
+    "export": [
+      "csv",
+      "parquet_optional"
+    ]
+  }
+}

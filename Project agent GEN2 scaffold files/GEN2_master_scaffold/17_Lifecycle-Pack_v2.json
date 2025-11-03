@@ -1,0 +1,185 @@
+{
+  "meta": {
+    "name": "17_Lifecycle-Pack",
+    "version": "v2.0.0",
+    "owner": "COO/PMO",
+    "created_at": "2025-09-12T19:16:40Z"
+  },
+  "objective": "Go-Live checklist, change-log schema, approvals, and rollback for GEN2.",
+  "schema_keys": [
+    "go_live",
+    "change_log",
+    "approvals",
+    "rollback"
+  ],
+  "token_budget": "\u22642000",
+  "refs": {
+    "role_index": "06_Role-Recipes_Index_v2.json",
+    "global_instructions": "02_Global-Instructions_v2.json",
+    "governance": "04_Governance+Risk-Register_v2.json",
+    "workflow_pack": "11_Workflow-Pack_v2.json",
+    "kpi_framework": "14_KPI+Evaluation-Framework_v2.json",
+    "observability": "15_Observability+Telemetry_Spec_v2.json",
+    "footprints": "16_Reasoning-Footprints_Schema_v1.json"
+  },
+  "go_live": {
+    "phases": [
+      {
+        "id": "preflight",
+        "name": "Preflight",
+        "owner": "COO/PMO",
+        "evidence": [
+          "01_charter/*"
+        ],
+        "checks": [
+          "objective_scope_constraints_confirmed",
+          "risk_tier_set"
+        ]
+      },
+      {
+        "id": "config",
+        "name": "Configuration",
+        "owner": "COO/PMO",
+        "evidence": [
+          "03_agent_runtime/*"
+        ],
+        "checks": [
+          "agent_registered_orggraph",
+          "memory_seeded_minimal",
+          "prompts_attached"
+        ]
+      },
+      {
+        "id": "eval",
+        "name": "Evaluation",
+        "owner": "Evaluator",
+        "evidence": [
+          "episodic:eval/*"
+        ],
+        "checks": [
+          "gates_met_PRI>=0.95",
+          "HAL<=0.02",
+          "AUD>=0.90"
+        ]
+      },
+      {
+        "id": "governance",
+        "name": "Governance Sign-off",
+        "owner": "CAIO",
+        "evidence": [
+          "approvals/*"
+        ],
+        "checks": [
+          "exceptions_reviewed_if_any",
+          "policy_ok"
+        ]
+      },
+      {
+        "id": "rollout",
+        "name": "Rollout",
+        "owner": "COO/PMO",
+        "evidence": [
+          "OrgGraph_event_log"
+        ],
+        "checks": [
+          "status_ACTIVE",
+          "alerts_configured"
+        ]
+      },
+      {
+        "id": "post",
+        "name": "Post-Go-Live",
+        "owner": "COO/PMO",
+        "evidence": [
+          "telemetry_dashboard"
+        ],
+        "checks": [
+          "kpi_monitoring_7_14_28d",
+          "regression_on_change"
+        ]
+      }
+    ],
+    "blockers": [
+      "missing_any_phase_evidence",
+      "gates_fail",
+      "unapproved_exception"
+    ]
+  },
+  "change_log": {
+    "path": "12_changelog/CHANGELOG.jsonl",
+    "entry_format": "one JSON object per line",
+    "fields": [
+      "timestamp",
+      "actor",
+      "actor_role",
+      "artifact",
+      "version_from",
+      "version_to",
+      "summary",
+      "details",
+      "refs",
+      "risk",
+      "evaluation",
+      "review",
+      "breaking_change",
+      "rollback",
+      "tags",
+      "checksums"
+    ]
+  },
+  "approvals": {
+    "matrix": [
+      {
+        "artifact": "02_Global-Instructions_v2.json",
+        "required": [
+          "CAIO",
+          "CPA"
+        ]
+      },
+      {
+        "artifact": "10_Prompt-Pack_v2.json (major)",
+        "required": [
+          "CAIO",
+          "CPA"
+        ]
+      },
+      {
+        "artifact": "11_Workflow-Pack_v2.json (major)",
+        "required": [
+          "COO/PMO",
+          "CAIO"
+        ]
+      },
+      {
+        "artifact": "05_Safety+Privacy_Guardrails_v2.json (exception S3+)",
+        "required": [
+          "CISO/Legal",
+          "CAIO"
+        ]
+      },
+      {
+        "artifact": "Release Certification",
+        "required": [
+          "Evaluator",
+          "CAIO"
+        ]
+      }
+    ],
+    "notes": "Approvals mirror the Role Index decision rights"
+  },
+  "rollback": {
+    "conditions": [
+      "PRI<0.95",
+      "HAL>0.02",
+      "AUD<0.90",
+      "incident_S2_or_higher",
+      "performance_regression>10%"
+    ],
+    "actions": [
+      "freeze_capability",
+      "revert_to_last_good",
+      "open_incident",
+      "notify_exec"
+    ]
+  }
+}

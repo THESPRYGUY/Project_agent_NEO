@@ -1,0 +1,401 @@
+{
+  "meta": {
+    "name": "04_Governance+Risk-Register",
+    "version": "v2.0.0",
+    "owner": "CRO",
+    "created_at": "2025-09-12T16:34:04Z"
+  },
+  "objective": "Unified governance model, risk taxonomy, controls, thresholds, and workflows for GEN2 agents.",
+  "schema_keys": [
+    "risk_taxonomy",
+    "controls",
+    "thresholds",
+    "exceptions"
+  ],
+  "token_budget": "\u22643000",
+  "frameworks": {
+    "nist_ai_rmf": [
+      "Govern",
+      "Map",
+      "Measure",
+      "Manage"
+    ],
+    "eu_ai_act_risk_categories": [
+      "prohibited",
+      "high",
+      "limited",
+      "minimal"
+    ],
+    "iso_42001_elements": [
+      "policy",
+      "leadership",
+      "planning",
+      "operation",
+      "evaluation",
+      "improvement"
+    ]
+  },
+  "policy": {
+    "principles": [
+      "Governance-by-design; refuse prohibited use",
+      "Privacy-by-design and data minimization",
+      "Least-privilege memory and telemetry",
+      "Transparent evaluation and rollback gates"
+    ],
+    "activation_gates": {
+      "pri_min": 0.95,
+      "hallucination_max": 0.02,
+      "audit_min": 0.9
+    },
+    "change_gates": {
+      "require_regression": true,
+      "no_severity_downgrade": true,
+      "allow_latency_increase_pct": 10
+    }
+  },
+  "risk_taxonomy": {
+    "categories": [
+      "model_quality",
+      "data_privacy",
+      "security",
+      "bias_fairness",
+      "safety_misuse",
+      "legal_regulatory",
+      "ip_copyright",
+      "operational",
+      "reputation",
+      "third_party"
+    ],
+    "examples": {
+      "model_quality": [
+        "hallucination",
+        "unsupported_claims",
+        "reasoning_error"
+      ],
+      "data_privacy": [
+        "pii_exposure",
+        "reidentification"
+      ],
+      "security": [
+        "prompt_injection",
+        "supply_chain",
+        "secrets_leakage"
+      ],
+      "bias_fairness": [
+        "disparate_impact",
+        "representational_harm"
+      ],
+      "safety_misuse": [
+        "dual_use",
+        "harmful_content"
+      ],
+      "legal_regulatory": [
+        "terms_violation",
+        "local_law_conflict"
+      ],
+      "ip_copyright": [
+        "copyright_infringement",
+        "license_noncompliance"
+      ],
+      "operational": [
+        "latency_spikes",
+        "cost_overrun",
+        "drift"
+      ],
+      "reputation": [
+        "inaccurate_public_output",
+        "offensive_tone"
+      ],
+      "third_party": [
+        "vendor_outage",
+        "model_policy_change"
+      ]
+    }
+  },
+  "scoring_model": {
+    "scale": {
+      "impact": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "likelihood": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "detection": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "control_strength": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ]
+    },
+    "formula_note": "Compute residual with decreasing factors for detection/control strength; round up to int.",
+    "severity_bands": [
+      {
+        "label": "S1_critical",
+        "min": 12,
+        "max": 25
+      },
+      {
+        "label": "S2_high",
+        "min": 8,
+        "max": 11
+      },
+      {
+        "label": "S3_medium",
+        "min": 4,
+        "max": 7
+      },
+      {
+        "label": "S4_low",
+        "min": 1,
+        "max": 3
+      }
+    ],
+    "policy_thresholds": {
+      "block_on_activation_if": [
+        "S1_critical",
+        "S2_high"
+      ],
+      "require_exec_signoff_if": {
+        "severity": "S3_medium",
+        "categories": [
+          "legal_regulatory",
+          "data_privacy",
+          "bias_fairness"
+        ]
+      }
+    }
+  },
+  "controls": [
+    {
+      "id": "C-001",
+      "name": "Guardrail_Prompts",
+      "maps_to": [
+        "NIST:Measure",
+        "EU:transparency",
+        "ISO:operation"
+      ],
+      "description": "Pre-execution guardrail prompts (safety, privacy, policy)."
+    },
+    {
+      "id": "C-002",
+      "name": "Eval_Gates",
+      "maps_to": [
+        "NIST:Measure",
+        "EU:accuracy,robustness",
+        "ISO:performance"
+      ],
+      "description": "Activation/change gates with KPI thresholds."
+    },
+    {
+      "id": "C-003",
+      "name": "Memory_Scopes",
+      "maps_to": [
+        "NIST:Govern",
+        "EU:data_governance",
+        "ISO:operation"
+      ],
+      "description": "Least-privilege read/write scopes validated by schema."
+    },
+    {
+      "id": "C-004",
+      "name": "HITL_Approvals",
+      "maps_to": [
+        "NIST:Manage",
+        "EU:human_oversight",
+        "ISO:leadership"
+      ],
+      "description": "Human gates for high-impact actions."
+    },
+    {
+      "id": "C-005",
+      "name": "Telemetry+Observability",
+      "maps_to": [
+        "NIST:Measure",
+        "ISO:performance"
+      ],
+      "description": "Cost/latency/error/reasoning KPIs with alerts."
+    },
+    {
+      "id": "C-006",
+      "name": "Incident_Response",
+      "maps_to": [
+        "NIST:Manage",
+        "EU:record-keeping",
+        "ISO:improvement"
+      ],
+      "description": "Open/freeze/RCA/remediate/review/close."
+    },
+    {
+      "id": "C-007",
+      "name": "Data_Minimization",
+      "maps_to": [
+        "EU:data_governance",
+        "ISO:operation"
+      ],
+      "description": "Store only necessary data; mask identifiers."
+    },
+    {
+      "id": "C-008",
+      "name": "Third-Party_Review",
+      "maps_to": [
+        "NIST:Map",
+        "ISO:operation"
+      ],
+      "description": "Assess vendor terms, model policies, SLAs, data locations."
+    }
+  ],
+  "workflows": {
+    "incident_response": {
+      "open": [
+        "create incident record",
+        "freeze risky capability"
+      ],
+      "investigate": [
+        "collect evidence",
+        "root_cause_analysis"
+      ],
+      "remediate": [
+        "apply fix",
+        "retest via Eval_Gates"
+      ],
+      "review": [
+        "executive_review",
+        "publish_lessons"
+      ],
+      "close": [
+        "update risk item",
+        "unfreeze when safe"
+      ]
+    },
+    "exception_process": {
+      "request": [
+        "justify need",
+        "temporary controls",
+        "expiry date"
+      ],
+      "approve": [
+        "risk_owner_signoff",
+        "CAIO/Compliance signoff"
+      ],
+      "monitor": [
+        "extra telemetry",
+        "short review cadence"
+      ],
+      "sunset": [
+        "expire or renew with new rationale"
+      ]
+    }
+  },
+  "reasoning_governance": {
+    "rules": [
+      "Never store or expose raw chain-of-thought.",
+      "Persist sanitized Reasoning Footprints (rationale summary, decision factors, error taxonomy, lessons).",
+      "Use debate/consensus loops for high-stakes tasks; record consensus outcome and dissent in footprints."
+    ],
+    "kpi_hooks": [
+      "RTI",
+      "CORD",
+      "CONA",
+      "RFG"
+    ]
+  },
+  "privacy_alignment": {
+    "guardrails_file": "05_Safety+Privacy_Guardrails_v2.json",
+    "pii_flags": [
+      "PII",
+      "PHI",
+      "PCI",
+      "minor_data",
+      "none"
+    ],
+    "retention_overrides_allowed": true
+  },
+  "starter_risks": [
+    {
+      "risk_id": "RR-SEC-PI-001",
+      "title": "Prompt Injection / Indirect Injection",
+      "category": "security",
+      "use_case": "Any tool-using or retrieval-augmented workflow",
+      "inherent_impact": 5,
+      "inherent_likelihood": 4,
+      "detection": 3,
+      "control_strength": 3,
+      "controls_applied": [
+        "C-001",
+        "C-002",
+        "C-003",
+        "C-004"
+      ],
+      "owner": "CPA",
+      "status": "open",
+      "treatment": "mitigate",
+      "review_cadence_days": 30
+    },
+    {
+      "risk_id": "RR-PRIV-PII-001",
+      "title": "PII Exposure",
+      "category": "data_privacy",
+      "use_case": "Customer data handling in assistants",
+      "inherent_impact": 5,
+      "inherent_likelihood": 3,
+      "detection": 3,
+      "control_strength": 3,
+      "controls_applied": [
+        "C-003",
+        "C-007",
+        "C-002",
+        "C-004"
+      ],
+      "owner": "Legal/Compliance",
+      "status": "open",
+      "treatment": "mitigate",
+      "review_cadence_days": 30
+    },
+    {
+      "risk_id": "RR-MQ-REAS-001",
+      "title": "Reasoning Error / Unsupported Claims",
+      "category": "model_quality",
+      "use_case": "Research briefs, planning, external outputs",
+      "inherent_impact": 4,
+      "inherent_likelihood": 3,
+      "detection": 3,
+      "control_strength": 2,
+      "controls_applied": [
+        "C-002",
+        "C-001",
+        "C-005"
+      ],
+      "owner": "Evaluator",
+      "status": "open",
+      "treatment": "mitigate",
+      "review_cadence_days": 14
+    }
+  ],
+  "exceptions": {
+    "allowed": true,
+    "policy": "Use exception_process workflow; time-bound; additional telemetry; executive sign-off required for S2+."
+  },
+  "definitions": {
+    "PRI": "Prompt/Plan Reason Integrity pass ratio",
+    "RTI": "Reasoning Transparency Index (from sanitized footprints)",
+    "CORD": "Chain-of-Reasoning Depth score",
+    "CONA": "Consensus Accuracy in debate loops",
+    "RFG": "Reflection Gain (% error reduction after reflection)"
+  }
+}

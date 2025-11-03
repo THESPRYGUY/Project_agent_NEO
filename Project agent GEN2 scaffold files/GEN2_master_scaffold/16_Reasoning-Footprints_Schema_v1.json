@@ -1,0 +1,69 @@
+{
+  "meta": {
+    "name": "16_Reasoning-Footprints_Schema",
+    "version": "v1.0.0",
+    "owner": "CPA+Evaluator",
+    "created_at": "2025-09-12T18:52:28Z"
+  },
+  "objective": "Sanitized rationale summaries (no raw CoT), decision factors, error taxonomy, and lessons learned.",
+  "schema_keys": [
+    "rationale_summary",
+    "decision_factors",
+    "error_taxonomy",
+    "lessons_learned"
+  ],
+  "token_budget": "\u22641500",
+  "policy": {
+    "no_raw_chain_of_thought": true,
+    "max_summary_tokens": 120,
+    "store_links_only": [
+      "sources",
+      "artifacts",
+      "workflow_nodes"
+    ]
+  },
+  "rationale_summary": {
+    "fields": [
+      "assumptions",
+      "steps",
+      "validation_checks"
+    ],
+    "constraints": [
+      "\u2264120_tokens",
+      "no_PII",
+      "no_verbatim_user_content"
+    ]
+  },
+  "decision_factors": {
+    "fields": [
+      "constraints_considered",
+      "tradeoffs",
+      "selected_option",
+      "alternatives_shortlist"
+    ],
+    "record_consensus": true,
+    "record_dissent": true
+  },
+  "error_taxonomy": [
+    "unsupported_claim",
+    "reasoning_gap",
+    "math_error",
+    "retrieval_miss",
+    "policy_violation",
+    "safety_flag"
+  ],
+  "lessons_learned": {
+    "fields": [
+      "root_cause",
+      "fix_applied",
+      "regression_test_added"
+    ],
+    "write_scope": "episodic:eval/*"
+  },
+  "kpi_bindings": {
+    "RTI_ref": "rationale_summary",
+    "CORD_ref": "decision_factors.steps_depth",
+    "CONA_ref": "decision_factors.consensus_vs_truth",
+    "RFG_ref": "lessons_learned.fix_applied_effect"
+  }
+}

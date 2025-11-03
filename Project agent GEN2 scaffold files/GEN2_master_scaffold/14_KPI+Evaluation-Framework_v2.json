@@ -1,0 +1,268 @@
+{
+  "meta": {
+    "name": "14_KPI+Evaluation-Framework",
+    "version": "v2.0.0",
+    "owner": "Evaluator",
+    "created_at": "2025-09-12T18:48:34Z"
+  },
+  "objective": "Portable KPIs and structured evaluation suites for GEN2, including Reasoning KPIs.",
+  "schema_keys": [
+    "kpis",
+    "metrics",
+    "benchmarks",
+    "reasoning_kpis"
+  ],
+  "token_budget": "\u22642500",
+  "refs": {
+    "role_index": "06_Role-Recipes_Index_v2.json",
+    "global_instructions": "02_Global-Instructions_v2.json",
+    "governance": "04_Governance+Risk-Register_v2.json",
+    "workflow_pack": "11_Workflow-Pack_v2.json",
+    "reporting_pack": "18_Reporting-Pack_v2.json"
+  },
+  "terms": {
+    "PRI": "Plan/Reason Integrity \u2014 required tests passed across functional+governance suites",
+    "HAL": "Hallucination rate \u2014 share of factual claims failing verification",
+    "AUD": "Audit pass rate \u2014 privacy/safety/policy checks",
+    "ADR": "Answer Directness Rate \u2014 percent of responses that directly address the query",
+    "RTI": "Reasoning Transparency Index \u2014 derived from sanitized Reasoning Footprints",
+    "CORD": "Chain-of-Reasoning Depth \u2014 structured step depth achieved vs planned",
+    "CONA": "Consensus Accuracy \u2014 debate loop agreement vs ground truth",
+    "RFG": "Reflection Gain \u2014 error reduction after reflection",
+    "LAT": "Latency p50/p95 \u2014 end-to-end completion time percentiles",
+    "CST": "Cost per 1k tokens \u2014 effective cost rate",
+    "COV": "Test coverage ratio \u2014 capabilities with \u22651 test / total capabilities",
+    "RST": "Regression Stability \u2014 percent of outputs within tolerance vs baseline",
+    "INC": "Incident rate (severity-weighted) \u2014 weighted incidents per 100 tasks"
+  },
+  "kpis": [
+    {
+      "id": "ADR",
+      "name": "Answer Directness Rate",
+      "target": ">=0.95",
+      "collection": {
+        "source": "telemetry",
+        "window_days": 14
+      }
+    },
+    {
+      "id": "PRI",
+      "name": "Plan/Reason Integrity",
+      "target": ">=0.95",
+      "collection": {
+        "source": "eval_results",
+        "window_days": 14
+      }
+    },
+    {
+      "id": "HAL",
+      "name": "Hallucination Rate",
+      "target": "<=0.02",
+      "collection": {
+        "source": "factcheck",
+        "window_days": 14
+      }
+    },
+    {
+      "id": "AUD",
+      "name": "Audit Pass Rate",
+      "target": ">=0.90",
+      "collection": {
+        "source": "governance_tests",
+        "window_days": 14
+      }
+    },
+    {
+      "id": "LAT",
+      "name": "Latency p50/p95 (ms)",
+      "target": {
+        "p50": "<=5000",
+        "p95": "<=15000"
+      },
+      "collection": {
+        "source": "telemetry",
+        "window_days": 7
+      }
+    },
+    {
+      "id": "CST",
+      "name": "Cost per 1k tokens",
+      "target": "<=policy_budget",
+      "collection": {
+        "source": "telemetry+pricing",
+        "window_days": 14
+      }
+    },
+    {
+      "id": "COV",
+      "name": "Test Coverage Ratio",
+      "target": ">=0.80",
+      "collection": {
+        "source": "eval_matrix",
+        "window_days": 30
+      }
+    },
+    {
+      "id": "RST",
+      "name": "Regression Stability",
+      "target": ">=0.95",
+      "collection": {
+        "source": "change_regression",
+        "window_days": 14
+      }
+    },
+    {
+      "id": "INC",
+      "name": "Incident Rate (severity-weighted)",
+      "target": "<=5",
+      "collection": {
+        "source": "incident_log",
+        "window_days": 30
+      }
+    }
+  ],
+  "reasoning_kpis": [
+    {
+      "id": "RTI",
+      "name": "Reasoning Transparency Index",
+      "target": ">=0.85",
+      "collection": {
+        "source": "footprints",
+        "window_days": 14
+      }
+    },
+    {
+      "id": "CORD",
+      "name": "CoR Depth Score",
+      "target": ">=0.80",
+      "collection": {
+        "source": "eval_results",
+        "window_days": 14
+      }
+    },
+    {
+      "id": "CONA",
+      "name": "Consensus Accuracy",
+      "target": ">=0.90",
+      "collection": {
+        "source": "debate_consensus",
+        "window_days": 14
+      }
+    },
+    {
+      "id": "RFG",
+      "name": "Reflection Gain",
+      "target": ">=0.20",
+      "collection": {
+        "source": "reflection_microloops",
+        "window_days": 14
+      }
+    }
+  ],
+  "benchmarks": {
+    "suite_defs": [
+      {
+        "id": "functional",
+        "description": "Task-specific correctness and contract adherence"
+      },
+      {
+        "id": "governance",
+        "description": "Privacy, safety, policy compliance"
+      },
+      {
+        "id": "red_team",
+        "description": "Prompt injection, jailbreak and bias probes"
+      },
+      {
+        "id": "reasoning_quality",
+        "description": "CoR depth, SoT clarity, consensus accuracy, reflection gain"
+      },
+      {
+        "id": "latency_cost",
+        "description": "Latency and cost under realistic loads"
+      }
+    ],
+    "matrices": [
+      {
+        "id": "baseline",
+        "suites": [
+          "functional",
+          "governance",
+          "red_team",
+          "reasoning_quality"
+        ]
+      },
+      {
+        "id": "change_regression",
+        "suites": [
+          "functional",
+          "governance",
+          "reasoning_quality",
+          "latency_cost"
+        ]
+      }
+    ]
+  },
+  "suites": {
+    "functional": {
+      "kpis": [
+        "PRI",
+        "ADR",
+        "RST"
+      ]
+    },
+    "governance": {
+      "kpis": [
+        "AUD",
+        "INC"
+      ]
+    },
+    "red_team": {
+      "kpis": [
+        "PRI",
+        "AUD",
+        "INC"
+      ]
+    },
+    "reasoning_quality": {
+      "kpis": [
+        "PRI",
+        "RTI",
+        "CORD",
+        "CONA",
+        "RFG"
+      ]
+    },
+    "latency_cost": {
+      "kpis": [
+        "LAT",
+        "CST"
+      ]
+    }
+  },
+  "gates": {
+    "activation": {
+      "PRI_min": 0.95,
+      "HAL_max": 0.02,
+      "AUD_min": 0.9
+    },
+    "change": {
+      "require_regression": true,
+      "no_severity_downgrade": true,
+      "allow_latency_increase_pct": 10
+    }
+  },
+  "runner": {
+    "config_refs": {
+      "workflow_pack": "11_Workflow-Pack_v2.json"
+    },
+    "result_write_scope": "episodic:eval/*",
+    "report_target": "18_Reporting-Pack_v2.json#Technical_Eval_Report"
+  },
+  "definition_of_done": [
+    "KPIs defined with targets and collection methods",
+    "Reasoning KPIs included and mapped to suites",
+    "Activation and change gates specified",
+    "Benchmarks and runner config provided"
+  ]
+}

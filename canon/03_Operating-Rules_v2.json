@@ -1,0 +1,207 @@
+{
+  "meta": {
+    "name": "03_Operating-Rules",
+    "version": "v2.0.0",
+    "owner": "COO",
+    "created_at": "2025-09-12T17:00:38Z"
+  },
+  "objective": "Lifecycle rules, RBAC, escalation, and KPI gates for GEN2 Project Agents.",
+  "schema_keys": [
+    "lifecycle",
+    "rbac",
+    "escalation",
+    "gates"
+  ],
+  "token_budget": "\u22642000",
+  "lifecycle": [
+    {
+      "phase": "intake",
+      "rules": [
+        "Capture objective, scope, constraints, risk tier",
+        "Load minimal memory scopes and relevant prompts only",
+        "Open task ticket with due date and telemetry key"
+      ],
+      "artifacts": [
+        "02_Global-Instructions_v2.json",
+        "08_Memory-Schema_v2.json"
+      ]
+    },
+    {
+      "phase": "plan",
+      "rules": [
+        "Planner-first: decompose task; map to tools/agents",
+        "Select workflow graph and prompt modules",
+        "Estimate tokens/latency; set eval gates and HITL if high-stakes"
+      ],
+      "artifacts": [
+        "11_Workflow-Pack_v2.json",
+        "10_Prompt-Pack_v2.json"
+      ]
+    },
+    {
+      "phase": "execute",
+      "rules": [
+        "Follow workflow graph; stream intermediate tokens only if useful",
+        "Apply guardrails before sensitive actions",
+        "Emit telemetry (cost/latency/errors/kpi deltas)"
+      ],
+      "artifacts": [
+        "15_Observability+Telemetry_Spec_v2.json"
+      ]
+    },
+    {
+      "phase": "validate",
+      "rules": [
+        "Run evaluation matrix (functional, governance, red-team, reasoning_quality, latency_cost)",
+        "Enforce gates; if fail, auto-tune prompts and re-test",
+        "Record Reasoning Footprints (sanitized) and QA outcomes"
+      ],
+      "artifacts": [
+        "14_KPI+Evaluation-Framework_v2.json",
+        "16_Reasoning-Footprints_Schema_v1.json"
+      ]
+    },
+    {
+      "phase": "deliver",
+      "rules": [
+        "Summarize outputs; include citations when non-trivial",
+        "Publish artifacts to correct folder; offload long content to files",
+        "Record change in lifecycle pack; bump semantic version if needed"
+      ],
+      "artifacts": [
+        "17_Lifecycle-Pack_v2.json",
+        "18_Reporting-Pack_v2.json"
+      ]
+    }
+  ],
+  "rbac": {
+    "roles": [
+      {
+        "name": "CAIO",
+        "permissions": [
+          "approve_policy",
+          "approve_major_release",
+          "orggraph_edit",
+          "risk_acceptance_high"
+        ]
+      },
+      {
+        "name": "CPA",
+        "permissions": [
+          "prompt_pack_edit",
+          "eval_matrix_edit",
+          "reasoning_policy_edit",
+          "pause_capability_on_eval_fail"
+        ]
+      },
+      {
+        "name": "COO/PMO",
+        "permissions": [
+          "workflow_edit",
+          "run_regression",
+          "schedule_release",
+          "freeze_on_incident"
+        ]
+      },
+      {
+        "name": "CISO/Legal",
+        "permissions": [
+          "guardrails_edit",
+          "privacy_rule_edit",
+          "approve_exceptions_S3plus"
+        ]
+      },
+      {
+        "name": "CDO/SRE",
+        "permissions": [
+          "telemetry_config",
+          "dataset_contracts",
+          "indexing_policy",
+          "observability_dashboard_admin"
+        ]
+      },
+      {
+        "name": "Evaluator",
+        "permissions": [
+          "run_eval_suites",
+          "certify_release",
+          "open_incident_on_fail"
+        ]
+      },
+      {
+        "name": "Agent",
+        "permissions": [
+          "execute_task",
+          "writeback_memory_scoped"
+        ]
+      }
+    ],
+    "memory_rule": "Agent writeback limited to declared scopes; cross-scope writes require PMO approval"
+  },
+  "escalation": {
+    "levels": [
+      {
+        "level": 1,
+        "who": "Agent auto",
+        "criteria": "single gate fail",
+        "action": "retry with tuned prompt"
+      },
+      {
+        "level": 2,
+        "who": "Evaluator/PMO",
+        "criteria": "repeat fail or high-risk task",
+        "action": "manual review, regression, or rollback"
+      },
+      {
+        "level": 3,
+        "who": "CAIO/CISO",
+        "criteria": "policy conflict, systemic risk, regulatory impact",
+        "action": "freeze capability, policy change, guidance note"
+      }
+    ],
+    "incident_record_fields": [
+      "timestamp",
+      "agent_id",
+      "event",
+      "impact",
+      "root_cause",
+      "action_taken",
+      "owner",
+      "next_review"
+    ],
+    "incident_workflow_ref": "04_Governance+Risk-Register_v2.json#workflows.incident_response",
+    "exception_workflow_ref": "04_Governance+Risk-Register_v2.json#workflows.exception_process"
+  },
+  "gates": {
+    "activation": {
+      "PRI_min": 0.95,
+      "HAL_max": 0.02,
+      "AUD_min": 0.9
+    },
+    "change": {
+      "require_regression": true,
+      "no_severity_downgrade": true,
+      "allow_latency_increase_pct": 10
+    },
+    "high_stakes_rule": "Require debate/consensus loop + HITL signoff for high-stakes tasks"
+  },
+  "logging_audit": {
+    "change_log_path": "17_Lifecycle-Pack_v2.json#change_log",
+    "fields": [
+      "timestamp",
+      "actor",
+      "artifact",
+      "version_from",
+      "version_to",
+      "summary",
+      "refs",
+      "risk",
+      "evaluation",
+      "review",
+      "breaking_change",
+      "rollback",
+      "tags",
+      "checksums"
+    ]
+  }
+}

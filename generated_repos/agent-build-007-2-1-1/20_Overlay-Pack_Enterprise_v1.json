@@ -1,0 +1,99 @@
+{
+  "brand": {
+    "style": "high",
+    "voice": "analytical"
+  },
+  "brand_voice": "crisp, analytical, executive",
+  "definition_of_done": [
+    "Brand and report templates available",
+    "Enterprise policies captured; conflicts resolved against Governance and Safety+Privacy",
+    "Stakeholders and escalation contacts defined with SLAs"
+  ],
+  "disclaimer": "Advisory support only; no legal advice.",
+  "escalations": {
+    "contacts": [
+      {
+        "role": "CAIO",
+        "sla_hours": 8
+      },
+      {
+        "role": "CISO",
+        "sla_hours": 4
+      },
+      {
+        "role": "PMO",
+        "sla_hours": 8
+      }
+    ],
+    "primary": "CAIO",
+    "secondary": "TeamLead"
+  },
+  "legal": {
+    "disclaimers": [
+      "Advisory support only; no legal advice."
+    ],
+    "ip": "All content © enterprise."
+  },
+  "meta": {
+    "agent_id": "AGT-112330-TURKEY-RND-0001",
+    "authors": [
+      "CAIO",
+      "CPA",
+      "TeamLead"
+    ],
+    "created_at": "1970-01-01T00:00:00Z",
+    "name": "20_Overlay-Pack_Enterprise_v1.json",
+    "owner": "Client Exec Sponsor",
+    "version": "v1.0.0"
+  },
+  "objective": "Enterprise overlay: policies, brand, legal positions, stakeholder map, escalation list.",
+  "policies": {
+    "documents": {
+      "retention_days": 365
+    },
+    "security": [
+      "least_privilege",
+      "need_to_know"
+    ]
+  },
+  "refs": {
+    "jurisdiction": "CA",
+    "organization": "Enterprise_Default"
+  },
+  "schema_keys": [
+    "brand",
+    "brand_voice",
+    "definition_of_done",
+    "disclaimer",
+    "escalations",
+    "legal",
+    "meta",
+    "objective",
+    "policies",
+    "refs",
+    "stakeholders",
+    "token_budget",
+    "version"
+  ],
+  "stakeholders": [
+    {
+      "email": "avery.chen@enterprise.example",
+      "name": "Avery Chen",
+      "role": "CISO"
+    },
+    {
+      "email": "jordan.ellis@enterprise.example",
+      "name": "Jordan Ellis",
+      "role": "Sponsor"
+    },
+    {
+      "email": "morgan.patel@enterprise.example",
+      "name": "Morgan Patel",
+      "role": "PMO Lead"
+    }
+  ],
+  "token_budget": {
+    "max_output_tokens": 1000
+  },
+  "version": 1
+}

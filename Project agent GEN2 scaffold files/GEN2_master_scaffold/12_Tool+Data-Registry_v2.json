@@ -1,0 +1,204 @@
+{
+  "meta": {
+    "name": "12_Tool+Data-Registry",
+    "version": "v2.0.0",
+    "owner": "CDO",
+    "created_at": "2025-09-12T18:31:59Z"
+  },
+  "objective": "Authoritative registry of tools, connectors, datasets, and source registry for GEN2.",
+  "schema_keys": [
+    "tools",
+    "connectors",
+    "datasets",
+    "source_registry",
+    "contracts"
+  ],
+  "token_budget": "\u22642500",
+  "policies": {
+    "governance_file": "04_Governance+Risk-Register_v2.json",
+    "safety_privacy_file": "05_Safety+Privacy_Guardrails_v2.json",
+    "observability_file": "15_Observability+Telemetry_Spec_v2.json",
+    "memory_schema_file": "08_Memory-Schema_v2.json"
+  },
+  "contracts": {
+    "tool_item_min": [
+      "id",
+      "name",
+      "capability",
+      "io_contract",
+      "safety",
+      "owner"
+    ],
+    "connector_item_min": [
+      "id",
+      "name",
+      "scope",
+      "auth_method",
+      "owner",
+      "pii_flags"
+    ],
+    "dataset_item_min": [
+      "id",
+      "name",
+      "description",
+      "classification",
+      "pii_flags",
+      "retention_days",
+      "owner",
+      "contract_ref"
+    ],
+    "source_item_min": [
+      "id",
+      "title",
+      "publisher",
+      "type",
+      "url",
+      "date_accessed",
+      "topics"
+    ]
+  },
+  "tools": [
+    {
+      "id": "tool.web.search",
+      "name": "Web Search",
+      "capability": "retrieve_open_web",
+      "io_contract": {
+        "input": "query",
+        "output": "results_list"
+      },
+      "safety": {
+        "allowlist_domains": [],
+        "denylist_domains": [],
+        "rate_limit_qpm": 6,
+        "respect_robots": true
+      },
+      "owner": "CDO/SRE"
+    },
+    {
+      "id": "tool.rag.query",
+      "name": "RAG Query",
+      "capability": "retrieve_internal_knowledge",
+      "io_contract": {
+        "input": "query+filters",
+        "output": "passages_with_scores"
+      },
+      "safety": {
+        "classification_max": "confidential",
+        "exclude_flags": [
+          "minor_data"
+        ]
+      },
+      "owner": "CDO/SRE"
+    },
+    {
+      "id": "tool.eval.run",
+      "name": "Evaluation Runner",
+      "capability": "execute_eval_matrix",
+      "io_contract": {
+        "input": "matrix_ref+subject",
+        "output": "case_results+kpi_aggregate"
+      },
+      "safety": {
+        "freeze_on_fail": true
+      },
+      "owner": "Evaluator"
+    }
+  ],
+  "connectors": [
+    {
+      "id": "conn.http",
+      "name": "HTTP Client",
+      "scope": "outbound_http",
+      "auth_method": "none_or_api_key",
+      "owner": "CDO/SRE",
+      "pii_flags": [
+        "none"
+      ],
+      "notes": "Respect jurisdictional export controls per Safety+Privacy"
+    },
+    {
+      "id": "conn.vectorstore",
+      "name": "Vector Store",
+      "scope": "embedding_index",
+      "auth_method": "service_account",
+      "owner": "CDO/SRE",
+      "pii_flags": [
+        "none",
+        "PII"
+      ],
+      "notes": "Index policies defined in 13_Knowledge-Graph+RAG_Config_v2.json"
+    }
+  ],
+  "datasets": [
+    {
+      "id": "ds.glossary.core",
+      "name": "Core AI Glossary",
+      "description": "Cross-team glossary for common AI terms",
+      "classification": "internal",
+      "pii_flags": [
+        "none"
+      ],
+      "retention_days": 1825,
+      "owner": "CPA",
+      "contract_ref": "08_Memory-Schema_v2.json#stubs.semantic_item"
+    },
+    {
+      "id": "ds.eval.baseline",
+      "name": "Baseline Evaluation Matrix",
+      "description": "Functional+governance+red-team+reasoning-quality cases",
+      "classification": "internal",
+      "pii_flags": [
+        "none"
+      ],
+      "retention_days": 1825,
+      "owner": "Evaluator",
+      "contract_ref": "14_KPI+Evaluation-Framework_v2.json"
+    }
+  ],
+  "source_registry": [
+    {
+      "id": "SRC-OPENAI-01",
+      "title": "OpenAI Docs \u2014 System Instructions & Structured Outputs",
+      "publisher": "OpenAI",
+      "type": "official_docs",
+      "url": "https://platform.openai.com/docs",
+      "date_accessed": "2025-09-12T00:00:00Z",
+      "topics": [
+        "prompts",
+        "instructions",
+        "tools"
+      ]
+    },
+    {
+      "id": "SRC-LANGGRAPH-01",
+      "title": "LangGraph \u2014 Stateful Agent Workflows",
+      "publisher": "LangChain",
+      "type": "framework_docs",
+      "url": "https://langchain-ai.github.io/langgraph/",
+      "date_accessed": "2025-09-12T00:00:00Z",
+      "topics": [
+        "workflows",
+        "agents"
+      ]
+    },
+    {
+      "id": "SRC-DSPY-01",
+      "title": "DSPy \u2014 Programming Language Models",
+      "publisher": "Stanford NLP / DSPy",
+      "type": "framework_docs",
+      "url": "https://dspy-docs.org/",
+      "date_accessed": "2025-09-12T00:00:00Z",
+      "topics": [
+        "workflows",
+        "training",
+        "eval"
+      ]
+    }
+  ],
+  "definition_of_done": [
+    "All entries conform to min item contracts",
+    "Safety/privacy and governance references present",
+    "Datasets list classification, PII flags, retention and owners",
+    "Source registry carries authoritative references"
+  ]
+}

@@ -1,0 +1,156 @@
+{
+  "meta": {
+    "name": "13_Knowledge-Graph+RAG_Config",
+    "version": "v2.0.0",
+    "owner": "CDO+CPA",
+    "created_at": "2025-09-12T18:37:37Z"
+  },
+  "objective": "Token-light configuration for indexing, embeddings, retrieval, and caching for GEN2 RAG.",
+  "schema_keys": [
+    "indices",
+    "chunking",
+    "embeddings",
+    "retrieval",
+    "caching"
+  ],
+  "token_budget": "\u22642000",
+  "refs": {
+    "tool_data_registry": "12_Tool+Data-Registry_v2.json",
+    "memory_schema": "08_Memory-Schema_v2.json",
+    "safety_privacy": "05_Safety+Privacy_Guardrails_v2.json",
+    "prompt_pack": "10_Prompt-Pack_v2.json"
+  },
+  "indices": [
+    {
+      "id": "idx.docs.core",
+      "dataset_ref": "ds.glossary.core",
+      "doc_types": [
+        "md",
+        "txt",
+        "html"
+      ],
+      "classification_max": "internal",
+      "pii_flags_allowed": [
+        "none"
+      ]
+    },
+    {
+      "id": "idx.eval.baseline",
+      "dataset_ref": "ds.eval.baseline",
+      "doc_types": [
+        "json"
+      ],
+      "classification_max": "internal",
+      "pii_flags_allowed": [
+        "none"
+      ]
+    }
+  ],
+  "chunking": {
+    "profiles": [
+      {
+        "doc_type": "pdf",
+        "max_tokens": 700,
+        "overlap_tokens": 120
+      },
+      {
+        "doc_type": "html",
+        "max_tokens": 600,
+        "overlap_tokens": 100
+      },
+      {
+        "doc_type": "md",
+        "max_tokens": 550,
+        "overlap_tokens": 90
+      },
+      {
+        "doc_type": "txt",
+        "max_tokens": 500,
+        "overlap_tokens": 80
+      }
+    ],
+    "default": {
+      "max_tokens": 600,
+      "overlap_tokens": 100
+    }
+  },
+  "embeddings": {
+    "model_ref": "text-embed-v2",
+    "dim": "auto",
+    "normalize": true,
+    "batch_size": 64,
+    "reindex_policy": {
+      "reindex_after_days": 90,
+      "force_reindex_if": [
+        "schema_change",
+        "pii_flag_change"
+      ]
+    }
+  },
+  "retrieval": {
+    "strategy": "hybrid",
+    "keyword": {
+      "enable": true
+    },
+    "vector": {
+      "enable": true,
+      "top_k": 12
+    },
+    "mmr": {
+      "enable": true,
+      "lambda": 0.5,
+      "top_k": 8
+    },
+    "reranker": {
+      "enable": true,
+      "model": "colbert-lite",
+      "top_k": 6
+    },
+    "filters": {
+      "classification_max": "confidential",
+      "exclude_flags": [
+        "minor_data"
+      ]
+    },
+    "quality_controls": {
+      "min_source_quality": "authoritative_or_better",
+      "freshness_days_warn": 365,
+      "denylist_domains": []
+    },
+    "response_budget": {
+      "max_passages": 6,
+      "max_tokens_synth": 450
+    }
+  },
+  "caching": {
+    "query_cache_ttl_min": 60,
+    "result_cache_ttl_min": 60,
+    "per_user_namespace": true,
+    "bypass_on_high_stakes": true
+  },
+  "safety_overrides": {
+    "honor_jurisdictional_rules": true,
+    "mask_pii_in_passages": true,
+    "strip_untrusted_blocks": true
+  },
+  "observability": {
+    "log_fields": [
+      "query_hash",
+      "index_id",
+      "hits",
+      "latency_ms",
+      "reranker_used",
+      "tokens_saved_cached"
+    ],
+    "dashboards": [
+      "RAG_performance",
+      "index_health"
+    ]
+  },
+  "definition_of_done": [
+    "All indices reference datasets from Tool+Data Registry",
+    "Chunking/embedding params tuned for token-light performance",
+    "Retrieval filters align with Safety+Privacy",
+    "Caching enabled with sensible TTLs and high-stakes bypass"
+  ]
+}

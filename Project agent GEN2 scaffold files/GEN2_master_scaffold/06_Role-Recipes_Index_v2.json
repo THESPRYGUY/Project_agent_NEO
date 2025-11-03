@@ -1,0 +1,262 @@
+{
+  "meta": {
+    "name": "06_Role-Recipes_Index",
+    "version": "v2.0.0",
+    "owner": "CAIO",
+    "created_at": "2025-09-12T17:14:00Z"
+  },
+  "objective": "Executive role recipes (missions, decision rights, KPIs, handoffs) for the GEN2 scaffold.",
+  "schema_keys": [
+    "roles",
+    "decision_rights",
+    "kpis",
+    "handoffs"
+  ],
+  "token_budget": "\u22642000",
+  "roles": [
+    {
+      "id": "CAIO",
+      "mission": "Own AI policy, Global-Instructions, and fleet strategy; approve high-risk capabilities and go-lives.",
+      "capabilities": [
+        "approve_policy",
+        "approve_major_release",
+        "orggraph_edit",
+        "risk_acceptance_high",
+        "publish_exec_guidance"
+      ],
+      "kpis": [
+        "ADR",
+        "AUD",
+        "PRI",
+        "Innovation_Index"
+      ],
+      "handoffs_to": [
+        "COO/PMO",
+        "CPA",
+        "Evaluator"
+      ]
+    },
+    {
+      "id": "CPA",
+      "mission": "Own prompt packs, role recipes, and reasoning quality; enforce token hygiene and safe agentic patterns.",
+      "capabilities": [
+        "prompt_pack_edit",
+        "eval_matrix_edit",
+        "reasoning_policy_edit",
+        "pause_capability_on_eval_fail"
+      ],
+      "kpis": [
+        "PRI",
+        "HAL",
+        "RTI",
+        "CORD",
+        "RFG"
+      ],
+      "handoffs_to": [
+        "COO/PMO",
+        "Evaluator"
+      ]
+    },
+    {
+      "id": "COO/PMO",
+      "mission": "Own workflows and lifecycle; ensure gates, schedules, and change control.",
+      "capabilities": [
+        "workflow_edit",
+        "run_regression",
+        "schedule_release",
+        "freeze_on_incident"
+      ],
+      "kpis": [
+        "LAT",
+        "CST",
+        "ADR",
+        "RST"
+      ],
+      "handoffs_to": [
+        "Evaluator",
+        "CAIO"
+      ]
+    },
+    {
+      "id": "CISO/Legal",
+      "mission": "Own safety/privacy guardrails, jurisdictional controls, and exceptions for regulated contexts.",
+      "capabilities": [
+        "guardrails_edit",
+        "privacy_rule_edit",
+        "approve_exceptions_S3plus"
+      ],
+      "kpis": [
+        "AUD",
+        "INC"
+      ],
+      "handoffs_to": [
+        "COO/PMO",
+        "CAIO"
+      ]
+    },
+    {
+      "id": "CDO/SRE",
+      "mission": "Own data/tool registries, memory schema, observability stack, and reliability SLAs.",
+      "capabilities": [
+        "telemetry_config",
+        "dataset_contracts",
+        "indexing_policy",
+        "observability_dashboard_admin"
+      ],
+      "kpis": [
+        "LAT",
+        "CST",
+        "pipeline_success_rate",
+        "COV"
+      ],
+      "handoffs_to": [
+        "Evaluator",
+        "CPA"
+      ]
+    },
+    {
+      "id": "Evaluator",
+      "mission": "Own test matrices and certification; run functional, governance, red-team, reasoning-quality suites.",
+      "capabilities": [
+        "run_eval_suites",
+        "certify_release",
+        "open_incident_on_fail"
+      ],
+      "kpis": [
+        "PRI",
+        "AUD",
+        "RST",
+        "CONA"
+      ],
+      "handoffs_to": [
+        "COO/PMO",
+        "CAIO"
+      ]
+    }
+  ],
+  "decision_rights": {
+    "global_instructions": {
+      "owner": "CAIO",
+      "approvers": [
+        "CAIO",
+        "CPA"
+      ]
+    },
+    "prompt_pack_major": {
+      "owner": "CPA",
+      "approvers": [
+        "CAIO",
+        "CPA"
+      ]
+    },
+    "workflow_major": {
+      "owner": "COO/PMO",
+      "approvers": [
+        "COO/PMO",
+        "CAIO"
+      ]
+    },
+    "guardrails_change": {
+      "owner": "CISO/Legal",
+      "approvers": [
+        "CISO/Legal",
+        "CAIO"
+      ]
+    },
+    "observability_spec": {
+      "owner": "CDO/SRE",
+      "approvers": [
+        "CDO/SRE",
+        "CAIO"
+      ]
+    },
+    "release_certification": {
+      "owner": "Evaluator",
+      "approvers": [
+        "Evaluator",
+        "CAIO"
+      ]
+    }
+  },
+  "kpis": {
+    "definitions_ref": "14_KPI+Evaluation-Framework_v2.json",
+    "role_targets": {
+      "CAIO": {
+        "ADR_min": 1,
+        "AUD_min": 0.9,
+        "PRI_min": 0.95
+      },
+      "CPA": {
+        "PRI_min": 0.95,
+        "HAL_max": 0.02,
+        "RTI_min": 0.85
+      },
+      "COO/PMO": {
+        "LAT_p95_ms_max": 15000,
+        "CST_within_budget": true,
+        "RST_min": 0.95
+      },
+      "CISO/Legal": {
+        "AUD_min": 0.9,
+        "INC_score_max": 5
+      },
+      "CDO/SRE": {
+        "pipeline_success_rate_min": 0.99,
+        "LAT_p95_ms_max": 15000,
+        "COV_min": 0.8
+      },
+      "Evaluator": {
+        "PRI_min": 0.95,
+        "AUD_min": 0.9,
+        "CONA_min": 0.9
+      }
+    }
+  },
+  "handoffs": [
+    {
+      "from": "CPA",
+      "to": "COO/PMO",
+      "artifact": "10_Prompt-Pack_v2.json",
+      "criteria": [
+        "PRI_local>=0.95",
+        "HAL_local<=0.02"
+      ]
+    },
+    {
+      "from": "COO/PMO",
+      "to": "Evaluator",
+      "artifact": "11_Workflow-Pack_v2.json",
+      "criteria": [
+        "tests_configured",
+        "gates_set"
+      ]
+    },
+    {
+      "from": "Evaluator",
+      "to": "CAIO",
+      "artifact": "18_Reporting-Pack_v2.json#cert_report",
+      "criteria": [
+        "gates_passed",
+        "no_S1_S2_incidents"
+      ]
+    },
+    {
+      "from": "CISO/Legal",
+      "to": "COO/PMO",
+      "artifact": "05_Safety+Privacy_Guardrails_v2.json#exceptions",
+      "criteria": [
+        "time_bound",
+        "extra_telemetry"
+      ]
+    },
+    {
+      "from": "CDO/SRE",
+      "to": "CPA",
+      "artifact": "12_Tool+Data-Registry_v2.json",
+      "criteria": [
+        "contracts_signed",
+        "pii_flags_set"
+      ]
+    }
+  ]
+}

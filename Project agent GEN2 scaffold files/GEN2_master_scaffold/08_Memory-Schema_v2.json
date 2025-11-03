@@ -1,0 +1,291 @@
+{
+  "meta": {
+    "name": "08_Memory-Schema",
+    "version": "v2.0.0",
+    "owner": "CDO",
+    "created_at": "2025-09-12T17:35:45Z"
+  },
+  "objective": "Industry-agnostic memory architecture with Reasoning Footprints anchors for GEN2.",
+  "schema_keys": [
+    "semantic",
+    "episodic",
+    "procedural",
+    "footprint_refs",
+    "retention"
+  ],
+  "token_budget": "\u22642500",
+  "principles": [
+    "Least-privilege scopes; explicit read/write declarations",
+    "Small, composable items; prefer links/indexes over large blobs",
+    "Immutable provenance: sources + hashes + timestamps",
+    "Token-aware retrieval (chunking, top_k, recency)",
+    "Privacy-first: classification gates, masking, jurisdictional alignment"
+  ],
+  "types": {
+    "semantic": "Long-lived knowledge (facts, glossaries, indexes, embeddings refs)",
+    "episodic": "Time-stamped events (decisions, evaluations, incidents, releases)",
+    "procedural": "Policies, playbooks, SOPs, contracts, templates (versioned)"
+  },
+  "scope_patterns": [
+    "semantic:domain/<topic>/<slug>",
+    "semantic:index/<name>",
+    "episodic:projects/<project_id>/<YYYY-MM-DD>/<event_id>",
+    "procedural:policy/<name>/vX.Y",
+    "procedural:playbook/<name>/vX.Y"
+  ],
+  "permissions": {
+    "roles": {
+      "CAIO": {
+        "read": [
+          "semantic:*",
+          "episodic:*",
+          "procedural:*"
+        ],
+        "write": [
+          "semantic:policy/*",
+          "procedural:*",
+          "episodic:exec/*"
+        ]
+      },
+      "CPA": {
+        "read": [
+          "semantic:*",
+          "episodic:eval/*",
+          "procedural:*"
+        ],
+        "write": [
+          "procedural:prompt-guides/*",
+          "episodic:eval/*"
+        ]
+      },
+      "COO/PMO": {
+        "read": [
+          "semantic:*",
+          "episodic:projects/*",
+          "procedural:*"
+        ],
+        "write": [
+          "episodic:projects/*",
+          "procedural:ops/*"
+        ]
+      },
+      "CISO/Legal": {
+        "read": [
+          "procedural:policy/*",
+          "episodic:*"
+        ],
+        "write": [
+          "procedural:policy/*",
+          "episodic:exceptions/*"
+        ]
+      },
+      "CDO/SRE": {
+        "read": [
+          "semantic:*",
+          "episodic:*",
+          "procedural:*"
+        ],
+        "write": [
+          "semantic:index/*",
+          "episodic:telemetry/*",
+          "procedural:observability/*"
+        ]
+      },
+      "Evaluator": {
+        "read": [
+          "semantic:policy/*",
+          "episodic:eval/*"
+        ],
+        "write": [
+          "episodic:eval/*"
+        ]
+      },
+      "Agent": {
+        "read": [
+          "semantic:*",
+          "procedural:*",
+          "episodic:self/*"
+        ],
+        "write": [
+          "episodic:self/*",
+          "procedural:builds/*"
+        ]
+      }
+    },
+    "notes": "Cross-scope writes require PMO approval; policy edits require CAIO/CISO sign-off"
+  },
+  "retention": {
+    "classification_levels": [
+      "public",
+      "internal",
+      "confidential",
+      "regulated"
+    ],
+    "pii_flags": [
+      "none",
+      "PII",
+      "PHI",
+      "PCI",
+      "minor_data"
+    ],
+    "default_days": {
+      "public": 3650,
+      "internal": 1825,
+      "confidential": 730,
+      "regulated": 2555
+    },
+    "actions": {
+      "archive_after_days": 365,
+      "reindex_after_days": 90,
+      "review_after_days": 180
+    },
+    "overrides": {
+      "jurisdiction": "05_Safety+Privacy_Guardrails_v2.json#jurisdictional_rules"
+    }
+  },
+  "retrieval": {
+    "chunking": {
+      "max_tokens": 600,
+      "overlap_tokens": 100
+    },
+    "embedding": {
+      "model_ref": "EMBEDDING_MODEL_PLACEHOLDER",
+      "dim": "auto",
+      "index": "vector_index_v2"
+    },
+    "search": {
+      "top_k": 6,
+      "mmr": true,
+      "lambda": 0.5,
+      "recency_bias_days": 180
+    },
+    "filters": {
+      "classification_max": "confidential",
+      "exclude_flags": [
+        "minor_data"
+      ]
+    },
+    "strategy": [
+      "keyword",
+      "hybrid",
+      "rerank_on_demand"
+    ],
+    "caching": {
+      "enable": true,
+      "ttl_minutes": 60
+    }
+  },
+  "footprint_refs": {
+    "spec": "16_Reasoning-Footprints_Schema_v1.json",
+    "linking_rules": [
+      "Each procedural step MAY link to one or more Reasoning Footprints IDs",
+      "Do not include raw chain-of-thought; store only sanitized summaries per spec"
+    ]
+  },
+  "writeback_rules": [
+    "Include actor, change_reason, sources, checksum (e.g., blake3) on updates",
+    "Reject duplicate content unless explicitly version-bumped",
+    "All writes validate against corresponding JSON Schemas; log result to episodic memory"
+  ],
+  "hydration": {
+    "task_match": [
+      "Match by scope patterns and tags",
+      "Apply recency bias for episodic; authority for semantic; version pinning for procedural",
+      "Down-select to token budget with summarisation before injection"
+    ],
+    "safety": [
+      "Filter by classification and pii_flags before retrieval",
+      "Mask PII/PHI where required; escalate on conflict"
+    ]
+  },
+  "quality_controls": {
+    "freshness_days_warn": 365,
+    "min_source_quality": "authoritative_or_better",
+    "required_fields": [
+      "title",
+      "summary",
+      "sources",
+      "hash"
+    ],
+    "audit_fields": [
+      "created_at",
+      "updated_at",
+      "actor",
+      "change_reason"
+    ]
+  },
+  "stubs": {
+    "semantic_item": {
+      "id": "sem-0001",
+      "key": "semantic:domain/general/ai-glossary",
+      "title": "AI Glossary (core terms)",
+      "summary": "Concise definitions of common AI terms for cross-team alignment.",
+      "tags": [
+        "glossary",
+        "foundation"
+      ],
+      "sources": [
+        {
+          "title": "curated",
+          "url": "about:blank"
+        }
+      ],
+      "classification": "internal",
+      "pii_flags": [
+        "none"
+      ],
+      "hash": "blake3:PLACEHOLDER",
+      "created_at": "2025-09-12T00:00:00Z",
+      "updated_at": "2025-09-12T00:00:00Z",
+      "actor": "CPA",
+      "content": "Short entries A\u2013Z with links to canonical references."
+    },
+    "episodic_event": {
+      "id": "ep-2025-09-12-001",
+      "key": "episodic:projects/gen2/2025-09-12/ep-001",
+      "title": "Baseline evaluation run",
+      "summary": "PRI=0.96, HAL=0.015, AUD=0.93",
+      "refs": [
+        "14_KPI+Evaluation-Framework_v2.json"
+      ],
+      "classification": "internal",
+      "pii_flags": [
+        "none"
+      ],
+      "metrics": {
+        "pri": 0.96,
+        "hallucination_rate": 0.015,
+        "audit_score": 0.93
+      },
+      "created_at": "2025-09-12T00:00:00Z",
+      "updated_at": "2025-09-12T00:00:00Z",
+      "actor": "Evaluator"
+    },
+    "procedural_item": {
+      "id": "proc-0001",
+      "key": "procedural:playbook/onboarding/v2.0",
+      "title": "Agent Onboarding Playbook",
+      "summary": "Register new agent, seed minimal memory, attach prompts, run baseline eval, register telemetry.",
+      "steps": [
+        "Validate Agent_Manifest against schema",
+        "Insert node+edges in OrgGraph; open ASUP",
+        "Seed memory; attach prompts; run baseline evaluation; register telemetry"
+      ],
+      "classification": "internal",
+      "pii_flags": [
+        "none"
+      ],
+      "version": "v2.0",
+      "created_at": "2025-09-12T00:00:00Z",
+      "updated_at": "2025-09-12T00:00:00Z",
+      "actor": "COO/PMO"
+    }
+  },
+  "definition_of_done": [
+    "Schemas saved and referenced",
+    "Scope patterns and permissions defined",
+    "Retention, retrieval, and safety rules established",
+    "Writeback and hydration procedures documented",
+    "Stubs provided for immediate use"
+  ]
+}
