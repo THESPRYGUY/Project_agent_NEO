@@ -97,6 +97,42 @@
     container.appendChild(chips);
   }
 
+  function renderDatasets(container, state, definitions, emit) {
+    if (!Array.isArray(definitions) || !definitions.length) {
+      return;
+    }
+    const chips = document.createElement("div");
+    chips.className = "intake-chips";
+    const selected = new Set((state.datasets || []).map((value) => String(value)));
+    definitions.forEach((dataset) => {
+      if (!dataset || typeof dataset !== "object") return;
+      const datasetId = String(dataset.id || dataset.name || "").trim();
+      if (!datasetId) return;
+      const chip = document.createElement("button");
+      chip.type = "button";
+      chip.className = "intake-chip";
+      chip.textContent = dataset.name || datasetId;
+      if (dataset.description) {
+        chip.title = dataset.description;
+      }
+      chip.setAttribute("data-selected", selected.has(datasetId) ? "true" : "false");
+      chip.addEventListener("click", () => {
+        const next = new Set((state.datasets || []).map((value) => String(value)));
+        const isSelected = chip.getAttribute("data-selected") === "true";
+        if (isSelected) {
+          next.delete(datasetId);
+        } else {
+          next.add(datasetId);
+        }
+        state.datasets = Array.from(next);
+        chip.setAttribute("data-selected", isSelected ? "false" : "true");
+        emit();
+      });
+      chips.appendChild(chip);
+    });
+    container.appendChild(chips);
+  }
+
   ns.initConnectorsForm = function initConnectorsForm(container, state, defaults, emit) {
     if (!container) return;
     const defaultsConnectors = Array.isArray(defaults.connectors) ? defaults.connectors : [];
@@ -107,6 +143,16 @@
       : Array.isArray(defaults.data_sources)
         ? defaults.data_sources.slice()
         : [];
+    const datasetDefs = Array.isArray(defaults.datasets) ? defaults.datasets : [];
+    state.dataset_catalog = datasetDefs.reduce((acc, item) => {
+      if (item && item.id) {
+        acc[item.id] = Object.assign({}, item);
+      }
+      return acc;
+    }, state.dataset_catalog || {});
+    state.datasets = Array.isArray(state.datasets) && state.datasets.length
+      ? state.datasets.slice()
+      : datasetDefs.map((item) => item.id).filter(Boolean);
 
     container.innerHTML = "";
     container.classList.add("intake-contract-card");
@@ -133,5 +179,15 @@
     dataSourceBlock.appendChild(dsHeading);
     renderDataSources(dataSourceBlock, state, defaults.data_sources || [], emit);
     container.appendChild(dataSourceBlock);
+
+    if (datasetDefs.length) {
+      const datasetBlock = document.createElement("div");
+      datasetBlock.style.marginTop = "1rem";
+      const dsHeading = document.createElement("strong");
+      dsHeading.textContent = "Datasets";
+      datasetBlock.appendChild(dsHeading);
+      renderDatasets(datasetBlock, state, datasetDefs, emit);
+      container.appendChild(datasetBlock);
+    }
   };
 })(typeof window !== "undefined" ? window : globalThis);

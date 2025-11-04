@@ -54,6 +54,7 @@
     const hiddenInitial = document.querySelector("[data-intake-memory-initial]");
     const hiddenOptional = document.querySelector("[data-intake-memory-optional]");
     const hiddenDataSources = document.querySelector("[data-intake-data-sources]");
+    const hiddenDatasets = document.querySelector("[data-intake-datasets]");
     const hiddenPii = document.querySelector("[data-intake-pii]");
     const hiddenRiskTags = document.querySelector("[data-intake-risk-tags]");
     const hiddenClassification = document.querySelector("[data-intake-classification]");
@@ -64,6 +65,8 @@
       memory: {},
       connectors: [],
       data_sources: [],
+      datasets: [],
+      dataset_catalog: {},
       governance: {},
       rbac: {},
       human_gate: {},
@@ -88,6 +91,7 @@
       if (hiddenInitial) setInputValue(hiddenInitial, serialiseArray(sample.memory?.initial_memory_packs || []));
       if (hiddenOptional) setInputValue(hiddenOptional, serialiseArray(sample.memory?.optional_packs || []));
       if (hiddenDataSources) setInputValue(hiddenDataSources, serialiseArray(payload.data_sources || []));
+      if (hiddenDatasets) setInputValue(hiddenDatasets, serialiseArray(state.datasets || []));
       if (hiddenPii) setInputValue(hiddenPii, serialiseArray(state.governance.pii_flags || []));
       if (hiddenRiskTags) setInputValue(hiddenRiskTags, serialiseArray(state.governance.risk_register_tags || []));
       if (hiddenClassification) setInputValue(hiddenClassification, state.governance.classification_default || "");
@@ -207,8 +211,29 @@
         const defaults = schema.defaults || {};
         const sample = schema.sample || {};
         state.memory = sample.memory || {};
-        state.connectors = (defaults.connectors || []).map(ns.clone ? ns.clone : (x) => JSON.parse(JSON.stringify(x)));
+        state.connectors = (defaults.connectors || []).map((conn) =>
+          ns.clone ? ns.clone(conn) : JSON.parse(JSON.stringify(conn))
+        );
         state.data_sources = (sample.data_sources || defaults.data_sources || []).slice();
+        const defaultDatasets = Array.isArray(defaults.datasets) ? defaults.datasets : [];
+        state.dataset_catalog = defaultDatasets.reduce((acc, item) => {
+          if (item && item.id) {
+            acc[item.id] = Object.assign({}, item);
+          }
+          return acc;
+        }, {});
+        const sampleDatasets = Array.isArray(sample.datasets) ? sample.datasets : [];
+        state.datasets =
+          sampleDatasets.length > 0
+            ? sampleDatasets
+                .map((entry) => {
+                  if (!entry) return "";
+                  if (typeof entry === "string") return entry;
+                  if (typeof entry === "object") return entry.id || entry.name || "";
+                  return "";
+                })
+                .filter(Boolean)
+            : defaultDatasets.map((item) => item.id).filter(Boolean);
         state.governance = sample.governance || {
           classification_default: (defaults.governance || {}).classification_default?.default || "confidential",
           pii_flags: (defaults.governance || {}).pii_flags || ["none"],
@@ -227,6 +252,7 @@
           ns.initConnectorsForm(connectorsContainer, state, {
             connectors: defaults.connectors || [],
             data_sources: defaults.data_sources || [],
+            datasets: defaultDatasets,
           }, () => {
             const payload = buildPayload(sample);
             syncHidden(payload, sample);
