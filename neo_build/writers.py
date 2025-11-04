@@ -472,4 +472,72 @@ def write_repo_files(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any
 
     # Packs
     packs = write_all_packs(profile, out_dir)
+    # Persist _last_build.json pointer for SoT consumers
+    try:
+        from datetime import datetime
+        import hashlib
+        import io
+        import json as _json
+        import zipfile
+
+        out_dir_path = Path(out_dir)
+        identity = _get(profile, "identity", {}) or {}
+        agent_meta = _get(profile, "agent", {}) or {}
+        agent_id = str(identity.get("agent_id") or agent_meta.get("name") or out_dir_path.parent.name or "agent").strip()
+        timestamp = out_dir_path.name or "latest"
+        file_count = len(list(out_dir_path.glob("*.json"))) + len(list(out_dir_path.glob("*.md")))
+        schema_version = str(_get(profile, "schema_version") or "2.1.1")
+
+        excluded_names = {"_last_build.json", ".DS_Store", "contract_report.json"}
+        excluded_dirs = {"__pycache__", ".pytest_cache", ".git", "spec_preview"}
+        rels: list[Path] = []
+        for path in out_dir_path.rglob("*"):
+            if not path.is_file():
+                continue
+            rel = path.relative_to(out_dir_path)
+            parts = rel.parts
+            if any(part.startswith(".") for part in parts):
+                continue
+            if any(part in excluded_dirs for part in parts):
+                continue
+            if rel.name in excluded_names:
+                continue
+            rels.append(rel)
+        rels = sorted(rels, key=lambda r: str(r).replace("\\", "/"))
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for rel in rels:
+                data = (out_dir_path / rel).read_bytes()
+                info = zipfile.ZipInfo(str(rel).replace("\\", "/"))
+                info.date_time = (1980, 1, 1, 0, 0, 0)
+                info.compress_type = zipfile.ZIP_DEFLATED
+                zf.writestr(info, data)
+        zip_hash = hashlib.sha256(buf.getvalue()).hexdigest()
+
+        payload = {
+            "schema_version": schema_version,
+            "agent_id": agent_id,
+            "outdir": str(out_dir_path.resolve()),
+            "files": file_count,
+            "ts": timestamp,
+            "zip_hash": zip_hash,
+            "status": "complete",
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+        }
+        build_id = payload.get("ts") or payload.get("timestamp")
+        if build_id:
+            payload["build_id"] = build_id
+        commit_hint = _get(profile, "commit") or _get(profile, "build_commit") or None
+        if commit_hint:
+            payload["commit"] = str(commit_hint)
+
+        try:
+            out_root = out_dir_path.parents[1]
+        except IndexError:
+            out_root = out_dir_path.parent
+        if out_root:
+            out_root.mkdir(parents=True, exist_ok=True)
+            (out_root / "_last_build.json").write_text(_json.dumps(payload, indent=2), encoding="utf-8")
+    except Exception:
+        pass
     return packs
