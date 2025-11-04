@@ -8,6 +8,7 @@ reporting.
 from __future__ import annotations
 
 import uuid
+import os
 from pathlib import Path
 import json
 from typing import Any, Dict, List, Mapping, Tuple
@@ -25,6 +26,9 @@ from .validators import (
     kpi_targets_sync,
     preferences_flow_flags,
 )
+
+CONTRACT_MODE = os.getenv("NEO_CONTRACT_MODE", "scaffold").strip().lower()
+CONTRACT_FULL = CONTRACT_MODE == "full"
 
 
 def _get(mapping: Mapping[str, Any] | None, key: str, default: Any = None) -> Any:
@@ -322,29 +326,30 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
     # 15 Observability + Telemetry
     obs = observability_spec()
     obs["version"] = 2
-    obs["decision_event_fields"] = [
-        "step_id",
-        "persistence_level",
-        "band_used",
-        "risk",
-        "confidence",
-        "cost_elapsed",
-        "time_elapsed",
-        "escalation_flag",
-        "escalation_reason",
-    ]
-    obs["decision_event_field_types"] = {
-        "step_id": "string",
-        "persistence_level": "string",
-        "band_used": "string",
-        "risk": "number",
-        "confidence": "number",
-        "cost_elapsed": "number",
-        "time_elapsed": "number",
-        "escalation_flag": "boolean",
-        "escalation_reason": "string",
-    }
-    obs.setdefault("sampling", {})["deviation_check_every_n_steps"] = 5
+    if CONTRACT_FULL:
+        obs["decision_event_fields"] = [
+            "step_id",
+            "persistence_level",
+            "band_used",
+            "risk",
+            "confidence",
+            "cost_elapsed",
+            "time_elapsed",
+            "escalation_flag",
+            "escalation_reason",
+        ]
+        obs["decision_event_field_types"] = {
+            "step_id": "string",
+            "persistence_level": "string",
+            "band_used": "string",
+            "risk": "number",
+            "confidence": "number",
+            "cost_elapsed": "number",
+            "time_elapsed": "number",
+            "escalation_flag": "boolean",
+            "escalation_reason": "string",
+        }
+        obs.setdefault("sampling", {})["deviation_check_every_n_steps"] = 5
     # v3 telemetry targets
     rate = _dget(profile, "telemetry.sampling.rate", None)
     if rate is not None:
@@ -359,22 +364,7 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
     json_write(out_dir / "15_Observability+Telemetry_Spec_v2.json", obs)
 
     # 16 Reasoning Footprints Schema
-    rf = {
-        "version": 1,
-        "store_raw_cot": False,
-        "fields": [
-            "objective",
-            "assumptions",
-            "tools_invoked",
-            "artifacts",
-            "risk",
-            "confidence",
-            "next_decision",
-            "zros_summary",
-            "band_verdict",
-            "escalation_packet_id",
-        ],
-    }
+    rf = {"version": 1, "store_raw_cot": False}
     packs["16_Reasoning-Footprints_Schema_v1.json"] = rf
     json_write(out_dir / "16_Reasoning-Footprints_Schema_v1.json", rf)
 
@@ -408,32 +398,34 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
         "escalation_flag",
         "escalation_reason",
     ]
-    rp = {
-        "version": 2,
-        "objective": "Maintain reporting parity across governance and telemetry checkpoints.",
-        "outputs": ["docx", "json"],
-        "publishing": {
-            "channels": ["governance", "executive"],
-            "frequency": "weekly",
-        },
-        "schedule": {
-            "cadence": "weekly",
-            "owner": "CAIO",
-        },
-        "templates": [
+    rp = {"version": 2, "templates": [
+        {
+            "id": "default",
+            "name": "Default Template",
+            "fields": rp_fields,
+        }
+    ]}
+    if CONTRACT_FULL:
+        rp.update(
             {
-                "id": "default",
-                "name": "Default Template",
-                "fields": rp_fields,
+                "objective": "Maintain reporting parity across governance and telemetry checkpoints.",
+                "outputs": ["docx", "json"],
+                "publishing": {
+                    "channels": ["governance", "executive"],
+                    "frequency": "weekly",
+                },
+                "schedule": {
+                    "cadence": "weekly",
+                    "owner": "CAIO",
+                },
+                "definition_of_done": [
+                    "Compliance report maps incidents/exceptions to gates and controls",
+                    "Data pack spec enumerates artifacts, retention, and formats",
+                    "Executive brief template available and token-light",
+                    "KPI views align to Observability dashboards and Evaluator cert report",
+                ],
             }
-        ],
-        "definition_of_done": [
-            "Compliance report maps incidents/exceptions to gates and controls",
-            "Data pack spec enumerates artifacts, retention, and formats",
-            "Executive brief template available and token-light",
-            "KPI views align to Observability dashboards and Evaluator cert report",
-        ],
-    }
+        )
     packs["18_Reporting-Pack_v2.json"] = rp
     json_write(out_dir / "18_Reporting-Pack_v2.json", rp)
 
@@ -445,36 +437,6 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
         "region": list(_get(sector_profile, "region", []) or []),
         "regulators": list(_get(sector_profile, "regulatory", []) or []),
         "naics": naics,
-        "datasets": [
-            {
-                "name": "baseline-domain-insights",
-                "source": "governance/insights",
-                "confidence": "baseline",
-            }
-        ],
-        "prompts": [
-            {
-                "id": "sme-baseline",
-                "context": "Provide domain guidance for analysts.",
-                "message": "Highlight compliance considerations and decision bands.",
-            }
-        ],
-        "policies": {
-            "advisory_scope": {
-                "controls": ["noop"],
-                "status": "informational",
-            }
-        },
-        "eval_cases": [
-            {
-                "id": "noop-evaluation",
-                "description": "Baseline SME overlay parity case.",
-            }
-        ],
-        "definition_of_done": [
-            "SME overlay aligns region, sector, and regulator references",
-            "Datasets enumerated for downstream parity checks",
-        ],
         # Sprint-1: add refs block for canonical consumption
         "refs": {
             "sector": _get(sector_profile, "sector", ""),
@@ -482,6 +444,41 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
             "regulators": list(_get(sector_profile, "regulatory", []) or []),
         },
     }
+    if CONTRACT_FULL:
+        od.update(
+            {
+                "datasets": [
+                    {
+                        "name": "baseline-domain-insights",
+                        "source": "governance/insights",
+                        "confidence": "baseline",
+                    }
+                ],
+                "prompts": [
+                    {
+                        "id": "sme-baseline",
+                        "context": "Provide domain guidance for analysts.",
+                        "message": "Highlight compliance considerations and decision bands.",
+                    }
+                ],
+                "policies": {
+                    "advisory_scope": {
+                        "controls": ["noop"],
+                        "status": "informational",
+                    }
+                },
+                "eval_cases": [
+                    {
+                        "id": "noop-evaluation",
+                        "description": "Baseline SME overlay parity case.",
+                    }
+                ],
+                "definition_of_done": [
+                    "SME overlay aligns region, sector, and regulator references",
+                    "Datasets enumerated for downstream parity checks",
+                ],
+            }
+        )
     packs["19_Overlay-Pack_SME-Domain_v1.json"] = od
     json_write(out_dir / "19_Overlay-Pack_SME-Domain_v1.json", od)
 
@@ -490,29 +487,34 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
         "version": 1,
         "brand_voice": "crisp, analytical, executive",
         "disclaimer": "Advisory support only; no legal advice.",
-        "refs": {
-            "policy": "enterprise-governance",
-            "playbooks": ["ops-escalation", "incident-response"],
-        },
-        "policies": {
-            "baseline": {
-                "controls": ["noop"],
-                "note": "Enterprise overlay stub policy.",
-            }
-        },
-        "brand": {
-            "tone": "executive",
-            "guidelines": ["Keep messaging concise", "Highlight audit readiness"],
-        },
-        "legal": {
-            "notices": ["Use for internal advisory only."],
-        },
-        "stakeholders": ["CAIO", "CPA"],
-        "escalations": {
-            "contacts": ["CAIO"],
-            "channel": "governance/escalations",
-        },
     }
+    if CONTRACT_FULL:
+        eo.update(
+            {
+                "refs": {
+                    "policy": "enterprise-governance",
+                    "playbooks": ["ops-escalation", "incident-response"],
+                },
+                "policies": {
+                    "baseline": {
+                        "controls": ["noop"],
+                        "note": "Enterprise overlay stub policy.",
+                    }
+                },
+                "brand": {
+                    "tone": "executive",
+                    "guidelines": ["Keep messaging concise", "Highlight audit readiness"],
+                },
+                "legal": {
+                    "notices": ["Use for internal advisory only."],
+                },
+                "stakeholders": ["CAIO", "CPA"],
+                "escalations": {
+                    "contacts": ["CAIO"],
+                    "channel": "governance/escalations",
+                },
+            }
+        )
     packs["20_Overlay-Pack_Enterprise_v1.json"] = eo
     json_write(out_dir / "20_Overlay-Pack_Enterprise_v1.json", eo)
 
