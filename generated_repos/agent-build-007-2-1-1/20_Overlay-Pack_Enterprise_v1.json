@@ -32,7 +32,7 @@
     "disclaimers": [
       "Advisory support only; no legal advice."
     ],
-    "ip": "All content © enterprise."
+    "ip": "All content \u00a9 enterprise."
   },
   "meta": {
     "agent_id": "AGT-112330-TURKEY-RND-0001",
@@ -95,5 +95,7 @@
   "token_budget": {
     "max_output_tokens": 1000
   },
-  "version": 1
+  "version": 1,
+  "prompts": [],
+  "datasets": []
 }
