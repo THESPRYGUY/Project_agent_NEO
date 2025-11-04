@@ -1,1 +1,17 @@
-﻿{"branch":"feature/sprint-ab007-mapper","commit":"bd4b140","pr":"92","build_root":"generated_repos/agent-build-007-2-1-1","schema_version":"2.1.1","packs":{"count":20,"hash":"HASH_UNKNOWN"},"ci":{"schema_validate":"green","intake_mapper_guard":"green","placeholder_sweep":"green","repo_audit":"green"}}
+{
+  "branch": "feature/sprint-ab007-mapper",
+  "commit": "bd4b140",
+  "pr": "92",
+  "build_root": "generated_repos/agent-build-007-2-1-1",
+  "schema_version": "2.1.1",
+  "packs": {
+    "count": 20,
+    "hash": "a2dad4e22042e92fd0ea7fb7cfeef249e3c8f788bad7b11219b9159bb13842bf"
+  },
+  "ci": {
+    "schema_validate": "green",
+    "intake_mapper_guard": "green",
+    "placeholder_sweep": "green",
+    "repo_audit": "green"
+  }
+}
