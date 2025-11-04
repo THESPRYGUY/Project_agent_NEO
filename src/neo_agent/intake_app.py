@@ -14,7 +14,6 @@ from urllib.parse import parse_qs
 import io
 import zipfile
 import tempfile
-from datetime import datetime
 
 from wsgiref.simple_server import make_server
 
@@ -860,10 +859,6 @@ class IntakeApplication:
             except Exception:
                 pass
 
-        final_dir: Optional[Path] = None
-        files = 0
-        last_payload: Optional[dict[str, Any]] = None
-        ts = ""
         err_code = "E_RENDER"
         try:
             # Render packs into tmp
@@ -903,7 +898,6 @@ class IntakeApplication:
             }
             try:
                 self._atomic_write_json(out_root / "_last_build.json", last)
-                last_payload = last
             except Exception as exc:
                 try:
                     LOGGER.warning("last_build write failed: %s", exc)
@@ -968,24 +962,6 @@ class IntakeApplication:
                     pass
             return 500, {"status": "error", "code": err_code, "message": str(exc), "req_id": req_id, "trace_id": req_id}
         finally:
-            try:
-                ensure_payload = last_payload or {
-                    "schema_version": str(_get(profile, "schema_version") or "2.1.1"),
-                    "agent_id": agent_id,
-                    "outdir": str(final_dir or tmp_dir),
-                    "files": int(files or 0),
-                    "ts": ts or time.strftime("%Y%m%dT%H%M%SZ", time.gmtime()),
-                    "zip_hash": "",
-                    "status": "complete",
-                    "timestamp": datetime.utcnow().isoformat() + "Z",
-                    "commit": os.environ.get("GITHUB_SHA", "local"),
-                }
-                try:
-                    self._atomic_write_json(out_root / "_last_build.json", ensure_payload)
-                except Exception:
-                    (out_root / "_last_build.json").write_text(json.dumps(ensure_payload, indent=2), encoding="utf-8")
-            except Exception:
-                pass
             try:
                 lock.release()
             except Exception:
