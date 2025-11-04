@@ -63,7 +63,11 @@ def _validator() -> Draft202012Validator:
 def validate_intake(payload: Dict[str, Any]) -> None:
     """Validate payload against the intake contract."""
     validator = _validator()
-    errors = sorted(validator.iter_errors(payload), key=lambda e: e.path)
+    def _sort_key(error: ValidationError) -> tuple:
+        path = tuple(str(part) for part in error.absolute_path)
+        return path + (error.message,)
+
+    errors = sorted(validator.iter_errors(payload), key=_sort_key)
     if errors:
         messages = []
         for error in errors:
