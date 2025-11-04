@@ -31,6 +31,18 @@ You should see HTTP 200 with headers `X-NEO-Intake-Version` and `X-Commit-SHA`.
 9. Sample payload lives at [`data/intake_contract_v1_sample.json`](data/intake_contract_v1_sample.json).
 10. Connector secrets remain sanitized; retention/permissions default from pack 08.
 
+### Registry Enum Sourcing
+- Enum choices for connectors, data sources, and datasets resolve via `neo_agent.registry_loader.load_tool_registry`.
+- The loader prefers `NEO_REGISTRY_ROOT`, then `_generated/_last_build.json`, before falling back to the baseline packs.
+- Pack `12_Tool+Data-Registry_v2.json` remains the single source of truth for connector/dataset IDs.
+- `/api/intake/schema` hydrates UI pickers with the loader output on every request.
+- Intake contract defaults no longer rely on checked-in JSON fragments for governed fields.
+- Front-end chips and toggles reflect loader data, while hidden inputs mirror the selected IDs.
+- Dataset chips surface loader IDs for operator review without mutating the contract payload.
+- CI job `registry-consistency` diffs sample payload IDs against pack 12 to catch drift.
+- Updating the pack snapshot is enough to refresh the UI and mapper defaults.
+- Registry alignment checks run in under a second and fail fast on unknown or missing IDs.
+
 ## 3) Dev Setup (10 minutes)
 - Python 3.11 and Node 20.x
 - Install and run tests:
@@ -364,4 +376,3 @@ Diagnostics example (unknowns are dropped):
 \n### CI Status (main)
 \n+[![CI (Unit + Integ/Smoke)](https://github.com/THESPRYGUY/Project_agent_NEO/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/THESPRYGUY/Project_agent_NEO/actions/workflows/ci.yml)
 \n+CI filter note (v2.1.2): Added `feat/**` and `hotfix/**` to workflow push filters; `pull_request` remains on `main` (types: opened, synchronize, reopened). Job names unchanged for Branch Protection.
-

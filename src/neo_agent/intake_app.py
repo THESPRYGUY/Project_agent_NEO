@@ -28,6 +28,7 @@ from neo_build.contracts import CANONICAL_PACK_FILENAMES
 from .adapters.normalize_v3 import normalize_context_role
 from .spec_generator import generate_agent_specs
 from .services.identity_utils import generate_agent_id
+from .registry_loader import load_tool_registry
 from neo_build.adapters.legacy_to_v3 import transform as legacy_transform
 from neo_build.validation.schema_guard import check_mutual_exclusion
 from mapper import apply_intake, IntakeValidationError
@@ -404,6 +405,7 @@ $build_panel_styles
                 <legend>Capabilities & Tools</legend>
                 <p class="notice">Configure connectors and human-gate actions via the Intake Contract panel below.</p>
                 <input type="hidden" name="capabilities_tools.tool_connectors_json" value="[]" data-intake-connectors-input>
+                <input type="hidden" name="capabilities_tools.datasets" value="" data-intake-datasets>
                 <input type="hidden" name="capabilities_tools.human_gate.actions" value="" data-intake-hg-input>
             </fieldset>
 
@@ -1065,7 +1067,7 @@ class IntakeApplication:
         sample = self._intake_contract_sample if isinstance(self._intake_contract_sample, Mapping) else {}
         sample_copy = json.loads(json.dumps(sample, ensure_ascii=False)) if sample else {}
         pack08 = self._load_pack_json('08_Memory-Schema_v2.json') or {}
-        pack12 = self._load_pack_json('12_Tool+Data-Registry_v2.json') or {}
+        registry = load_tool_registry(getattr(self, '_default_build_root', None))
         pack03 = self._load_pack_json('03_Operating-Rules_v2.json') or {}
         memory_defaults = {
             'scopes': list(pack08.get('memory_scopes') or []),
@@ -1073,19 +1075,26 @@ class IntakeApplication:
             'permissions': (pack08.get('permissions') or {}).get('roles', {}),
             'writeback_rules': list(pack08.get('writeback_rules') or []),
         }
-        connectors = []
-        for conn in pack12.get('connectors', []):
-            if not isinstance(conn, Mapping):
-                continue
-            connectors.append({
-                'id': str(conn.get('id') or conn.get('name') or ''),
-                'name': str(conn.get('name') or conn.get('id') or ''),
-                'enabled': bool(conn.get('enabled', True)),
-                'scopes': list(conn.get('scopes') or []),
-                'secret_ref': str(conn.get('secret_ref') or ''),
+        connectors = [
+            {
+                'id': conn.id,
+                'name': conn.name,
+                'enabled': conn.enabled,
+                'scopes': list(conn.scopes),
+                'secret_ref': conn.secret_ref,
                 'selected': True,
-            })
-        connectors.sort(key=lambda item: item.get('name', '').lower())
+            }
+            for conn in registry.connectors
+        ]
+        datasets = [
+            {
+                'id': dataset.id,
+                'name': dataset.name,
+                'description': dataset.description,
+                'classification': dataset.classification,
+            }
+            for dataset in registry.datasets
+        ]
         governance_props = (contract.get('properties', {}) or {}).get('governance', {}).get('properties', {})
         classification_enum = list((governance_props.get('classification_default') or {}).get('enum', []) or [])
         pii_enum = list((((governance_props.get('pii_flags') or {}).get('items') or {}).get('enum') or []) or [])
@@ -1096,7 +1105,8 @@ class IntakeApplication:
         defaults = {
             'memory': memory_defaults,
             'connectors': connectors,
-            'data_sources': list(pack12.get('data_sources') or []),
+            'data_sources': list(registry.data_sources),
+            'datasets': datasets,
             'governance': {
                 'classification_default': {
                     'default': (sample_copy.get('governance') or {}).get('classification_default')
