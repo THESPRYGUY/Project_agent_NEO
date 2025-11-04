@@ -1,0 +1,1 @@
+﻿{"branch":"feature/sprint-ab007-intake-ui","commit":"bd4b140","pr":"93","build_root":"generated_repos/agent-build-007-2-1-1","schema_version":"2.1.1","packs":{"count":20,"hash":"HASH_UNKNOWN"},"ci":{"schema_validate":"green","intake_mapper_guard":"green","placeholder_sweep":"green","repo_audit":"green","unit-python":"green","unit-js":"green","ui_schema_smoke":"green"}}
