@@ -65,8 +65,7 @@
   },
   "pii_flags": [
     "basic_contact",
-    "customer_record",
-    "none"
+    "customer_record"
   ],
   "pii_mask_on_ingest": true,
   "principles": [
