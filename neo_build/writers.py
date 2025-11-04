@@ -28,6 +28,8 @@ from .validators import (
 )
 
 CONTRACT_MODE = os.getenv("NEO_CONTRACT_MODE", "scaffold").strip().lower()
+if CONTRACT_MODE not in {"full", "preview"}:
+    CONTRACT_MODE = "scaffold"
 CONTRACT_FULL = CONTRACT_MODE == "full"
 
 
