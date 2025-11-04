@@ -898,6 +898,10 @@ class IntakeApplication:
             }
             try:
                 self._atomic_write_json(out_root / "_last_build.json", last)
+                base_generated = (self.base_dir / "_generated").resolve()
+                if base_generated != out_root.resolve():
+                    base_generated.mkdir(parents=True, exist_ok=True)
+                    self._atomic_write_json(base_generated / "_last_build.json", last)
             except Exception as exc:
                 try:
                     LOGGER.warning("last_build write failed: %s", exc)
@@ -2966,6 +2970,30 @@ window.addEventListener('DOMContentLoaded', function () {
                     status_code, resp = self._transactional_build(form_profile, environ)
                     if status_code == 200 and isinstance(resp, Mapping):
                         outdir = Path(str(resp.get("outdir")))
+                        # Ensure last-build pointer exists for immediate save() consumers
+                        try:
+                            parents = outdir.parents
+                            out_root = parents[1] if len(parents) >= 2 else outdir.parent
+                            if out_root:
+                                last_path = out_root / "_last_build.json"
+                                if not last_path.exists():
+                                    try:
+                                        zip_hash, _zip_bytes = self._canonical_zip_hash(outdir)
+                                    except Exception:
+                                        zip_hash = ""
+                                    payload = {
+                                        "schema_version": "2.1.1",
+                                        "agent_id": str(resp.get("agent_id") or ""),
+                                        "outdir": str(outdir),
+                                        "files": int(resp.get("files") or 0),
+                                        "ts": str(resp.get("ts") or ""),
+                                        "zip_hash": zip_hash,
+                                        "status": "complete",
+                                        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                                    }
+                                    last_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+                        except Exception:
+                            pass
                         # Compile profile (best-effort) and generate spec preview alongside SoT
                         try:
                             from .profile_compiler import compile_profile

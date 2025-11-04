@@ -35,5 +35,30 @@ describe('overlay modal', () => {
     expect(!!close).toBe(true)
     close!.click()
   })
-})
 
+  it('updates existing banner state with empty overlays', async () => {
+    const mod = await import('../../src/ui/build_panel.js')
+    const base = {
+      timestamp: '2025-01-02T03:04:05Z',
+      outdir: '/work/AGT/20250102T030405Z',
+      parity: { '02_vs_14': false, '11_vs_02': false, '03_vs_02': true, '17_vs_02': true },
+      overlay_summary: { applied: false, items: [] },
+    } as any
+    mod.renderParityBanner(base)
+    const banner = document.querySelector('[data-last-build-banner]') as HTMLElement | null
+    expect(!!banner).toBe(true)
+    const firstBadge = banner!.querySelector('.badge')
+    expect(firstBadge?.textContent).toContain('NEEDS REVIEW')
+
+    const allGreen = {
+      ...base,
+      outdir: '',
+      parity: { '02_vs_14': true, '11_vs_02': true, '03_vs_02': true, '17_vs_02': true },
+    }
+    mod.renderParityBanner(allGreen)
+    const badge = banner!.querySelector('.badge')
+    expect(badge?.textContent).toContain('ALL TRUE')
+    const download = banner!.querySelector('[data-last-zip]') as HTMLAnchorElement | null
+    expect(download?.hasAttribute('hidden')).toBe(true)
+  })
+})

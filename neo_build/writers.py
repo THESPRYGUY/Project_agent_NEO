@@ -8,6 +8,7 @@ reporting.
 from __future__ import annotations
 
 import uuid
+import os
 from pathlib import Path
 import json
 from typing import Any, Dict, List, Mapping, Tuple
@@ -25,6 +26,11 @@ from .validators import (
     kpi_targets_sync,
     preferences_flow_flags,
 )
+
+CONTRACT_MODE = os.getenv("NEO_CONTRACT_MODE", "scaffold").strip().lower()
+if CONTRACT_MODE not in {"full", "preview"}:
+    CONTRACT_MODE = "scaffold"
+CONTRACT_FULL = CONTRACT_MODE == "full"
 
 
 def _get(mapping: Mapping[str, Any] | None, key: str, default: Any = None) -> Any:
@@ -322,6 +328,30 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
     # 15 Observability + Telemetry
     obs = observability_spec()
     obs["version"] = 2
+    if CONTRACT_FULL:
+        obs["decision_event_fields"] = [
+            "step_id",
+            "persistence_level",
+            "band_used",
+            "risk",
+            "confidence",
+            "cost_elapsed",
+            "time_elapsed",
+            "escalation_flag",
+            "escalation_reason",
+        ]
+        obs["decision_event_field_types"] = {
+            "step_id": "string",
+            "persistence_level": "string",
+            "band_used": "string",
+            "risk": "number",
+            "confidence": "number",
+            "cost_elapsed": "number",
+            "time_elapsed": "number",
+            "escalation_flag": "boolean",
+            "escalation_reason": "string",
+        }
+        obs.setdefault("sampling", {})["deviation_check_every_n_steps"] = 5
     # v3 telemetry targets
     rate = _dget(profile, "telemetry.sampling.rate", None)
     if rate is not None:
@@ -377,6 +407,27 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
             "fields": rp_fields,
         }
     ]}
+    if CONTRACT_FULL:
+        rp.update(
+            {
+                "objective": "Maintain reporting parity across governance and telemetry checkpoints.",
+                "outputs": ["docx", "json"],
+                "publishing": {
+                    "channels": ["governance", "executive"],
+                    "frequency": "weekly",
+                },
+                "schedule": {
+                    "cadence": "weekly",
+                    "owner": "CAIO",
+                },
+                "definition_of_done": [
+                    "Compliance report maps incidents/exceptions to gates and controls",
+                    "Data pack spec enumerates artifacts, retention, and formats",
+                    "Executive brief template available and token-light",
+                    "KPI views align to Observability dashboards and Evaluator cert report",
+                ],
+            }
+        )
     packs["18_Reporting-Pack_v2.json"] = rp
     json_write(out_dir / "18_Reporting-Pack_v2.json", rp)
 
@@ -395,6 +446,41 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
             "regulators": list(_get(sector_profile, "regulatory", []) or []),
         },
     }
+    if CONTRACT_FULL:
+        od.update(
+            {
+                "datasets": [
+                    {
+                        "name": "baseline-domain-insights",
+                        "source": "governance/insights",
+                        "confidence": "baseline",
+                    }
+                ],
+                "prompts": [
+                    {
+                        "id": "sme-baseline",
+                        "context": "Provide domain guidance for analysts.",
+                        "message": "Highlight compliance considerations and decision bands.",
+                    }
+                ],
+                "policies": {
+                    "advisory_scope": {
+                        "controls": ["noop"],
+                        "status": "informational",
+                    }
+                },
+                "eval_cases": [
+                    {
+                        "id": "noop-evaluation",
+                        "description": "Baseline SME overlay parity case.",
+                    }
+                ],
+                "definition_of_done": [
+                    "SME overlay aligns region, sector, and regulator references",
+                    "Datasets enumerated for downstream parity checks",
+                ],
+            }
+        )
     packs["19_Overlay-Pack_SME-Domain_v1.json"] = od
     json_write(out_dir / "19_Overlay-Pack_SME-Domain_v1.json", od)
 
@@ -404,6 +490,33 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
         "brand_voice": "crisp, analytical, executive",
         "disclaimer": "Advisory support only; no legal advice.",
     }
+    if CONTRACT_FULL:
+        eo.update(
+            {
+                "refs": {
+                    "policy": "enterprise-governance",
+                    "playbooks": ["ops-escalation", "incident-response"],
+                },
+                "policies": {
+                    "baseline": {
+                        "controls": ["noop"],
+                        "note": "Enterprise overlay stub policy.",
+                    }
+                },
+                "brand": {
+                    "tone": "executive",
+                    "guidelines": ["Keep messaging concise", "Highlight audit readiness"],
+                },
+                "legal": {
+                    "notices": ["Use for internal advisory only."],
+                },
+                "stakeholders": ["CAIO", "CPA"],
+                "escalations": {
+                    "contacts": ["CAIO"],
+                    "channel": "governance/escalations",
+                },
+            }
+        )
     packs["20_Overlay-Pack_Enterprise_v1.json"] = eo
     json_write(out_dir / "20_Overlay-Pack_Enterprise_v1.json", eo)
 
@@ -472,4 +585,72 @@ def write_repo_files(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any
 
     # Packs
     packs = write_all_packs(profile, out_dir)
+    # Persist _last_build.json pointer for SoT consumers
+    try:
+        from datetime import datetime
+        import hashlib
+        import io
+        import json as _json
+        import zipfile
+
+        out_dir_path = Path(out_dir)
+        identity = _get(profile, "identity", {}) or {}
+        agent_meta = _get(profile, "agent", {}) or {}
+        agent_id = str(identity.get("agent_id") or agent_meta.get("name") or out_dir_path.parent.name or "agent").strip()
+        timestamp = out_dir_path.name or "latest"
+        file_count = len(list(out_dir_path.glob("*.json"))) + len(list(out_dir_path.glob("*.md")))
+        schema_version = str(_get(profile, "schema_version") or "2.1.1")
+
+        excluded_names = {"_last_build.json", ".DS_Store", "contract_report.json"}
+        excluded_dirs = {"__pycache__", ".pytest_cache", ".git", "spec_preview"}
+        rels: list[Path] = []
+        for path in out_dir_path.rglob("*"):
+            if not path.is_file():
+                continue
+            rel = path.relative_to(out_dir_path)
+            parts = rel.parts
+            if any(part.startswith(".") for part in parts):
+                continue
+            if any(part in excluded_dirs for part in parts):
+                continue
+            if rel.name in excluded_names:
+                continue
+            rels.append(rel)
+        rels = sorted(rels, key=lambda r: str(r).replace("\\", "/"))
+        buf = io.BytesIO()
+        with zipfile.ZipFile(buf, "w", zipfile.ZIP_DEFLATED) as zf:
+            for rel in rels:
+                data = (out_dir_path / rel).read_bytes()
+                info = zipfile.ZipInfo(str(rel).replace("\\", "/"))
+                info.date_time = (1980, 1, 1, 0, 0, 0)
+                info.compress_type = zipfile.ZIP_DEFLATED
+                zf.writestr(info, data)
+        zip_hash = hashlib.sha256(buf.getvalue()).hexdigest()
+
+        payload = {
+            "schema_version": schema_version,
+            "agent_id": agent_id,
+            "outdir": str(out_dir_path.resolve()),
+            "files": file_count,
+            "ts": timestamp,
+            "zip_hash": zip_hash,
+            "status": "complete",
+            "timestamp": datetime.utcnow().isoformat() + "Z",
+        }
+        build_id = payload.get("ts") or payload.get("timestamp")
+        if build_id:
+            payload["build_id"] = build_id
+        commit_hint = _get(profile, "commit") or _get(profile, "build_commit") or None
+        if commit_hint:
+            payload["commit"] = str(commit_hint)
+
+        try:
+            out_root = out_dir_path.parents[1]
+        except IndexError:
+            out_root = out_dir_path.parent
+        if out_root:
+            out_root.mkdir(parents=True, exist_ok=True)
+            (out_root / "_last_build.json").write_text(_json.dumps(payload, indent=2), encoding="utf-8")
+    except Exception:
+        pass
     return packs
