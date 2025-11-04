@@ -131,7 +131,10 @@
     "version": "v2.0.0"
   },
   "objective": "Unified governance model, risk taxonomy, controls, thresholds, and workflows for GEN2 agents.",
-  "pii_flags": [],
+  "pii_flags": [
+    "customer_record",
+    "basic_contact"
+  ],
   "policy": {
     "classification_default": "confidential",
     "no_impersonation": true
@@ -139,11 +142,8 @@
   "privacy_alignment": {
     "guardrails_file": "05_Safety+Privacy_Guardrails_v2.json",
     "pii_flags": [
-      "PCI",
-      "PHI",
-      "PII",
-      "minor_data",
-      "none"
+      "customer_record",
+      "basic_contact"
     ],
     "retention_overrides_allowed": true
   },

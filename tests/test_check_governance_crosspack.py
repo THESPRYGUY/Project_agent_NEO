@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from scripts.check_governance_crosspack import PACK_FILENAMES, check_repo
+from scripts.check_governance_crosspack import PACK_FILENAMES, check_repo, main as run_main
 
 
 def _write_pack(tmpdir: Path, name: str, payload: dict) -> None:
@@ -67,3 +67,32 @@ def test_none_flag_combo_flagged(tmp_path):
 
     issues = check_repo(tmp_path)
     assert any(issue.code == "pii_flags_none_combo" for issue in issues)
+
+
+def test_checker_scopes_to_root(tmp_path, monkeypatch):
+    build_root = tmp_path / "current_build"
+    build_root.mkdir()
+    pack02, pack04, pack05 = _baseline_payloads()
+    for code, payload in zip(("02", "04", "05"), (pack02, pack04, pack05)):
+        _write_pack(build_root, PACK_FILENAMES[code], payload)
+
+    sibling = tmp_path / "ignored_build"
+    sibling.mkdir()
+    (sibling / PACK_FILENAMES["05"]).write_text("{}", encoding="utf-8")
+
+    monkeypatch.setenv("BUILD_ROOT", str(build_root))
+    exit_code = run_main([])
+    assert exit_code == 0
+
+
+def test_checker_utf8_non_ascii(tmp_path, monkeypatch):
+    build_root = tmp_path / "utf8_build"
+    build_root.mkdir()
+    pack02, pack04, pack05 = _baseline_payloads()
+    pack02["notes"] = "π, ö, ñ"
+    for code, payload in zip(("02", "04", "05"), (pack02, pack04, pack05)):
+        _write_pack(build_root, PACK_FILENAMES[code], payload)
+
+    monkeypatch.setenv("BUILD_ROOT", str(build_root))
+    exit_code = run_main([])
+    assert exit_code == 0
