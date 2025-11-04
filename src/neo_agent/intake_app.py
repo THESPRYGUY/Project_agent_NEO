@@ -898,6 +898,10 @@ class IntakeApplication:
             }
             try:
                 self._atomic_write_json(out_root / "_last_build.json", last)
+                base_generated = (self.base_dir / "_generated").resolve()
+                if base_generated != out_root.resolve():
+                    base_generated.mkdir(parents=True, exist_ok=True)
+                    self._atomic_write_json(base_generated / "_last_build.json", last)
             except Exception as exc:
                 try:
                     LOGGER.warning("last_build write failed: %s", exc)
