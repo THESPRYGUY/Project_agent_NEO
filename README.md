@@ -387,3 +387,11 @@ Diagnostics example (unknowns are dropped):
 \n### CI Status (main)
 \n+[![CI (Unit + Integ/Smoke)](https://github.com/THESPRYGUY/Project_agent_NEO/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/THESPRYGUY/Project_agent_NEO/actions/workflows/ci.yml)
 \n+CI filter note (v2.1.2): Added `feat/**` and `hotfix/**` to workflow push filters; `pull_request` remains on `main` (types: opened, synchronize, reopened). Job names unchanged for Branch Protection.
+\n### How KPI report is generated
+\n1. Run `python scripts/gen_kpi_report.py --root generated_repos/agent-build-007-2-1-1 --out reports/`.
+\n2. The script reads packs 02, 11, 14, and 15 to gather KPI targets and gates.
+\n3. PRI, HAL, and AUD fall back to target thresholds when live CI data is missing.
+\n4. Outputs land in `reports/kpi_report.json` plus `reports/kpi_report.md`.
+\n5. Telemetry emits `kpi_report_generated` for observability ingestion.
+\n6. Use `--ci` to print a terse summary in workflow logs.
+\n7. Workflow `kpi-report-smoke` publishes the artifact for review.
