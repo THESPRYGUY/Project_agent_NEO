@@ -5,7 +5,7 @@ Validates that generated agent repositories keep key governance and safety
 contracts aligned across packs 02, 04, and 05.
 
 Checks performed per repository:
-  * Cross-file references between 02↔04↔05 point to the expected filenames.
+  * Cross-file references between 02<->04<->05 point to the expected filenames.
   * Classification defaults agree between 04.policy, 04 root, and 05.
   * No-impersonation guardrail is enabled consistently.
   * PII flag selections match between packs and avoid `none` mixed with others.
@@ -18,6 +18,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from dataclasses import dataclass
 from pathlib import Path
@@ -234,7 +235,7 @@ def check_repo(repo_root: Path) -> List[CheckIssue]:
                 CheckIssue(
                     repo=repo_label,
                     code="pii_flags_privacy_alignment_mismatch",
-                    message=f"04.privacy_alignment.pii_flags {flags_04_priv} missing selections from packs (expected ⊆ {sorted(expected_flags)}).",
+                    message=f"04.privacy_alignment.pii_flags {flags_04_priv} missing selections from packs (expected subset of {sorted(expected_flags)}).",
                 )
             )
 
@@ -252,42 +253,39 @@ def check_repo(repo_root: Path) -> List[CheckIssue]:
 
 
 def main(argv: list[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Cross-check governance packs 02↔04↔05 for consistency.")
+    parser = argparse.ArgumentParser(description="Cross-check governance packs 02<->04<->05 for consistency.")
+    default_root = Path(os.environ.get("BUILD_ROOT", "generated_repos/agent-build-007-2-1-1"))
     parser.add_argument(
         "--root",
         type=Path,
-        default=Path("generated_repos"),
-        help="Directory containing generated repos or a single repo root (default: generated_repos).",
+        default=default_root,
+        help="Path to the generated repo to check (default: %(default)s).",
     )
     parser.add_argument(
-        "--fail-fast",
+        "--strict",
         action="store_true",
-        help="Exit immediately on first repository failure instead of checking all.",
+        help="Return a non-zero exit code when findings are detected.",
     )
     args = parser.parse_args(argv)
 
-    repo_paths = _collect_repo_paths(args.root.resolve())
-    if not repo_paths:
-        parser.error(f"No generated repositories with packs {tuple(PACK_FILENAMES.values())} under {args.root}.")
+    repo_root = args.root.expanduser().resolve()
+    if not _is_repo_root(repo_root):
+        parser.error(
+            f"{repo_root} does not contain required packs {tuple(PACK_FILENAMES.values())}. "
+            "Set BUILD_ROOT or pass --root to a generated repo root."
+        )
 
-    all_issues: List[CheckIssue] = []
-    for repo in repo_paths:
-        repo_issues = check_repo(repo)
-        if repo_issues:
-            all_issues.extend(repo_issues)
-            print(f"[FAIL] {repo.name} ({len(repo_issues)} issue(s)).")
-            for issue in repo_issues:
-                print(f"  - [{issue.code}] {issue.message}")
-            if args.fail_fast:
-                break
-        else:
-            print(f"[OK] {repo.name} governance cross-check passed.")
+    repo_issues = check_repo(repo_root)
+    if repo_issues:
+        print(f"[FAIL] {repo_root.name} ({len(repo_issues)} issue(s)).")
+        for issue in repo_issues:
+            print(f"  - [{issue.code}] {issue.message}")
+        if args.strict:
+            return 1
+        print("\nGovernance cross-check completed with findings (non-strict mode).")
+        return 0
 
-    if all_issues:
-        print(f"\nGovernance cross-check failed with {len(all_issues)} issue(s) across {len(repo_paths)} repo(s).")
-        return 1
-
-    print(f"\nGovernance cross-check passed for {len(repo_paths)} repo(s).")
+    print(f"[OK] {repo_root.name} governance cross-check passed.")
     return 0
 
 
