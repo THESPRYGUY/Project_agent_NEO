@@ -31,6 +31,17 @@ You should see HTTP 200 with headers `X-NEO-Intake-Version` and `X-Commit-SHA`.
 9. Sample payload lives at [`data/intake_contract_v1_sample.json`](data/intake_contract_v1_sample.json).
 10. Connector secrets remain sanitized; retention/permissions default from pack 08.
 
+### Governance Cross-Pack Check
+Run the governance cross-pack check to keep packs 02, 04, and 05 aligned.
+Invoke from repo root: `python scripts/check_governance_crosspack.py --root generated_repos/agent-build-007-2-1-1`.
+Pass any directory that contains the three pack files if you need to target another build.
+The script confirms 02 constraints and refusal playbooks point to the actual governance and safety pack names.
+It checks 04 privacy_alignment.guardrails_file and 05 operational_hooks.governance_file point back correctly.
+Classification defaults must agree across 04 (root and policy) and 05 data_classification, otherwise the run fails.
+No-impersonation must stay true in both packs; the checker flags mismatches immediately.
+PII flags must match across packs and cannot mix 'none' with other entries.
+Use --root generated_repos to scan every generated repo, and add --fail-fast to stop at the first failing repo.
+
 ### Registry Enum Sourcing
 - Enum choices for connectors, data sources, and datasets resolve via `neo_agent.registry_loader.load_tool_registry`.
 - The loader prefers `NEO_REGISTRY_ROOT`, then `_generated/_last_build.json`, before falling back to the baseline packs.
