@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import re
 import uuid
+from datetime import datetime
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Mapping, MutableMapping, Optional
@@ -83,69 +84,88 @@ def generate_agent_repo(
     if base_dir not in out_dir.parents and base_dir != out_dir:
         raise AgentRepoGenerationError("invalid output directory resolution")
 
-    files_written: List[str] = []
     _ensure_dir(out_dir)
+    files_written: List[str] = []
 
-    manifest: Dict[str, Any] = {
-        "agent": {"name": name, "version": version},
-        "business_function": business_function,
-        "role": {
-            "code": role.get("code", ""),
-            "title": role.get("title", ""),
-            "seniority": role.get("seniority", ""),
-            "function": business_function or role.get("function", ""),
-        },
-        "routing_hints": routing_defaults,
-    }
+    try:
+        manifest: Dict[str, Any] = {
+            "agent": {"name": name, "version": version},
+            "business_function": business_function,
+            "role": {
+                "code": role.get("code", ""),
+                "title": role.get("title", ""),
+                "seniority": role.get("seniority", ""),
+                "function": business_function or role.get("function", ""),
+            },
+            "routing_hints": routing_defaults,
+        }
 
-    classification = profile.get("classification") if isinstance(profile, Mapping) else None
-    if isinstance(classification, Mapping) and isinstance(classification.get("naics"), Mapping):
-        manifest.setdefault("classification", {})["naics"] = classification["naics"]
-    elif isinstance(profile.get("naics"), Mapping):
-        manifest.setdefault("classification", {})["naics"] = profile["naics"]
+        classification = profile.get("classification") if isinstance(profile, Mapping) else None
+        if isinstance(classification, Mapping) and isinstance(classification.get("naics"), Mapping):
+            manifest.setdefault("classification", {})["naics"] = classification["naics"]
+        elif isinstance(profile.get("naics"), Mapping):
+            manifest.setdefault("classification", {})["naics"] = profile["naics"]
 
-    bf = manifest.get("business_function", "")
-    rc = manifest.get("role", {}) or {}
-    rh = manifest.get("routing_hints", {}) or {}
-    naics = (manifest.get("classification", {}) or {}).get("naics", {}) or {}
+        bf = manifest.get("business_function", "")
+        rc = manifest.get("role", {}) or {}
+        rh = manifest.get("routing_hints", {}) or {}
+        naics = (manifest.get("classification", {}) or {}).get("naics", {}) or {}
 
-    readme_lines = [
-        f"# Agent: {name or 'Unnamed Agent'} {('v' + version) if version else ''}",
-        "",
-        "## Domain & Role",
-        f"- Business Function: {bf or 'N/A'}",
-        f"- Role: {rc.get('title') or rc.get('code') or 'N/A'}",
-        f"- Seniority: {rc.get('seniority') or 'N/A'}",
-        "",
-        "## NAICS",
-        f"- Code: {naics.get('code', 'N/A')} (level {naics.get('level', 'N/A')})",
-        f"- Title: {naics.get('title', 'N/A')}",
-        f"- Lineage: {json.dumps(naics.get('lineage', []), ensure_ascii=False)}",
-        "",
-        "## Routing Hints",
-        "```json",
-        json.dumps(rh, indent=2, ensure_ascii=False),
-        "```",
-        "",
-        "## Quickstart",
-        "- Edit neo_agent_config.json",
-        "- Run your agent pipeline as needed",
-    ]
-    readme_content = "\n".join(readme_lines) + "\n"
+        readme_lines = [
+            f"# Agent: {name or 'Unnamed Agent'} {('v' + version) if version else ''}",
+            "",
+            "## Domain & Role",
+            f"- Business Function: {bf or 'N/A'}",
+            f"- Role: {rc.get('title') or rc.get('code') or 'N/A'}",
+            f"- Seniority: {rc.get('seniority') or 'N/A'}",
+            "",
+            "## NAICS",
+            f"- Code: {naics.get('code', 'N/A')} (level {naics.get('level', 'N/A')})",
+            f"- Title: {naics.get('title', 'N/A')}",
+            f"- Lineage: {json.dumps(naics.get('lineage', []), ensure_ascii=False)}",
+            "",
+            "## Routing Hints",
+            "```json",
+            json.dumps(rh, indent=2, ensure_ascii=False),
+            "```",
+            "",
+            "## Quickstart",
+            "- Edit neo_agent_config.json",
+            "- Run your agent pipeline as needed",
+        ]
+        readme_content = "\n".join(readme_lines) + "\n"
 
-    readme_path = out_dir / "README.md"
-    readme_path.write_text(readme_content, encoding="utf-8", newline="\n")
-    files_written.append(str(readme_path.relative_to(out_dir)))
+        readme_path = out_dir / "README.md"
+        readme_path.write_text(readme_content, encoding="utf-8", newline="\n")
+        files_written.append(str(readme_path.relative_to(out_dir)))
 
-    cfg_path = out_dir / "neo_agent_config.json"
-    cfg_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    files_written.append(str(cfg_path.relative_to(out_dir)))
+        cfg_path = out_dir / "neo_agent_config.json"
+        cfg_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        files_written.append(str(cfg_path.relative_to(out_dir)))
 
-    return {
-        "slug": out_dir.name,
-        "path": out_dir,
-        "files": files_written,
-        "readme": readme_content,
-    }
+        return {
+            "slug": out_dir.name,
+            "path": out_dir,
+            "files": files_written,
+            "readme": readme_content,
+        }
+    finally:
+        try:
+            import json as _json, os as _os
 
-
+            cfg = options if isinstance(options, Mapping) else {}
+            build_id = cfg.get("build_id", out_dir.name)
+            schema_version = cfg.get("schema_version", "2.1.1")
+            lb = {
+                "build_id": build_id,
+                "schema_version": schema_version,
+                "status": "complete",
+                "timestamp": datetime.utcnow().isoformat() + "Z",
+                "commit": _os.environ.get("GITHUB_SHA", "local"),
+                "outdir": str(out_dir),
+            }
+            pointer_path = base_dir / "_last_build.json"
+            with open(pointer_path, "w", encoding="utf-8") as handle:
+                _json.dump(lb, handle, indent=2)
+        except Exception:
+            pass  # _lb_finally_guard
