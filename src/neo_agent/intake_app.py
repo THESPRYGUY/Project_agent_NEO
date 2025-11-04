@@ -30,6 +30,7 @@ from .spec_generator import generate_agent_specs
 from .services.identity_utils import generate_agent_id
 from neo_build.adapters.legacy_to_v3 import transform as legacy_transform
 from neo_build.validation.schema_guard import check_mutual_exclusion
+from mapper import apply_intake, IntakeValidationError
 
 try:  # pragma: no cover - telemetry is optional in some environments
     from .telemetry import (
@@ -401,48 +402,30 @@ $build_panel_styles
 
             <fieldset>
                 <legend>Capabilities & Tools</legend>
-                <label>Tool Connectors (JSON array)
-                    <textarea name="capabilities_tools.tool_connectors_json" rows="4" placeholder='[{"name":"sharepoint","enabled":true,"scopes":["read"],"secret_ref":"SET_ME"}]'></textarea>
-                </label>
-                <label>Human-Gate Actions (comma separated)
-                    <input type="text" name="capabilities_tools.human_gate.actions" value="">
-                </label>
+                <p class="notice">Configure connectors and human-gate actions via the Intake Contract panel below.</p>
+                <input type="hidden" name="capabilities_tools.tool_connectors_json" value="[]" data-intake-connectors-input>
+                <input type="hidden" name="capabilities_tools.human_gate.actions" value="" data-intake-hg-input>
             </fieldset>
 
             <fieldset>
                 <legend>Memory</legend>
-                <label>Memory Scopes (comma separated)
-                    <input type="text" name="memory.memory_scopes" value="">
-                </label>
-                <label>Initial Memory Packs (comma separated)
-                    <input type="text" name="memory.initial_memory_packs" value="">
-                </label>
-                <label>Optional Packs (comma separated)
-                    <input type="text" name="memory.optional_packs" value="">
-                </label>
-                <label>Data Sources (comma separated)
-                    <input type="text" name="memory.data_sources" value="">
-                </label>
+                <p class="notice">Memory scopes, retention, permissions, and writeback rules are managed in the Intake Contract panel.</p>
+                <input type="hidden" name="memory.memory_scopes" value="" data-intake-memory-scopes>
+                <input type="hidden" name="memory.retention_json" value="{}" data-intake-memory-retention>
+                <input type="hidden" name="memory.permissions_json" value="{}" data-intake-memory-permissions>
+                <input type="hidden" name="memory.writeback_rules_json" value="[]" data-intake-memory-rules>
+                <input type="hidden" name="memory.initial_memory_packs" value="" data-intake-memory-initial>
+                <input type="hidden" name="memory.optional_packs" value="" data-intake-memory-optional>
+                <input type="hidden" name="memory.data_sources" value="" data-intake-data-sources>
             </fieldset>
 
             <fieldset>
                 <legend>Governance & Evaluation</legend>
-                <label>Risk Register Tags (comma separated)
-                    <input type="text" name="governance_eval.risk_register_tags" value="">
-                </label>
-                <label>PII Flags (comma separated)
-                    <input type="text" name="governance_eval.pii_flags" value="">
-                </label>
-                <label>Classification Default
-                    <select name="governance_eval.classification_default">
-                        <option value="confidential" selected>confidential</option>
-                        <option value="restricted">restricted</option>
-                        <option value="public">public</option>
-                    </select>
-                </label>
-                <label>RBAC Roles (comma separated)
-                    <input type="text" name="governance.rbac.roles" value="">
-                </label>
+                <p class="notice">PII flags, classification defaults, risk tags, and RBAC roles are sourced from the Intake Contract panel.</p>
+                <input type="hidden" name="governance_eval.risk_register_tags" value="" data-intake-risk-tags>
+                <input type="hidden" name="governance_eval.pii_flags" value="" data-intake-pii>
+                <input type="hidden" name="governance_eval.classification_default" value="confidential" data-intake-classification>
+                <input type="hidden" name="governance.rbac.roles" value="" data-intake-rbac-roles>
             </fieldset>
 
             <fieldset>
@@ -489,6 +472,24 @@ $build_panel_styles
             <button type="submit">Generate Agent Profile</button>
         </form>
 
+
+        <section class="intake-contract-panel" data-intake-panel>
+          <h2>Intake Contract Mapper</h2>
+          <p class="intake-form-status" data-intake-status>Loading schema…</p>
+          <div class="intake-contract-grid">
+            <div data-intake-memory></div>
+            <div data-intake-connectors></div>
+            <div data-intake-governance></div>
+            <div data-intake-rbac></div>
+          </div>
+          <div class="intake-contract-actions">
+            <button type="button" data-intake-dry-run>Dry Run Mapper</button>
+            <button type="button" data-intake-apply>Apply Mapper</button>
+          </div>
+          <div class="intake-results" data-intake-results></div>
+          <input type="hidden" name="intake.contract_payload" value="" data-intake-payload>
+        </section>
+
         $summary
         <section class="build-panel" id="build-panel" aria-labelledby="build-panel-title">
           <div class="build-panel__header">
@@ -503,18 +504,18 @@ $build_panel_styles
               <div class="health-chip" data-health-chip>
                 <span>Schema</span>
                 <strong class="mono" data-intake-schema>v3.0</strong>
-                <span>• App</span>
+                <span>â€¢ App</span>
                 <strong class="mono" data-app-version>0.0.0</strong>
               </div>
               <div style="margin-top: 0.5rem; font-size: 0.85rem;">
                 <div>pid: <span class="mono" data-pid>?</span></div>
-                <div>output: <span class="mono" data-repo-output-dir>…</span></div>
+                <div>output: <span class="mono" data-repo-output-dir>â€¦</span></div>
               </div>
             </div>
             <div class="card" id="parity-card">
               <h3>Parity</h3>
-              <div>02 ↔ 14: <strong data-parity-02-14 title="02_Global-Instructions vs 14_KPI targets parity">–</strong></div>
-              <div>11 ↔ 02: <strong data-parity-11-02 title="11_Workflow gates vs 02 targets parity">–</strong></div>
+              <div>02 â†” 14: <strong data-parity-02-14 title="02_Global-Instructions vs 14_KPI targets parity">â€“</strong></div>
+              <div>11 â†” 02: <strong data-parity-11-02 title="11_Workflow gates vs 02 targets parity">â€“</strong></div>
             </div>
             <div class="card" id="integrity-card">
               <h3>Integrity</h3>
@@ -538,6 +539,30 @@ $build_panel_styles
             </div>
           </div>
         </section>
+        <script>
+$intake_schema_loader_script
+        </script>
+        <script>
+$intake_api_client_script
+        </script>
+        <script>
+$intake_form_memory_script
+        </script>
+        <script>
+$intake_form_connectors_script
+        </script>
+        <script>
+$intake_form_governance_script
+        </script>
+        <script>
+$intake_form_rbac_script
+        </script>
+        <script>
+$intake_results_panel_script
+        </script>
+        <script>
+$intake_contract_panel_script
+        </script>
         <script type="module">
 $persona_script
         </script>
@@ -638,7 +663,21 @@ class IntakeApplication:
         self._function_role_css = self._safe_read_text(self.ui_dir / "function_role.css")
         self._function_role_js = self._safe_read_text(self.ui_dir / "function_role.js")
         self._generate_agent_js = self._safe_read_text(self.ui_dir / "generate_agent.js")
+        self._intake_contract_css = self._safe_read_text(self.ui_dir / "intake_contract.css")
+        self._schema_loader_js = self._safe_read_text(self.ui_dir / "schema_loader.js")
+        self._api_client_js = self._safe_read_text(self.ui_dir / "api_client.js")
+        self._form_memory_js = self._safe_read_text(self.ui_dir / "form_memory.js")
+        self._form_connectors_js = self._safe_read_text(self.ui_dir / "form_connectors.js")
+        self._form_governance_js = self._safe_read_text(self.ui_dir / "form_governance.js")
+        self._form_rbac_js = self._safe_read_text(self.ui_dir / "form_rbac_hitl.js")
+        self._results_panel_js = self._safe_read_text(self.ui_dir / "results_panel.js")
+        self._intake_contract_panel_js = self._safe_read_text(self.ui_dir / "intake_contract_panel.js")
         self._naics_selector_html = self._safe_read_text(self.ui_dir / "naics_selector.html")
+        self._intake_contract_sample = self._safe_read_json(
+            self.data_root / "intake_contract_v1_sample.json",
+            {},
+        )
+        self._default_build_root = self.project_root / "generated_repos" / "agent-build-007-2-1-1"
         LOGGER.debug("Loaded function/role assets: functions=%d roles=%d",
                      len(self._function_role_data.get("functions", [])),
                      len(self._function_role_data.get("roles", [])))
@@ -941,7 +980,7 @@ class IntakeApplication:
     def _safe_read_text(self, path: Path) -> str:
         """Read a text asset safely, tolerating mixed encodings.
 
-        Prefer UTFÃƒÆ’Ã…Â½ÃƒÂ¢Ã¢â€šÂ¬Ã…â€œÃƒÆ’Ã†â€™ÃƒÂ¢Ã¢â€šÂ¬Ã‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€šÃ‚Â¦8. If the file contains stray bytes (e.g., smart quotes
+        Prefer UTFÃƒÆ’Ã†â€™Ãƒâ€¦Ã‚Â½ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€¦Ã¢â‚¬Å“ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã‚Â¢ÃƒÂ¢Ã¢â‚¬Å¡Ã‚Â¬Ãƒâ€šÃ‚Â¡ÃƒÆ’Ã†â€™Ãƒâ€ Ã¢â‚¬â„¢ÃƒÆ’Ã¢â‚¬Å¡Ãƒâ€šÃ‚Â¦8. If the file contains stray bytes (e.g., smart quotes
         pasted from Word), fall back to decoding with replacement so the app
         does not crash during initialisation.
         """
@@ -990,6 +1029,133 @@ class IntakeApplication:
             except Exception:
                 LOGGER.exception("Failed to parse JSON at %s", path)
                 return default
+    def _json_response(self, start_response, status: int, payload: Any) -> list[bytes]:
+        body = json.dumps(payload, ensure_ascii=False).encode('utf-8')
+        status_map = {
+            200: '200 OK',
+            201: '201 Created',
+            204: '204 No Content',
+            400: '400 Bad Request',
+            404: '404 Not Found',
+            500: '500 Internal Server Error',
+        }
+        status_line = status_map.get(status, f'{status} OK')
+        headers = _std_headers('application/json; charset=utf-8', len(body))
+        start_response(status_line, headers)
+        return [body]
+
+    def _load_pack_json(self, filename: str) -> dict[str, Any] | list[Any]:
+        root = getattr(self, '_default_build_root', None)
+        try:
+            if isinstance(root, Path):
+                path = root / filename
+            else:
+                path = self.project_root / 'generated_repos' / 'agent-build-007-2-1-1' / filename
+        except Exception:
+            path = self.project_root / 'generated_repos' / 'agent-build-007-2-1-1' / filename
+        data = self._safe_read_json(path, {})
+        return data if isinstance(data, (dict, list)) else {}
+
+    def _intake_schema_payload(self) -> dict[str, Any]:
+        contract = self._safe_read_json(self.project_root / 'contracts' / 'intake_contract_v1.json', {})
+        sample = self._intake_contract_sample if isinstance(self._intake_contract_sample, Mapping) else {}
+        sample_copy = json.loads(json.dumps(sample, ensure_ascii=False)) if sample else {}
+        pack08 = self._load_pack_json('08_Memory-Schema_v2.json') or {}
+        pack12 = self._load_pack_json('12_Tool+Data-Registry_v2.json') or {}
+        pack03 = self._load_pack_json('03_Operating-Rules_v2.json') or {}
+        memory_defaults = {
+            'scopes': list(pack08.get('memory_scopes') or []),
+            'retention': pack08.get('retention') or {},
+            'permissions': (pack08.get('permissions') or {}).get('roles', {}),
+            'writeback_rules': list(pack08.get('writeback_rules') or []),
+        }
+        connectors = []
+        for conn in pack12.get('connectors', []):
+            if not isinstance(conn, Mapping):
+                continue
+            connectors.append({
+                'id': str(conn.get('id') or conn.get('name') or ''),
+                'name': str(conn.get('name') or conn.get('id') or ''),
+                'enabled': bool(conn.get('enabled', True)),
+                'scopes': list(conn.get('scopes') or []),
+                'secret_ref': str(conn.get('secret_ref') or ''),
+                'selected': True,
+            })
+        connectors.sort(key=lambda item: item.get('name', '').lower())
+        governance_props = (contract.get('properties', {}) or {}).get('governance', {}).get('properties', {})
+        classification_enum = list((governance_props.get('classification_default') or {}).get('enum', []) or [])
+        pii_enum = list((((governance_props.get('pii_flags') or {}).get('items') or {}).get('enum') or []) or [])
+        human_gate_enum = list((((contract.get('properties', {}) or {}).get('human_gate') or {}).get('properties', {})
+                               .get('actions', {})
+                               .get('items', {})
+                               .get('enum', []) or []))
+        defaults = {
+            'memory': memory_defaults,
+            'connectors': connectors,
+            'data_sources': list(pack12.get('data_sources') or []),
+            'governance': {
+                'classification_default': {
+                    'default': (sample_copy.get('governance') or {}).get('classification_default')
+                               or (classification_enum[0] if classification_enum else 'confidential'),
+                },
+                'classification_default_options': classification_enum,
+                'pii_flags_options': pii_enum,
+                'pii_flags': list((sample_copy.get('governance') or {}).get('pii_flags') or []),
+            },
+            'roles': list(((pack03.get('rbac') or {}).get('roles') or [])),
+            'human_gate_actions': human_gate_enum,
+        }
+        return {
+            'contract': contract,
+            'defaults': defaults,
+            'sample': sample_copy or {},
+        }
+
+    def _extract_mapper_errors(self, exc: IntakeValidationError) -> list[str]:
+        lines = []
+        for line in str(exc).splitlines():
+            line = line.strip()
+            if not line or line.startswith('Intake contract validation failed'):
+                continue
+            lines.append(line)
+        return lines
+
+    def _handle_intake_schema(self, start_response):
+        payload = self._intake_schema_payload()
+        return self._json_response(start_response, 200, payload)
+
+    def _handle_intake_mapper(self, environ, start_response):
+        try:
+            length = int(environ.get('CONTENT_LENGTH') or '0')
+        except (TypeError, ValueError):
+            length = 0
+        raw_body = environ.get('wsgi.input').read(length) if length else environ.get('wsgi.input').read(0)
+        try:
+            data = json.loads(raw_body.decode('utf-8')) if raw_body else {}
+        except Exception:
+            return self._json_response(start_response, 400, {'status': 'error', 'message': 'invalid_json'})
+        if not isinstance(data, Mapping):
+            return self._json_response(start_response, 400, {'status': 'error', 'message': 'invalid_payload'})
+        payload = data.get('payload')
+        if not isinstance(payload, Mapping):
+            return self._json_response(start_response, 400, {'status': 'error', 'message': 'payload_required'})
+        dry_run = bool(data.get('dry_run', True))
+        try:
+            result = apply_intake(dict(payload), getattr(self, '_default_build_root', None) or (self.project_root / 'generated_repos' / 'agent-build-007-2-1-1'), dry_run=dry_run)
+        except IntakeValidationError as exc:
+            return self._json_response(start_response, 400, {'status': 'invalid', 'errors': self._extract_mapper_errors(exc)})
+        except Exception as exc:
+            LOGGER.exception('Mapper invocation failed')
+            return self._json_response(start_response, 500, {'status': 'error', 'message': str(exc)})
+        response = {
+            'status': 'ok',
+            'dry_run': dry_run,
+            'changed_files': result.get('changed_files', []),
+            'mapping_report': result.get('mapping_report', []),
+            'diff_report': result.get('diff_report', []),
+        }
+        return self._json_response(start_response, 200, response)
+
     def _load_persona_assets(self) -> dict[str, str]:
         html = self._safe_read_text(self.ui_dir / "persona_tabs.html")
         base_css = self._safe_read_text(self.ui_dir / "persona.css")
@@ -1350,6 +1516,7 @@ window.addEventListener('DOMContentLoaded', function () {
                     self._domain_selector_assets.get("css"),
                     self._domain_selector_assets.get("bundle_css"),
                     self._function_role_css,
+                    self._intake_contract_css,
                 )
                 if part
             ),
@@ -1508,6 +1675,14 @@ window.addEventListener('DOMContentLoaded', function () {
             extra_styles=extra_styles or "",
             notice=_notice(message),
             persona_tabs=persona_html or "",
+            intake_schema_loader_script=self._indent_block(self._schema_loader_js or "", spaces=8),
+            intake_api_client_script=self._indent_block(self._api_client_js or "", spaces=8),
+            intake_form_memory_script=self._indent_block(self._form_memory_js or "", spaces=8),
+            intake_form_connectors_script=self._indent_block(self._form_connectors_js or "", spaces=8),
+            intake_form_governance_script=self._indent_block(self._form_governance_js or "", spaces=8),
+            intake_form_rbac_script=self._indent_block(self._form_rbac_js or "", spaces=8),
+            intake_results_panel_script=self._indent_block(self._results_panel_js or "", spaces=8),
+            intake_contract_panel_script=self._indent_block(self._intake_contract_panel_js or "", spaces=8),
             persona_script=persona_script or "",
             persona_hidden_value=persona_hidden or "",
             summary=summary_html or "",
@@ -1828,6 +2003,10 @@ window.addEventListener('DOMContentLoaded', function () {
             pass
 
         # Routing: JSON APIs first
+        if path == "/api/intake/schema" and method == "GET":
+            return self._handle_intake_schema(start_response)
+        if path == "/api/intake/mapper" and method == "POST":
+            return self._handle_intake_mapper(environ, start_response)
         if path == "/health" and method == "GET":
             payload = {
                 "status": "ok",
@@ -2269,7 +2448,7 @@ window.addEventListener('DOMContentLoaded', function () {
                 start_response("400 Bad Request", headers)
                 return [payload]
 
-            # Normalize NAICS + Function/Role → role_profile/sector_profile
+            # Normalize NAICS + Function/Role â†’ role_profile/sector_profile
             try:
                 # Extract region from multiple possible sources
                 region_vals = []

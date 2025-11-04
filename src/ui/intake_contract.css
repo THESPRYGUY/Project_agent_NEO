@@ -1,0 +1,133 @@
+.intake-contract-panel {
+  margin-top: 2rem;
+  background: #ffffff;
+  border: 1px solid #dbe2ef;
+  border-radius: 12px;
+  padding: 1.5rem;
+  box-shadow: 0 4px 12px rgba(17, 45, 78, 0.08);
+}
+
+.intake-contract-panel h2 {
+  margin-top: 0;
+  color: #112d4e;
+  font-size: 1.2rem;
+}
+
+.intake-contract-grid {
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+  margin-top: 1rem;
+}
+
+.intake-contract-card {
+  background: #f7f9fc;
+  border: 1px solid #e6edf6;
+  border-radius: 10px;
+  padding: 0.9rem;
+}
+
+.intake-contract-card h3 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1rem;
+  color: #0b2545;
+}
+
+.intake-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.intake-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  border: 1px solid #c5d7f2;
+  border-radius: 999px;
+  padding: 0.25rem 0.7rem;
+  font-size: 0.85rem;
+  background: #eef2fb;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease;
+}
+
+.intake-chip[data-selected="true"] {
+  background: #1f3c88;
+  border-color: #1f3c88;
+  color: #ffffff;
+}
+
+.intake-chip input {
+  display: none;
+}
+
+.intake-contract-actions {
+  display: flex;
+  gap: 0.75rem;
+  margin-top: 1.25rem;
+  flex-wrap: wrap;
+}
+
+.intake-contract-actions button {
+  background: #1f3c88;
+  color: #fff;
+  padding: 0.6rem 1.1rem;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.intake-contract-actions button[disabled] {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.intake-results {
+  margin-top: 1.5rem;
+  background: #0b1b36;
+  color: #e3f6f5;
+  padding: 1rem;
+  border-radius: 10px;
+  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+  max-height: 320px;
+  overflow: auto;
+}
+
+.intake-results h4 {
+  margin: 0.6rem 0 0.3rem 0;
+  color: #8bc4ff;
+}
+
+.intake-form-status {
+  margin-top: 0.75rem;
+  font-size: 0.9rem;
+  color: #205072;
+}
+
+.intake-flex {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.intake-matrix {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.9rem;
+}
+
+.intake-matrix th,
+.intake-matrix td {
+  border: 1px solid #dbe2ef;
+  padding: 0.35rem 0.5rem;
+  text-align: left;
+}
+
+.intake-matrix input[type="number"] {
+  width: 100%;
+  padding: 0.35rem;
+  border-radius: 4px;
+  border: 1px solid #c5d7f2;
+}

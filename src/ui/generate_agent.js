@@ -126,18 +126,32 @@
       risk_tier: get('sector_profile.risk_tier'),
       regulatory: (get('sector_profile.regulatory')||'').split(',').map(s=>s.trim()).filter(Boolean)
     };
-    let connectors = parseJsonSafe(get('capabilities_tools.tool_connectors_json'));
-    if (!Array.isArray(connectors)) connectors = [];
+    const connectorsRaw = parseJsonSafe(get('capabilities_tools.tool_connectors_json'));
+    const humanGateActions = (get('capabilities_tools.human_gate.actions')||'').split(',').map(s=>s.trim()).filter(Boolean);
+    let connectors = Array.isArray(connectorsRaw) ? connectorsRaw : [];
+    const retentionJson = parseJsonSafe(get('memory.retention_json'));
+    const permissionsJson = parseJsonSafe(get('memory.permissions_json'));
+    const writebackRulesJson = parseJsonSafe(get('memory.writeback_rules_json'));
+    const dataSourcesRaw = (get('memory.data_sources')||'').split(',').map(s=>s.trim()).filter(Boolean);
     profile.capabilities_tools = {
       tool_connectors: connectors,
-      human_gate: { actions: (get('capabilities_tools.human_gate.actions')||'').split(',').map(s=>s.trim()).filter(Boolean) }
+      human_gate: { actions: humanGateActions }
     };
     profile.memory = {
       memory_scopes: (get('memory.memory_scopes')||'').split(',').map(s=>s.trim()).filter(Boolean),
       initial_memory_packs: (get('memory.initial_memory_packs')||'').split(',').map(s=>s.trim()).filter(Boolean),
       optional_packs: (get('memory.optional_packs')||'').split(',').map(s=>s.trim()).filter(Boolean),
-      data_sources: (get('memory.data_sources')||'').split(',').map(s=>s.trim()).filter(Boolean),
+      data_sources: dataSourcesRaw,
     };
+    if (retentionJson && typeof retentionJson === 'object') {
+      profile.memory.retention = retentionJson;
+    }
+    if (permissionsJson && typeof permissionsJson === 'object') {
+      profile.memory.permissions = permissionsJson;
+    }
+    if (Array.isArray(writebackRulesJson)) {
+      profile.memory.writeback_rules = writebackRulesJson;
+    }
     profile.governance_eval = {
       risk_register_tags: (get('governance_eval.risk_register_tags')||'').split(',').map(s=>s.trim()).filter(Boolean),
       pii_flags: (get('governance_eval.pii_flags')||'').split(',').map(s=>s.trim()).filter(Boolean),
@@ -151,6 +165,10 @@
         classification_default: get('governance_eval.classification_default') || 'confidential',
       }
     };
+    const intakeContractPayload = parseJsonSafe(get('intake.contract_payload'));
+    if (intakeContractPayload && typeof intakeContractPayload === 'object') {
+      profile.intake_contract = intakeContractPayload;
+    }
     // v3 persona extras
     profile.persona = Object.assign({}, profile.persona || {}, {
       tone: get('persona.tone') || 'crisp, analytical, executive',

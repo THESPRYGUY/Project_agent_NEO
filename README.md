@@ -19,6 +19,18 @@ curl -i http://127.0.0.1:5000/health
 
 You should see HTTP 200 with headers `X-NEO-Intake-Version` and `X-Commit-SHA`.
 
+## How the Intake works now
+1. Contract schema (v1) loads from `/api/intake/schema` at runtime.
+2. Memory, connectors, governance, and RBAC chips derive from packs 03/04/05/08/12.
+3. Hidden form inputs stay in sync with the Intake Contract panel state.
+4. Dry-run triggers `tools/apply_intake.py --dry-run` and surfaces Mapping + Diff reports.
+5. Apply runs the mapper and displays the changed pack list.
+6. Validation errors sort deterministically across multi-error payloads.
+7. CI gates flow schema-validate -> intake-mapper-guard -> placeholder-sweep -> repo-audit -> unit -> ui-schema-smoke.
+8. `scripts/ui_schema_smoke.py` smoke-tests the panel payload in CI.
+9. Sample payload lives at [`data/intake_contract_v1_sample.json`](data/intake_contract_v1_sample.json).
+10. Connector secrets remain sanitized; retention/permissions default from pack 08.
+
 ## 3) Dev Setup (10 minutes)
 - Python 3.11 and Node 20.x
 - Install and run tests:
