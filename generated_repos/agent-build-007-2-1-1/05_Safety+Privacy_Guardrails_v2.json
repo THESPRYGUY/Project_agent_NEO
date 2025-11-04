@@ -63,6 +63,11 @@
     "incident_workflow": "use_incident_response_from_governance",
     "observability_file": "15_Observability+Telemetry_Spec_v2.json"
   },
+  "pii_flags": [
+    "basic_contact",
+    "customer_record",
+    "none"
+  ],
   "pii_mask_on_ingest": true,
   "principles": [
     "Apply privacy-by-design and least-privilege access.",

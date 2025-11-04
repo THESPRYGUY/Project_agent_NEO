@@ -62,6 +62,11 @@
       ]
     }
   ],
+  "human_gate_actions": [
+    "legal_advice",
+    "regulatory_interpretation",
+    "financial_commitment"
+  ],
   "meta": {
     "agent_id": "AGT-112330-TURKEY-RND-0001",
     "authors": [

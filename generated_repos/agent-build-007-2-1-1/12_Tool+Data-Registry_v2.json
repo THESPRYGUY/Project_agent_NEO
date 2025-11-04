@@ -1,27 +1,22 @@
 {
   "connectors": [
     {
-      "auth_method": "none_or_api_key",
-      "id": "conn.http",
-      "name": "HTTP Client",
-      "notes": "Respect jurisdictional export controls per Safety+Privacy",
-      "owner": "CDO/SRE",
-      "pii_flags": [
-        "none"
+      "enabled": true,
+      "id": "sharepoint",
+      "name": "sharepoint",
+      "scopes": [
+        "read"
       ],
-      "scope": "outbound_http"
+      "secret_ref": "vault://connectors/sharepoint"
     },
     {
-      "auth_method": "service_account",
-      "id": "conn.vectorstore",
-      "name": "Vector Store",
-      "notes": "Index policies defined in 13_Knowledge-Graph+RAG_Config_v2.json",
-      "owner": "CDO/SRE",
-      "pii_flags": [
-        "PII",
-        "none"
+      "enabled": true,
+      "id": "vectorstore",
+      "name": "vectorstore",
+      "scopes": [
+        "embedding_index"
       ],
-      "scope": "embedding_index"
+      "secret_ref": "vault://connectors/vectorstore"
     }
   ],
   "contracts": {
@@ -61,6 +56,11 @@
       "safety"
     ]
   },
+  "data_sources": [
+    "SRC-DSPY-01",
+    "SRC-LANGGRAPH-01",
+    "SRC-OPENAI-01"
+  ],
   "datasets": [
     {
       "name": "default_index",
@@ -119,7 +119,7 @@
       "date_accessed": "2025-09-12T00:00:00Z",
       "id": "SRC-DSPY-01",
       "publisher": "Stanford NLP / DSPy",
-      "title": "DSPy — Programming Language Models",
+      "title": "DSPy \u2014 Programming Language Models",
       "topics": [
         "eval",
         "training",
@@ -132,7 +132,7 @@
       "date_accessed": "2025-09-12T00:00:00Z",
       "id": "SRC-LANGGRAPH-01",
       "publisher": "LangChain",
-      "title": "LangGraph — Stateful Agent Workflows",
+      "title": "LangGraph \u2014 Stateful Agent Workflows",
       "topics": [
         "agents",
         "workflows"
@@ -144,7 +144,7 @@
       "date_accessed": "2025-09-12T00:00:00Z",
       "id": "SRC-OPENAI-01",
       "publisher": "OpenAI",
-      "title": "OpenAI Docs — System Instructions & Structured Outputs",
+      "title": "OpenAI Docs \u2014 System Instructions & Structured Outputs",
       "topics": [
         "instructions",
         "prompts",

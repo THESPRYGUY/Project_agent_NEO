@@ -1,0 +1,336 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://project-neo/contracts/intake_contract_v1.json",
+  "title": "Project NEO Intake Contract v1",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "intake_version",
+    "metadata",
+    "determinism",
+    "rbac",
+    "memory",
+    "connectors",
+    "data_sources",
+    "governance",
+    "human_gate"
+  ],
+  "properties": {
+    "intake_version": {
+      "type": "string",
+      "const": "v1"
+    },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "agent_id",
+        "project_code",
+        "environment",
+        "submitted_at"
+      ],
+      "properties": {
+        "agent_id": {
+          "type": "string",
+          "pattern": "^[A-Z0-9-_]{3,64}$"
+        },
+        "project_code": {
+          "type": "string",
+          "pattern": "^[A-Z0-9_-]{2,32}$"
+        },
+        "environment": {
+          "type": "string",
+          "enum": [
+            "dev",
+            "staging",
+            "prod"
+          ]
+        },
+        "submitted_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "owners": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 10,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Za-z0-9/+& -]{1,48}$"
+          }
+        },
+        "notes": {
+          "type": "string",
+          "maxLength": 2000
+        }
+      }
+    },
+    "determinism": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "fixed_timestamp",
+        "stable_seed",
+        "deep_sort_keys"
+      ],
+      "properties": {
+        "fixed_timestamp": {
+          "type": "boolean",
+          "const": true
+        },
+        "stable_seed": {
+          "type": "boolean",
+          "const": true
+        },
+        "deep_sort_keys": {
+          "type": "boolean",
+          "const": true
+        },
+        "timestamp_value": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "seed_value": {
+          "type": "integer",
+          "minimum": 0,
+          "maximum": 2147483647
+        }
+      }
+    },
+    "rbac": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "roles"
+      ],
+      "properties": {
+        "roles": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[A-Z][A-Za-z0-9/ +_-]{1,63}$"
+          }
+        }
+      }
+    },
+    "memory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "scopes",
+        "retention",
+        "permissions",
+        "writeback_rules"
+      ],
+      "properties": {
+        "scopes": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^(episodic|semantic|procedural)(:[A-Za-z0-9_./*-]+)?$"
+          }
+        },
+        "retention": {
+          "type": "object",
+          "minProperties": 1,
+          "additionalProperties": false,
+          "properties": {
+            "episodic": {
+              "type": "integer",
+              "minimum": 1,
+              "maximum": 3650
+            },
+            "semantic": {
+              "type": "integer",
+              "minimum": 30,
+              "maximum": 7300
+            },
+            "procedural": {
+              "type": "integer",
+              "minimum": 30,
+              "maximum": 7300
+            }
+          }
+        },
+        "permissions": {
+          "type": "object",
+          "minProperties": 1,
+          "maxProperties": 16,
+          "propertyNames": {
+            "pattern": "^[A-Z][A-Za-z0-9/ +_-]{1,63}$"
+          },
+          "additionalProperties": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "read",
+              "write"
+            ],
+            "properties": {
+              "read": {
+                "type": "array",
+                "minItems": 1,
+                "maxItems": 32,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "pattern": "^(episodic|semantic|procedural):[A-Za-z0-9_./*-]+$"
+                }
+              },
+              "write": {
+                "type": "array",
+                "minItems": 0,
+                "maxItems": 32,
+                "uniqueItems": true,
+                "items": {
+                  "type": "string",
+                  "pattern": "^(episodic|semantic|procedural):[A-Za-z0-9_./*-]+$"
+                }
+              }
+            }
+          }
+        },
+        "writeback_rules": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "items": {
+            "type": "string",
+            "minLength": 8,
+            "maxLength": 512
+          }
+        }
+      }
+    },
+    "connectors": {
+      "type": "array",
+      "minItems": 1,
+      "maxItems": 24,
+      "uniqueItems": true,
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "name",
+              "enabled",
+              "scopes",
+              "secret_ref"
+            ],
+            "properties": {
+              "name": {
+                "type": "string",
+                "pattern": "^[A-Za-z0-9][A-Za-z0-9 ._-]{1,63}$"
+          },
+          "enabled": {
+            "type": "boolean"
+          },
+          "scopes": {
+            "type": "array",
+            "minItems": 1,
+            "maxItems": 16,
+            "uniqueItems": true,
+            "items": {
+              "type": "string",
+              "pattern": "^[a-z0-9_.:-]{3,64}$"
+            }
+          },
+          "secret_ref": {
+            "type": "string",
+            "pattern": "^[a-z0-9]+://[A-Za-z0-9/_-]{3,128}$"
+          }
+        }
+      }
+    },
+    "data_sources": {
+      "type": "array",
+      "minItems": 0,
+      "maxItems": 64,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "pattern": "^[A-Z0-9_-]{3,64}$"
+      }
+    },
+    "governance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "classification_default",
+        "pii_flags",
+        "risk_register_tags"
+      ],
+      "properties": {
+        "classification_default": {
+          "type": "string",
+          "enum": [
+            "public",
+            "internal",
+            "confidential",
+            "restricted"
+          ]
+        },
+        "pii_flags": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "none",
+              "basic_contact",
+              "financial",
+              "health",
+              "government_id",
+              "employee_record",
+              "customer_record",
+              "custom_sensitive"
+            ]
+          }
+        },
+        "risk_register_tags": {
+          "type": "array",
+          "minItems": 0,
+          "maxItems": 32,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "pattern": "^[a-z0-9][a-z0-9_-]{1,31}$"
+          }
+        }
+      }
+    },
+    "human_gate": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actions"
+      ],
+      "properties": {
+        "actions": {
+          "type": "array",
+          "minItems": 1,
+          "maxItems": 16,
+          "uniqueItems": true,
+          "items": {
+            "type": "string",
+            "enum": [
+              "legal_advice",
+              "regulatory_interpretation",
+              "financial_commitment",
+              "data_export",
+              "escalated_override"
+            ]
+          }
+        }
+      }
+    }
+  }
+}

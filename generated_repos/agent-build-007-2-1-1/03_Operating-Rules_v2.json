@@ -45,9 +45,13 @@
   "objective": "Lifecycle rules, RBAC, escalation, and KPI gates for GEN2 Project Agents.",
   "rbac": {
     "roles": [
+      "Agent",
       "CAIO",
+      "CDO/SRE",
+      "CISO/Legal",
+      "COO/PMO",
       "CPA",
-      "TeamLead"
+      "Evaluator"
     ]
   },
   "schema_keys": [

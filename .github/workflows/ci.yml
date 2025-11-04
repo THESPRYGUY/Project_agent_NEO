@@ -37,7 +37,7 @@ jobs:
       - name: Publish canonical Required job names
         run: |
           printf "Required job names (copy these into Branch Protection):\n" | tee -a "$GITHUB_STEP_SUMMARY"
-          printf "unit-python\nunit-js\ngolden snapshot\ndocker-build-smoke\nsmoke\ncontract-validate\nschema-validate\nplaceholder-sweep\nrepo-audit\n" | tee -a "$GITHUB_STEP_SUMMARY"
+          printf "unit-python\nunit-js\ngolden snapshot\ndocker-build-smoke\nsmoke\ncontract-validate\nschema-validate\nintake-mapper-guard\nplaceholder-sweep\nrepo-audit\n" | tee -a "$GITHUB_STEP_SUMMARY"
 
   diag:
     if: always()
@@ -484,10 +484,50 @@ jobs:
           name: schema-validate-report
           path: generated_repos/agent-build-007-2-1-1/contract_report.json
 
+  intake-mapper-guard:
+    name: intake-mapper-guard
+    runs-on: ubuntu-latest
+    needs: [schema-validate]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Install deps
+        run: |
+          python -m pip install -U pip
+          pip install -e .[dev]
+      - name: Dry-run mapper against intake contract
+        run: |
+          python tools/apply_intake.py --input data/intake_contract_v1_sample.json --root generated_repos/agent-build-007-2-1-1 --dry-run --report generated_repos/agent-build-007-2-1-1/reports/intake_mapper_report.json
+      - name: Assert mapper drift-free
+        run: |
+          python - <<'PY'
+          import json
+          import pathlib
+          import sys
+
+          report_path = pathlib.Path("generated_repos/agent-build-007-2-1-1/reports/intake_mapper_report.json")
+          report = json.loads(report_path.read_text(encoding="utf-8"))
+          changed = report.get("changed_files") or []
+          if changed:
+              print("intake-mapper-guard: drift detected in packs:", ", ".join(changed), file=sys.stderr)
+              sys.exit(1)
+          if report.get("diff_report"):
+              print("intake-mapper-guard: diff report populated unexpectedly.", file=sys.stderr)
+              sys.exit(1)
+          print("intake-mapper-guard: OK — packs align with intake contract.")
+          PY
+      - name: Upload mapper report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: intake-mapper-report
+          path: generated_repos/agent-build-007-2-1-1/reports/intake_mapper_report.json
+
   placeholder-sweep:
     name: placeholder-sweep
     runs-on: ubuntu-latest
-    needs: [schema-validate]
+    needs: [intake-mapper-guard]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5

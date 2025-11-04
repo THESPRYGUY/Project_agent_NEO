@@ -289,7 +289,7 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
             name = str(c.get("name", "")).strip()
             enabled = bool(c.get("enabled", False))
             scopes = list(c.get("scopes", []) or [])
-            secret = str(c.get("secret_ref", "SET_ME"))
+            secret = str(c.get("secret_ref", "") or "").strip()
             # Alias mapping
             if name == "clm":
                 name = "sharepoint"
@@ -299,7 +299,10 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
                 name = "placeholder"
                 enabled = False
                 scopes = ["read"]
-                secret = "SET_ME"
+            if not scopes:
+                scopes = ["read"]
+            if not secret or "SET_ME" in secret.upper():
+                secret = f"secret_manager:{name}"
             connectors.append({"name": name, "enabled": enabled, "scopes": scopes, "secret_ref": secret})
     tr = {"version": 2, "connectors": connectors}
     packs["12_Tool+Data-Registry_v2.json"] = tr
