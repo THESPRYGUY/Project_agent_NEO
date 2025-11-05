@@ -1,0 +1,37 @@
+name: KPI Report (cron)
+
+env:
+  BUILD_ROOT: generated_repos/agent-build-007-2-1-1
+
+on:
+  schedule:
+    - cron: '0 2 * * *'
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  kpi-report-cron:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          python -m pip install -U pip
+          python -m pip install -e .[dev]
+      - name: Generate KPI report
+        run: python scripts/gen_kpi_report.py --root "$BUILD_ROOT" --out reports/
+      - name: Upload KPI report artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: kpi-report-cron
+          path: reports/
+          retention-days: 14
