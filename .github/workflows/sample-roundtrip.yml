@@ -1,0 +1,46 @@
+name: Sample KPI Roundtrip
+
+env:
+  BUILD_ROOT: generated_repos/agent-build-007-2-1-1
+
+on:
+  push:
+    branches: [ main ]
+    paths:
+      - ".github/workflows/sample-roundtrip.yml"
+      - "scripts/gen_kpi_report.py"
+      - "reports/kpi_report.sample.json"
+      - "reports/kpi_report.sample.md"
+  workflow_dispatch: {}
+
+permissions:
+  contents: read
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  sample-roundtrip:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install dependencies
+        run: |
+          python -m pip install -U pip
+          python -m pip install -e .[dev]
+      - name: Generate KPI report
+        run: python scripts/gen_kpi_report.py --root "$BUILD_ROOT" --out reports/
+      - name: Validate KPI report files
+        run: |
+          test -f reports/kpi_report.json
+          test -f reports/kpi_report.md
+          jq -e '. | has("pri") and has("hal") and has("aud") and has("gates")' reports/kpi_report.json >/dev/null
+      - name: Upload sample artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: sample-kpi
+          path: reports/

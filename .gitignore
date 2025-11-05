@@ -42,6 +42,8 @@ reports/*
 !reports/.gitkeep
 !reports/kpi_report.json
 !reports/kpi_report.md
+!reports/kpi_report.sample.json
+!reports/kpi_report.sample.md
 !reports/release_gate.json
 !reports/release_gate.md
 telemetry*.jsonl
