@@ -1,0 +1,216 @@
+{
+  "version": "1.0.0",
+  "timestamp": "2025-11-05T00:53:06Z",
+  "commit": "7f9ceb6b1c2a098d7b7aa5075d3ef391fe867b85",
+  "go_live": {
+    "blockers": [
+      "gates_fail",
+      "missing_any_phase_evidence",
+      "unapproved_exception"
+    ],
+    "phases": [
+      {
+        "id": "config",
+        "name": "Configuration",
+        "owner": "COO/PMO",
+        "checks": [
+          "agent_registered_orggraph",
+          "memory_seeded_minimal",
+          "prompts_attached"
+        ],
+        "evidence": [
+          "03_agent_runtime/*"
+        ]
+      },
+      {
+        "id": "governance",
+        "name": "Governance Sign-off",
+        "owner": "CAIO",
+        "checks": [
+          "exceptions_reviewed_if_any",
+          "policy_ok"
+        ],
+        "evidence": [
+          "approvals/*"
+        ]
+      },
+      {
+        "id": "eval",
+        "name": "Evaluation",
+        "owner": "Evaluator",
+        "checks": [
+          "AUD>=0.90",
+          "HAL<=0.02",
+          "gates_met_PRI>=0.95"
+        ],
+        "evidence": [
+          "episodic:eval/*"
+        ]
+      },
+      {
+        "id": "post",
+        "name": "Post-Go-Live",
+        "owner": "COO/PMO",
+        "checks": [
+          "kpi_monitoring_7_14_28d",
+          "regression_on_change"
+        ],
+        "evidence": [
+          "telemetry_dashboard"
+        ]
+      },
+      {
+        "id": "preflight",
+        "name": "Preflight",
+        "owner": "COO/PMO",
+        "checks": [
+          "objective_scope_constraints_confirmed",
+          "risk_tier_set"
+        ],
+        "evidence": [
+          "01_charter/*"
+        ]
+      },
+      {
+        "id": "rollout",
+        "name": "Rollout",
+        "owner": "COO/PMO",
+        "checks": [
+          "alerts_configured",
+          "status_ACTIVE"
+        ],
+        "evidence": [
+          "OrgGraph_event_log"
+        ]
+      }
+    ],
+    "checklists": [
+      {
+        "id": "prelaunch",
+        "title": "Pre-Launch Gate",
+        "owner": "COO/PMO",
+        "steps": [
+          "Confirm all go_live.blockers cleared",
+          "Verify approvals matrix signatures recorded",
+          "Ensure evaluation evidence captured for PRI/HAL/AUD",
+          "Review telemetry dashboards for alert coverage"
+        ],
+        "triggers": []
+      },
+      {
+        "id": "launch_day",
+        "title": "Launch Day",
+        "owner": "CAIO",
+        "steps": [
+          "Announce activation to stakeholders",
+          "Enable production workflow graph with rollback toggle ready",
+          "Confirm monitoring hooks streaming to observability sinks"
+        ],
+        "triggers": []
+      },
+      {
+        "id": "post_launch",
+        "title": "Post-Launch Oversight",
+        "owner": "Evaluator",
+        "steps": [
+          "Track KPI drift at 7/14/28-day intervals",
+          "Log incidents or exceptions in change_log",
+          "Schedule regression run if major prompt/workflow changes occur"
+        ],
+        "triggers": []
+      }
+    ]
+  },
+  "gates": {
+    "activation": [
+      "AUD>=0.9",
+      "HAL<=0.02",
+      "PRI>=0.95"
+    ],
+    "kpi_targets": {
+      "AUD_min": 0.9,
+      "HAL_max": 0.02,
+      "PRI_min": 0.95
+    },
+    "effective_autonomy": 0.0
+  },
+  "approvals": [
+    {
+      "artifact": "02_Global-Instructions_v2.json",
+      "required": [
+        "CAIO",
+        "CPA"
+      ]
+    },
+    {
+      "artifact": "05_Safety+Privacy_Guardrails_v2.json (exception S3+)",
+      "required": [
+        "CAIO",
+        "CISO/Legal"
+      ]
+    },
+    {
+      "artifact": "10_Prompt-Pack_v2.json (major)",
+      "required": [
+        "CAIO",
+        "CPA"
+      ]
+    },
+    {
+      "artifact": "11_Workflow-Pack_v2.json (major)",
+      "required": [
+        "CAIO",
+        "COO/PMO"
+      ]
+    },
+    {
+      "artifact": "Release Certification",
+      "required": [
+        "CAIO",
+        "Evaluator"
+      ]
+    }
+  ],
+  "rollback": {
+    "on_failure": "revert_to:staging",
+    "checklists": [
+      {
+        "id": "decision",
+        "title": "Rollback Decision",
+        "owner": "CAIO",
+        "steps": [
+          "Notify stakeholders (CAIO, COO/PMO, Evaluator)",
+          "Freeze new changes and capture telemetry snapshot",
+          "Approve rollback execution window"
+        ],
+        "triggers": [
+          "HAL breach > 0.02 sustained",
+          "AUD drop below 0.90",
+          "Critical incident logged"
+        ]
+      },
+      {
+        "id": "execution",
+        "title": "Execute Rollback",
+        "owner": "COO/PMO",
+        "steps": [
+          "Switch traffic to staging or last good build",
+          "Revert knowledge bases / configs updated post-launch",
+          "Validate restoration via smoke checklist"
+        ],
+        "triggers": []
+      },
+      {
+        "id": "postmortem",
+        "title": "Postmortem & Remediation",
+        "owner": "Evaluator",
+        "steps": [
+          "Open incident postmortem with root-cause analysis",
+          "Update change_log with rollback metadata",
+          "Define remediation actions before re-activation"
+        ],
+        "triggers": []
+      }
+    ]
+  }
+}

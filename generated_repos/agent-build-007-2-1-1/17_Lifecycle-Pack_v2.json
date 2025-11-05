@@ -161,6 +161,39 @@
         "name": "Rollout",
         "owner": "COO/PMO"
       }
+    ],
+    "checklists": [
+      {
+        "id": "prelaunch",
+        "title": "Pre-Launch Gate",
+        "owner": "COO/PMO",
+        "steps": [
+          "Confirm all go_live.blockers cleared",
+          "Verify approvals matrix signatures recorded",
+          "Ensure evaluation evidence captured for PRI/HAL/AUD",
+          "Review telemetry dashboards for alert coverage"
+        ]
+      },
+      {
+        "id": "launch_day",
+        "title": "Launch Day",
+        "owner": "CAIO",
+        "steps": [
+          "Announce activation to stakeholders",
+          "Enable production workflow graph with rollback toggle ready",
+          "Confirm monitoring hooks streaming to observability sinks"
+        ]
+      },
+      {
+        "id": "post_launch",
+        "title": "Post-Launch Oversight",
+        "owner": "Evaluator",
+        "steps": [
+          "Track KPI drift at 7/14/28-day intervals",
+          "Log incidents or exceptions in change_log",
+          "Schedule regression run if major prompt/workflow changes occur"
+        ]
+      }
     ]
   },
   "meta": {
@@ -186,7 +219,44 @@
     "workflow_pack": "11_Workflow-Pack_v2.json"
   },
   "rollback": {
-    "on_failure": "revert_to:staging"
+    "on_failure": "revert_to:staging",
+    "checklists": [
+      {
+        "id": "decision",
+        "owner": "CAIO",
+        "title": "Rollback Decision",
+        "triggers": [
+          "HAL breach > 0.02 sustained",
+          "AUD drop below 0.90",
+          "Critical incident logged"
+        ],
+        "steps": [
+          "Notify stakeholders (CAIO, COO/PMO, Evaluator)",
+          "Freeze new changes and capture telemetry snapshot",
+          "Approve rollback execution window"
+        ]
+      },
+      {
+        "id": "execution",
+        "owner": "COO/PMO",
+        "title": "Execute Rollback",
+        "steps": [
+          "Switch traffic to staging or last good build",
+          "Revert knowledge bases / configs updated post-launch",
+          "Validate restoration via smoke checklist"
+        ]
+      },
+      {
+        "id": "postmortem",
+        "owner": "Evaluator",
+        "title": "Postmortem & Remediation",
+        "steps": [
+          "Open incident postmortem with root-cause analysis",
+          "Update change_log with rollback metadata",
+          "Define remediation actions before re-activation"
+        ]
+      }
+    ]
   },
   "schema_keys": [
     "approvals",
