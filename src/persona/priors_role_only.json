@@ -1,0 +1,22 @@
+{
+  "_default": ["ENTJ", "ENFJ", "INTJ"],
+  "EXEC:CXO": ["ENTJ", "ENFJ", "ESTJ"],
+  "FIN:VP": ["ESTJ", "ISTJ", "ENTJ"],
+  "FIN:CONTROLLER": ["ISTJ", "ESTJ", "ENTJ"],
+  "OPS:DIR": ["ESTJ", "ENTJ", "ESFJ"],
+  "OPS:PLANT": ["ISTJ", "ESTJ", "ISTP"],
+  "SC:DIR": ["ESTJ", "ISTJ", "ENTJ"],
+  "SC:PLANNER": ["INTJ", "ISTJ", "ENTJ"],
+  "SALES:VP": ["ENTJ", "ENFJ", "ESTP"],
+  "SALES:MANAGER": ["ENFJ", "ENFP", "ESFJ"],
+  "MKT:DIR": ["ENFJ", "ENFP", "INFJ"],
+  "MKT:MANAGER": ["ENFP", "ENTP", "ESFP"],
+  "HR:DIR": ["ENFJ", "ESFJ", "INFJ"],
+  "HR:BP": ["ENFJ", "INFJ", "ISFJ"],
+  "ENG:PLATFORM": ["INTJ", "ENTP", "ISTP"],
+  "ENG:LEAD": ["ENTJ", "INTJ", "ENFP"],
+  "DA:LEAD": ["INTJ", "INTP", "ENTP"],
+  "CS:LEAD": ["ESFJ", "ENFP", "ISFJ"],
+  "SEC:DIR": ["INTJ", "ISTJ", "ENTJ"],
+  "LEGAL:DIR": ["INTJ", "INFJ", "ISTJ"]
+}
