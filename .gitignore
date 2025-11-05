@@ -38,7 +38,10 @@ _generated/
 _diffs/
 _archive/
 _tmp_validate_02/
-reports/
+reports/*
+!reports/.gitkeep
+!reports/kpi_report.json
+!reports/kpi_report.md
 telemetry*.jsonl
 before_after_diff.zip
 *.zip

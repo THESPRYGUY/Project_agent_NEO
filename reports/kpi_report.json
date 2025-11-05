@@ -1,0 +1,52 @@
+{
+  "version": "1.0.0",
+  "timestamp": "2025-11-04T23:43:54Z",
+  "commit": "7f9ceb6b1c2a098d7b7aa5075d3ef391fe867b85",
+  "pri": {
+    "metric": "PRI",
+    "target": ">=0.95",
+    "comparator": ">=",
+    "value": 0.95,
+    "status": "target-only",
+    "source": "targets"
+  },
+  "hal": {
+    "metric": "HAL",
+    "target": "<=0.02",
+    "comparator": "<=",
+    "value": 0.02,
+    "status": "target-only",
+    "source": "targets"
+  },
+  "aud": {
+    "metric": "AUD",
+    "target": ">=0.90",
+    "comparator": ">=",
+    "value": 0.9,
+    "status": "target-only",
+    "source": "targets"
+  },
+  "gates": {
+    "activation": {
+      "AUD_min": 0.9,
+      "HAL_max": 0.02,
+      "PRI_min": 0.95
+    },
+    "change": {
+      "allow_latency_increase_pct": 10,
+      "no_severity_downgrade": true,
+      "require_regression": true
+    },
+    "workflow_targets": {
+      "AUD_min": 0.9,
+      "HAL_max": 0.02,
+      "PRI_min": 0.95
+    },
+    "global_go_live": [
+      "AUD>=0.9",
+      "HAL<=0.02",
+      "PRI>=0.95"
+    ]
+  },
+  "ci_runs": []
+}
