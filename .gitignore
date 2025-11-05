@@ -46,6 +46,8 @@ reports/*
 !reports/kpi_report.sample.md
 !reports/release_gate.json
 !reports/release_gate.md
+!reports/persona_state.json
+!reports/agent_profile.json
 telemetry*.jsonl
 before_after_diff.zip
 *.zip
