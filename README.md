@@ -388,6 +388,7 @@ Diagnostics example (unknowns are dropped):
 ### CI Status (main)
 
 [![CI (Unit + Integ/Smoke)](https://github.com/THESPRYGUY/Project_agent_NEO/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/THESPRYGUY/Project_agent_NEO/actions/workflows/ci.yml)
+[![KPI Report (cron)](https://github.com/THESPRYGUY/Project_agent_NEO/actions/workflows/kpi-report-cron.yml/badge.svg?branch=main)](https://github.com/THESPRYGUY/Project_agent_NEO/actions/workflows/kpi-report-cron.yml)
 
 CI filter note (v2.1.2): Added `feat/**` and `hotfix/**` to workflow push filters; `pull_request` remains on `main` (types: opened, synchronize, reopened). Job names unchanged for Branch Protection.
 
@@ -400,6 +401,11 @@ CI filter note (v2.1.2): Added `feat/**` and `hotfix/**` to workflow push filter
 5. Telemetry emits `kpi_report_generated` for observability ingestion.
 6. Use `--ci` to print a terse summary in workflow logs.
 7. Workflow `kpi-report-smoke` publishes the artifact for review.
+
+### Where to find KPI report
+
+- Nightly artifact: Actions → **KPI Report (cron)** → latest run (reports/kpi\_report.\*).
+- On-demand: Run `python scripts/gen_kpi_report.py --root generated_repos/agent-build-007-2-1-1 --out reports/`.
 
 ### Tag conventions & release steps
 
