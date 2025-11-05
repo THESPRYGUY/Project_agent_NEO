@@ -43,12 +43,15 @@ def _ensure_import():
             os.sys.path.insert(0, p)
 
 
-def test_auth_stub_off_by_default_all_routes_ok(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_auth_stub_off_by_default_all_routes_ok(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     _ensure_import()
     # Ensure AUTH_REQUIRED is not set
     monkeypatch.delenv("AUTH_REQUIRED", raising=False)
     monkeypatch.delenv("AUTH_TOKENS", raising=False)
     from neo_agent.intake_app import create_app
+
     app = create_app(base_dir=tmp_path)
     st, _, _ = _wsgi_call(app, "GET", "/last-build")
     # Default behavior (no auth) must not be 401
@@ -60,6 +63,7 @@ def test_auth_stub_health_exempt(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     monkeypatch.setenv("AUTH_REQUIRED", "true")
     monkeypatch.setenv("AUTH_TOKENS", "tokenA, tokenB")
     from neo_agent.intake_app import create_app
+
     app = create_app(base_dir=tmp_path)
     st, hdrs, raw = _wsgi_call(app, "GET", "/health")
     assert st == "200 OK"
@@ -67,11 +71,14 @@ def test_auth_stub_health_exempt(tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     assert payload.get("status") == "ok"
 
 
-def test_auth_stub_unauthorized_without_token(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_auth_stub_unauthorized_without_token(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     _ensure_import()
     monkeypatch.setenv("AUTH_REQUIRED", "1")
     monkeypatch.setenv("AUTH_TOKENS", "tokenA,tokenB")
     from neo_agent.intake_app import create_app
+
     app = create_app(base_dir=tmp_path)
     st, hdrs, raw = _wsgi_call(app, "GET", "/last-build")
     assert st.startswith("401")
@@ -88,11 +95,14 @@ def test_auth_stub_unauthorized_without_token(tmp_path: Path, monkeypatch: pytes
     assert wa == 'Bearer realm="neo", error="invalid_token"'
 
 
-def test_auth_stub_unauthorized_with_invalid_token(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_auth_stub_unauthorized_with_invalid_token(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     _ensure_import()
     monkeypatch.setenv("AUTH_REQUIRED", "true")
     monkeypatch.setenv("AUTH_TOKENS", "tokenA, tokenB")
     from neo_agent.intake_app import create_app
+
     app = create_app(base_dir=tmp_path)
     st, hdrs, raw = _wsgi_call(
         app,
@@ -113,11 +123,14 @@ def test_auth_stub_unauthorized_with_invalid_token(tmp_path: Path, monkeypatch: 
     assert wa == 'Bearer realm="neo", error="invalid_token"'
 
 
-def test_auth_stub_happy_path_valid_token_returns_200(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_auth_stub_happy_path_valid_token_returns_200(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     _ensure_import()
     monkeypatch.setenv("AUTH_REQUIRED", "true")
     monkeypatch.setenv("AUTH_TOKENS", "tok1,tok2")
     from neo_agent.intake_app import create_app
+
     app = create_app(base_dir=tmp_path)
     st, hdrs, raw = _wsgi_call(
         app,
@@ -128,15 +141,19 @@ def test_auth_stub_happy_path_valid_token_returns_200(tmp_path: Path, monkeypatc
     assert st.startswith("200")
     payload = json.loads(raw.decode("utf-8"))
     assert (isinstance(payload, list)) or (
-        isinstance(payload, dict) and ("items" in payload or payload.get("status") == "ok")
+        isinstance(payload, dict)
+        and ("items" in payload or payload.get("status") == "ok")
     )
 
 
-def test_auth_stub_csv_whitespace_and_case_insensitive_scheme(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_auth_stub_csv_whitespace_and_case_insensitive_scheme(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     _ensure_import()
     monkeypatch.setenv("AUTH_REQUIRED", "true")
     monkeypatch.setenv("AUTH_TOKENS", "tok1, tok2 ")
     from neo_agent.intake_app import create_app
+
     app = create_app(base_dir=tmp_path)
     st, hdrs, raw = _wsgi_call(
         app,
@@ -147,11 +164,14 @@ def test_auth_stub_csv_whitespace_and_case_insensitive_scheme(tmp_path: Path, mo
     assert st.startswith("200")
 
 
-def test_auth_ordering_precedes_rate_limit_and_body_size(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
+def test_auth_ordering_precedes_rate_limit_and_body_size(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+):
     _ensure_import()
     monkeypatch.setenv("AUTH_REQUIRED", "true")
     monkeypatch.setenv("AUTH_TOKENS", "tok1")
     from neo_agent.intake_app import create_app
+
     app = create_app(base_dir=tmp_path)
 
     # Even with rate-limit 0/0, missing Authorization should return 401 (not 429)

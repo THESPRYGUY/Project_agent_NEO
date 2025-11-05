@@ -20,8 +20,10 @@ def test_health_reports_and_headers(tmp_path):
         "CONTENT_LENGTH": "0",
     }
     status_headers = []
+
     def start_response(status, headers):
         status_headers.append((status, headers))
+
     body = b"".join(app.wsgi_app(environ, start_response))
     status, headers = status_headers[0]
     assert status == "200 OK"
@@ -33,4 +35,3 @@ def test_health_reports_and_headers(tmp_path):
     assert payload.get("build_tag") == "v3.0"
     assert payload.get("app_version")
     assert payload.get("repo_output_dir")
-

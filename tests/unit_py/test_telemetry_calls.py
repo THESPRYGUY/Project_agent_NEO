@@ -31,8 +31,10 @@ def _wsgi_call(app, method: str, path: str, query: str = "", body: bytes = b""):
         "CONTENT_LENGTH": str(len(body)),
     }
     status_headers = []
+
     def start_response(status, headers):
         status_headers.append((status, headers))
+
     data = b"".join(app.wsgi_app(env, start_response))
     status, headers = status_headers[0]
     return status, dict(headers), data
@@ -44,16 +46,26 @@ def test_last_build_emits_event(tmp_path: Path, monkeypatch):
     from neo_agent.intake_app import create_app
 
     called = {}
+
     def _emit(evt, payload):
         called[evt] = payload
+
     monkeypatch.setattr(appmod, "emit_event", _emit)
 
     out_root = tmp_path / "root"
     out_root.mkdir(parents=True, exist_ok=True)
-    (out_root / "_last_build.json").write_text(json.dumps({
-        "timestamp": "2025-01-01T00:00:00Z", "outdir": str(out_root / 'AGT' / 'TS'),
-        "file_count": 20, "parity": {}, "integrity_errors": []
-    }), encoding="utf-8")
+    (out_root / "_last_build.json").write_text(
+        json.dumps(
+            {
+                "timestamp": "2025-01-01T00:00:00Z",
+                "outdir": str(out_root / "AGT" / "TS"),
+                "file_count": 20,
+                "parity": {},
+                "integrity_errors": [],
+            }
+        ),
+        encoding="utf-8",
+    )
     os.environ["NEO_REPO_OUTDIR"] = str(out_root)
     app = create_app(base_dir=tmp_path)
     st, _, _ = _wsgi_call(app, "GET", "/last-build")
@@ -67,8 +79,10 @@ def test_zip_download_emits_event(tmp_path: Path, monkeypatch):
     from neo_agent.intake_app import create_app
 
     called = {}
+
     def _emit(evt, payload):
         called[evt] = payload
+
     monkeypatch.setattr(appmod, "emit_event", _emit)
 
     os.environ["NEO_REPO_OUTDIR"] = str(tmp_path / "root")
@@ -80,4 +94,3 @@ def test_zip_download_emits_event(tmp_path: Path, monkeypatch):
     st, _, data = _wsgi_call(app, "GET", "/build/zip", query=f"outdir={outdir}")
     assert st == "200 OK"
     assert "zip_download" in called
-

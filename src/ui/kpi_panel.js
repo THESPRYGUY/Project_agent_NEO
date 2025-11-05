@@ -5,8 +5,12 @@
 
   function asMetric(metric) {
     if (!metric || typeof metric !== "object") return "n/a";
-    const value = metric.value !== undefined && metric.value !== null ? String(metric.value) : "";
-    const target = typeof metric.target === "string" && metric.target ? metric.target : "";
+    const value =
+      metric.value !== undefined && metric.value !== null
+        ? String(metric.value)
+        : "";
+    const target =
+      typeof metric.target === "string" && metric.target ? metric.target : "";
     if (value && target) return `${value} (${target})`;
     if (target) return target;
     if (value) return value;
@@ -61,7 +65,8 @@
     if (!target) return { refresh() {} };
     target.classList.add("kpi-panel");
     const opts = options || {};
-    const url = typeof opts.url === "string" && opts.url ? opts.url : DEFAULT_URL;
+    const url =
+      typeof opts.url === "string" && opts.url ? opts.url : DEFAULT_URL;
 
     async function refresh() {
       try {

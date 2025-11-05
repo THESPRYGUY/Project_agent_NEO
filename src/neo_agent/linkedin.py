@@ -142,4 +142,3 @@ def scrape_linkedin_profile(url: str, *, timeout: float = 5.0) -> Dict[str, Any]
         metadata["certifications"] = certifications
 
     return metadata
-

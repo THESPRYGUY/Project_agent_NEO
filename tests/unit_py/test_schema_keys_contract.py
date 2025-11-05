@@ -12,21 +12,48 @@ from neo_build.schemas import required_keys_map
 pytestmark = pytest.mark.unit
 
 
-def _run_build(intake: Path, outdir: Path, cwd: Path, env: dict[str, str] | None = None) -> Path:
+def _run_build(
+    intake: Path, outdir: Path, cwd: Path, env: dict[str, str] | None = None
+) -> Path:
     envp = dict(os.environ)
     if env:
         envp.update(env)
     # Minimal valid profile
     profile = {
         "agent": {"name": "Atlas Analyst", "version": "1.0.0"},
-        "identity": {"agent_id": "atlas", "display_name": "Atlas Analyst", "owners": ["CAIO", "CPA", "TeamLead"]},
-        "role_profile": {"role_title": "Enterprise Analyst", "archetype": "AIA-P", "objectives": ["Dashboards"]},
-        "sector_profile": {"sector": "Finance", "region": ["NA"], "regulatory": ["SEC"]},
+        "identity": {
+            "agent_id": "atlas",
+            "display_name": "Atlas Analyst",
+            "owners": ["CAIO", "CPA", "TeamLead"],
+        },
+        "role_profile": {
+            "role_title": "Enterprise Analyst",
+            "archetype": "AIA-P",
+            "objectives": ["Dashboards"],
+        },
+        "sector_profile": {
+            "sector": "Finance",
+            "region": ["NA"],
+            "regulatory": ["SEC"],
+        },
     }
     intake.write_text(json.dumps(profile, indent=2), encoding="utf-8")
     cp = subprocess.run(
-        [sys.executable, str(cwd / "build_repo.py"), "--intake", str(intake), "--out", str(outdir), "--extend", "--force-utf8", "--emit-parity"],
-        cwd=str(cwd), capture_output=True, text=True, env=envp,
+        [
+            sys.executable,
+            str(cwd / "build_repo.py"),
+            "--intake",
+            str(intake),
+            "--out",
+            str(outdir),
+            "--extend",
+            "--force-utf8",
+            "--emit-parity",
+        ],
+        cwd=str(cwd),
+        capture_output=True,
+        text=True,
+        env=envp,
     )
     assert cp.returncode == 0, cp.stderr + cp.stdout
     return outdir / "atlas-1-0-0"
@@ -46,4 +73,3 @@ def test_schema_keys_exact_and_sorted(tmp_path: Path) -> None:
         assert isinstance(got, list)
         expect = sorted(set(req_map.get(fname, [])))
         assert got == expect
-

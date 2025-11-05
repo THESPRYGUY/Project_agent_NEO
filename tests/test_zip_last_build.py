@@ -21,8 +21,10 @@ def _wsgi_call(app, method: str, path: str, body: dict | None = None):
         "CONTENT_LENGTH": str(len(raw)),
     }
     status_headers = []
+
     def start_response(status, headers):
         status_headers.append((status, headers))
+
     resp_iter = app.wsgi_app(env, start_response)
     data = b"".join(resp_iter)
     status, headers = status_headers[0]
@@ -43,9 +45,12 @@ def test_last_build_and_zip_endpoints(tmp_path: Path):
     if str(srcp) not in sys.path:
         sys.path.insert(0, str(srcp))
     from neo_agent.intake_app import create_app
+
     app = create_app(base_dir=work_root)
     # Save profile
-    fixture = json.loads((Path.cwd() / "fixtures" / "sample_profile.json").read_text(encoding="utf-8"))
+    fixture = json.loads(
+        (Path.cwd() / "fixtures" / "sample_profile.json").read_text(encoding="utf-8")
+    )
     st, _, _ = _wsgi_call(app, "POST", "/save", fixture)
     assert st == "200 OK"
     # Build
@@ -83,8 +88,10 @@ def test_last_build_and_zip_endpoints(tmp_path: Path):
         "CONTENT_LENGTH": "0",
     }
     st_headers = []
+
     def start_response(status, headers):
         st_headers.append((status, headers))
+
     data = b"".join(app.wsgi_app(env, start_response))
     st, hdrs = st_headers[0]
     hdrs = {k.lower(): v for k, v in dict(hdrs).items()}
@@ -108,7 +115,7 @@ def test_last_build_and_zip_endpoints(tmp_path: Path):
     data = b"".join(app.wsgi_app(env, start_response))
     st, hdrs = st_headers[0]
     assert st == "200 OK"
-    with zipfile.ZipFile(io.BytesIO(data), 'r') as zf:
+    with zipfile.ZipFile(io.BytesIO(data), "r") as zf:
         names = set(zf.namelist())
     assert "_last_build.json" not in names
     assert ".DS_Store" not in names
@@ -133,6 +140,7 @@ def test_last_build_and_zip_endpoints(tmp_path: Path):
     st, _ = st_headers[0]
     assert st == "404 Not Found"
 
+
 def test_last_build_204_when_missing(tmp_path: Path):
     os.environ["NEO_REPO_OUTDIR"] = str((tmp_path / "root").resolve())
     root = Path.cwd()
@@ -142,6 +150,7 @@ def test_last_build_204_when_missing(tmp_path: Path):
     if str(srcp) not in sys.path:
         sys.path.insert(0, str(srcp))
     from neo_agent.intake_app import create_app
+
     app = create_app(base_dir=tmp_path)
     st, headers, body = _wsgi_call(app, "GET", "/last-build", None)
     assert st == "204 No Content"
@@ -162,6 +171,7 @@ def test_zip_streams_large_tree(tmp_path: Path):
     if str(srcp) not in sys.path:
         sys.path.insert(0, str(srcp))
     from neo_agent.intake_app import create_app
+
     app = create_app(base_dir=work_root)
     # prepare an outdir with > 10MB dummy file
     outdir = work_root / "AGT-xx" / "20250101T000000Z"
@@ -182,8 +192,10 @@ def test_zip_streams_large_tree(tmp_path: Path):
         "CONTENT_LENGTH": "0",
     }
     st_headers = []
+
     def start_response(status, headers):
         st_headers.append((status, headers))
+
     it = app.wsgi_app(env, start_response)
     st, hdrs = st_headers[0]
     assert st == "200 OK"

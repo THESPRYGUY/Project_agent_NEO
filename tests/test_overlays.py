@@ -11,6 +11,7 @@ import yaml
 
 def _wsgi_call(app, method: str, path: str, body: dict | None = None):
     import io
+
     raw = json.dumps(body or {}).encode("utf-8")
     env = {
         "REQUEST_METHOD": method,
@@ -24,8 +25,10 @@ def _wsgi_call(app, method: str, path: str, body: dict | None = None):
         "CONTENT_LENGTH": str(len(raw)),
     }
     status_headers = []
+
     def start_response(status, headers):
         status_headers.append((status, headers))
+
     resp = b"".join(app.wsgi_app(env, start_response))
     status = status_headers[0][0]
     return status, dict(status_headers[0][1]), resp
@@ -34,10 +37,16 @@ def _wsgi_call(app, method: str, path: str, body: dict | None = None):
 def _profile() -> dict:
     return {
         "intake_version": "v3.0",
-        "identity": {"agent_id": "AGENT-OL-001", "display_name": "Overlay Agent", "owners": ["Owner"]},
+        "identity": {
+            "agent_id": "AGENT-OL-001",
+            "display_name": "Overlay Agent",
+            "owners": ["Owner"],
+        },
         "context": {"naics": {"code": "541512"}, "region": ["CA"]},
         "role": {"function_code": "it_ops", "role_code": "AIA-P", "role_title": "Lead"},
-        "governance_eval": {"gates": {"PRI_min": 0.95, "hallucination_max": 0.02, "audit_min": 0.9}},
+        "governance_eval": {
+            "gates": {"PRI_min": 0.95, "hallucination_max": 0.02, "audit_min": 0.9}
+        },
     }
 
 
@@ -53,7 +62,9 @@ def test_overlays_noop_19_20(tmp_path: Path, monkeypatch):
     cfg = {"apply": ["19_SME_Domain", "20_Enterprise"]}
     summary = apply_overlays(outdir, cfg)
     # SME/Enterprise overlays should be no-op by default for generated packs
-    assert "19_SME_Domain" in summary["applied"] and "20_Enterprise" in summary["applied"]
+    assert (
+        "19_SME_Domain" in summary["applied"] and "20_Enterprise" in summary["applied"]
+    )
     assert summary["integrity_errors"] == []
     # Parity remains true
     p = summary.get("parity") or {}
@@ -93,14 +104,22 @@ def test_disallowed_key_is_skipped(tmp_path: Path):
     # Build a custom ops YAML that tries to touch a disallowed key
     ops = {
         "operations": [
-            {"upsert": {"target_file": "11_Workflow-Pack_v2.json", "set": {"not_allowed": {"x": 1}}}},
+            {
+                "upsert": {
+                    "target_file": "11_Workflow-Pack_v2.json",
+                    "set": {"not_allowed": {"x": 1}},
+                }
+            },
         ]
     }
     custom_yaml = tmp_path / "ops.yaml"
     custom_yaml.write_text(yaml.safe_dump(ops), encoding="utf-8")
     cfg = {"apply": ["persistence_adaptiveness"], "persistence_ops": str(custom_yaml)}
     summary = apply_overlays(outdir, cfg)
-    assert any(s.startswith("11_Workflow-Pack_v2.json:not_allowed") for s in summary.get("skipped", []))
+    assert any(
+        s.startswith("11_Workflow-Pack_v2.json:not_allowed")
+        for s in summary.get("skipped", [])
+    )
 
 
 def test_atomic_rollback_restores_repo_on_failure(tmp_path: Path):

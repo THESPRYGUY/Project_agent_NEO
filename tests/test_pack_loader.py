@@ -16,7 +16,9 @@ def test_all_packs_load_and_validate(project_root: Path) -> None:
 
     for path in json_files:
         result = pack_loader.validate_pack(path)
-        assert not result.missing_keys, f"{path} is missing required keys: {result.missing_keys}"
+        assert (
+            not result.missing_keys
+        ), f"{path} is missing required keys: {result.missing_keys}"
         assert isinstance(result.payload, dict)
 
 
@@ -27,11 +29,12 @@ def test_topological_order_matches_node_count() -> None:
     assert order == ["a", "b", "c"]
 
 
-def test_cli_reports_cycle(project_root: Path, capsys: pytest.CaptureFixture[str]) -> None:
+def test_cli_reports_cycle(
+    project_root: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
     exit_code = pack_loader.main([str(project_root)])
     output = capsys.readouterr().out
 
     assert exit_code == 0
     assert "quality_feedback" in output
     assert "Warning: Workflow graph contains a cycle involving" in output
-

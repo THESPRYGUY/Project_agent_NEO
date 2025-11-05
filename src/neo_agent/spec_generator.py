@@ -44,7 +44,6 @@ def _iter_skill_definitions(profile: Mapping[str, Any]) -> Iterable[SkillConfigu
         )
 
 
-
 def _extract_persona_metadata(profile: Mapping[str, Any]) -> Dict[str, Any] | None:
     def _coerce(candidate: Any) -> Dict[str, Any] | None:
         if not isinstance(candidate, Mapping):
@@ -56,7 +55,9 @@ def _extract_persona_metadata(profile: Mapping[str, Any]) -> Dict[str, Any] | No
         axes = dict(axes_source) if isinstance(axes_source, Mapping) else {}
         traits_source = candidate.get("suggested_traits", [])
         traits: list[Any] = []
-        if isinstance(traits_source, Iterable) and not isinstance(traits_source, (str, bytes)):
+        if isinstance(traits_source, Iterable) and not isinstance(
+            traits_source, (str, bytes)
+        ):
             for item in traits_source:
                 if isinstance(item, Mapping):
                     traits.append(dict(item))
@@ -65,7 +66,9 @@ def _extract_persona_metadata(profile: Mapping[str, Any]) -> Dict[str, Any] | No
         return {
             "mbti_code": str(code).upper(),
             "name": str(candidate.get("name") or candidate.get("nickname") or ""),
-            "description": str(candidate.get("description") or candidate.get("summary") or ""),
+            "description": str(
+                candidate.get("description") or candidate.get("summary") or ""
+            ),
             "axes": axes,
             "suggested_traits": traits,
         }
@@ -114,7 +117,9 @@ def _metadata_from_profile(profile: Mapping[str, Any]) -> Dict[str, Any]:
     }
 
     persona_metadata = _extract_persona_metadata(profile)
-    metadata["persona"] = persona_metadata if persona_metadata is not None else agent.get("persona")
+    metadata["persona"] = (
+        persona_metadata if persona_metadata is not None else agent.get("persona")
+    )
 
     return metadata
 
@@ -129,11 +134,13 @@ def build_agent_configuration(profile: Mapping[str, Any]) -> AgentConfiguration:
     skills = tuple(_iter_skill_definitions(profile))
 
     if not skills:
-        skills = (SkillConfiguration(
-            name="echo",
-            description="Fallback echo skill",
-            entrypoint="neo_agent.skills:echo",
-        ),)
+        skills = (
+            SkillConfiguration(
+                name="echo",
+                description="Fallback echo skill",
+                entrypoint="neo_agent.skills:echo",
+            ),
+        )
 
     metadata = _metadata_from_profile(profile)
 
@@ -145,7 +152,9 @@ def build_agent_configuration(profile: Mapping[str, Any]) -> AgentConfiguration:
     )
 
 
-def generate_agent_specs(profile: Mapping[str, Any], output_dir: Path) -> Dict[str, Path]:
+def generate_agent_specs(
+    profile: Mapping[str, Any], output_dir: Path
+) -> Dict[str, Path]:
     """Generate agent spec files in ``output_dir`` from the provided ``profile``."""
 
     if not isinstance(profile, Mapping):
@@ -191,4 +200,3 @@ def generate_from_profile_path(profile_path: Path, output_dir: Path) -> Dict[str
         raise ConfigurationError("Profile file must contain a JSON object")
 
     return generate_agent_specs(data, output_dir)
-

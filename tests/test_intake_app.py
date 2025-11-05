@@ -59,6 +59,7 @@ def test_intake_form_submission(tmp_path: Path) -> None:
     }
 
     response = _invoke(app, "POST", post_data)
+
     # Trigger a deterministic build then verify last-build pointer
     # (Some form submissions may defer actual build to the explicit /build step)
     def _wsgi_call(method: str, path: str, body: dict | None = None):
@@ -75,11 +76,14 @@ def test_intake_form_submission(tmp_path: Path) -> None:
             "CONTENT_LENGTH": str(len(raw)),
         }
         status_headers = []
+
         def start_response(status, headers):
             status_headers.append((status, headers))
+
         data = b"".join(app.wsgi_app(env, start_response))
         status, headers = status_headers[0]
         return status, dict(headers), data
+
     st, _, _ = _wsgi_call("POST", "/build", {})
     assert st == "200 OK"
     last_path = tmp_path / "_generated" / "_last_build.json"
@@ -105,14 +109,15 @@ def test_intake_form_submission(tmp_path: Path) -> None:
     assert (spec_dir / "agent_config.json").exists()
 
 
-
 def test_mbti_payload_enriched(tmp_path: Path) -> None:
     app = create_app(base_dir=tmp_path)
-    saved = app._save_persona_state({
-        "operator": {"code": "INFJ"},
-        "agent": {"code": "INTJ"},
-        "alternates": [{"code": "ENTJ"}],
-    })
+    saved = app._save_persona_state(
+        {
+            "operator": {"code": "INFJ"},
+            "agent": {"code": "INTJ"},
+            "alternates": [{"code": "ENTJ"}],
+        }
+    )
     agent_block = saved.get("agent", {})
     mbti_block = agent_block.get("mbti", {})
     assert mbti_block.get("mbti_code") == "INTJ"
@@ -124,11 +129,13 @@ def test_mbti_payload_enriched(tmp_path: Path) -> None:
 
 def test_repo_scaffold_contains_mbti(tmp_path: Path) -> None:
     app = create_app(base_dir=tmp_path)
-    app._save_persona_state({
-        "operator": {"code": "INFJ"},
-        "agent": {"code": "ENTJ"},
-        "alternates": [],
-    })
+    app._save_persona_state(
+        {
+            "operator": {"code": "INFJ"},
+            "agent": {"code": "ENTJ"},
+            "alternates": [],
+        }
+    )
     post_data = {
         "agent_name": "MBTI Agent",
         "agent_version": "1.0.0",
@@ -146,6 +153,7 @@ def test_repo_scaffold_contains_mbti(tmp_path: Path) -> None:
         "linkedin_url": "",
     }
     _invoke(app, "POST", post_data)
+
     # Kick off build to populate last-build pointer
     def _wsgi_call(method: str, path: str, body: dict | None = None):
         raw = json.dumps(body or {}).encode("utf-8")
@@ -161,11 +169,14 @@ def test_repo_scaffold_contains_mbti(tmp_path: Path) -> None:
             "CONTENT_LENGTH": str(len(raw)),
         }
         status_headers = []
+
         def start_response(status, headers):
             status_headers.append((status, headers))
+
         data = b"".join(app.wsgi_app(env, start_response))
         status, headers = status_headers[0]
         return status, dict(headers), data
+
     st, _, _ = _wsgi_call("POST", "/build", {})
     assert st == "200 OK"
     # Specs path moved to spec_preview under SoT outdir
@@ -188,7 +199,14 @@ def test_api_generate_agent_repo(tmp_path: Path) -> None:
     # Build payload
     profile = {
         "agent": {"name": "API Agent", "version": "1.0.0"},
-        "classification": {"naics": {"code": "541110", "title": "Offices of Lawyers", "level": 6, "lineage": []}},
+        "classification": {
+            "naics": {
+                "code": "541110",
+                "title": "Offices of Lawyers",
+                "level": 6,
+                "lineage": [],
+            }
+        },
         "context": {"region": ["CA"]},
         "business_function": "legal_compliance",
         "role": {"code": "AIA-P", "title": "Legal & Compliance Lead"},

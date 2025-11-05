@@ -64,7 +64,9 @@ def generate_agent_repo(
 
     agent = _read_profile_section(profile, "agent", {})
     name = str(agent.get("name", "")).strip() if isinstance(agent, Mapping) else ""
-    version = str(agent.get("version", "")).strip() if isinstance(agent, Mapping) else ""
+    version = (
+        str(agent.get("version", "")).strip() if isinstance(agent, Mapping) else ""
+    )
 
     business_function = str(profile.get("business_function", ""))
     role = profile.get("role") if isinstance(profile, Mapping) else None
@@ -72,8 +74,12 @@ def generate_agent_repo(
         role = {}
     routing_defaults = profile.get("routing_defaults")
     if not isinstance(routing_defaults, Mapping):
-        routing_defaults = profile.get("routing_hints") if isinstance(profile, Mapping) else None
-        routing_defaults = routing_defaults if isinstance(routing_defaults, Mapping) else {}
+        routing_defaults = (
+            profile.get("routing_hints") if isinstance(profile, Mapping) else None
+        )
+        routing_defaults = (
+            routing_defaults if isinstance(routing_defaults, Mapping) else {}
+        )
 
     slug_source = "-".join([s for s in [name, version] if s])
     slug = _slugify(slug_source) or _slugify(name) or f"agent-{uuid.uuid4().hex[:8]}"
@@ -100,8 +106,12 @@ def generate_agent_repo(
             "routing_hints": routing_defaults,
         }
 
-        classification = profile.get("classification") if isinstance(profile, Mapping) else None
-        if isinstance(classification, Mapping) and isinstance(classification.get("naics"), Mapping):
+        classification = (
+            profile.get("classification") if isinstance(profile, Mapping) else None
+        )
+        if isinstance(classification, Mapping) and isinstance(
+            classification.get("naics"), Mapping
+        ):
             manifest.setdefault("classification", {})["naics"] = classification["naics"]
         elif isinstance(profile.get("naics"), Mapping):
             manifest.setdefault("classification", {})["naics"] = profile["naics"]
@@ -140,7 +150,9 @@ def generate_agent_repo(
         files_written.append(str(readme_path.relative_to(out_dir)))
 
         cfg_path = out_dir / "neo_agent_config.json"
-        cfg_path.write_text(json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        cfg_path.write_text(
+            json.dumps(manifest, indent=2, ensure_ascii=False) + "\n", encoding="utf-8"
+        )
         files_written.append(str(cfg_path.relative_to(out_dir)))
 
         return {

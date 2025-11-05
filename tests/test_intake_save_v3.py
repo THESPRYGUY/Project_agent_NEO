@@ -21,8 +21,10 @@ def _call(app, method: str, path: str, payload: dict | None = None):
         "CONTENT_LENGTH": str(len(body)),
     }
     status_headers: list[tuple[str, list[tuple[str, str]]]] = []
+
     def start_response(status: str, headers: list[tuple[str, str]]):
         status_headers.append((status, headers))
+
     resp_iter = app.wsgi_app(environ, start_response)
     raw = b"".join(resp_iter)
     status = status_headers[0][0]
@@ -39,8 +41,14 @@ def _valid_payload():
             "owners": ["CAIO", "CPA"],
         },
         "context": {"naics": {"code": "541110"}, "region": ["CA"]},
-        "role": {"function_code": "legal_compliance", "role_code": "AIA-P", "role_title": "Lead"},
-        "governance_eval": {"gates": {"PRI_min": 0.95, "hallucination_max": 0.02, "audit_min": 0.9}},
+        "role": {
+            "function_code": "legal_compliance",
+            "role_code": "AIA-P",
+            "role_title": "Lead",
+        },
+        "governance_eval": {
+            "gates": {"PRI_min": 0.95, "hallucination_max": 0.02, "audit_min": 0.9}
+        },
     }
 
 
@@ -71,4 +79,3 @@ def test_save_v3_rejects_missing_fields(tmp_path: Path):
     body = json.loads(raw.decode("utf-8"))
     assert body.get("status") == "invalid"
     assert any("identity.display_name" in e for e in body.get("errors", []))
-

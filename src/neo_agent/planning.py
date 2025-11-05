@@ -21,7 +21,9 @@ class PlanStep:
 class Planner:
     """Selects skills to execute based on the state and available knowledge."""
 
-    def __init__(self, configuration: AgentConfiguration, knowledge: KnowledgeBase) -> None:
+    def __init__(
+        self, configuration: AgentConfiguration, knowledge: KnowledgeBase
+    ) -> None:
         self._configuration = configuration
         self._knowledge = knowledge
 

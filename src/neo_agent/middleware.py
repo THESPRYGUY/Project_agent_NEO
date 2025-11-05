@@ -70,7 +70,9 @@ class ObservabilityMiddleware:
         self._lock = threading.Lock()
 
     # ---- Public WSGI entry ----
-    def __call__(self, environ: MutableMapping[str, object], start_response: Callable) -> Iterable[bytes]:
+    def __call__(
+        self, environ: MutableMapping[str, object], start_response: Callable
+    ) -> Iterable[bytes]:
         t0 = time.perf_counter()
         req_id = _req_id_from_env(environ)
         environ["neo.req_id"] = req_id
@@ -93,12 +95,17 @@ class ObservabilityMiddleware:
                     token = None
             if not token or token not in self.auth_tokens:
                 duration_ms = int((time.perf_counter() - t0) * 1000)
-                body = _error_envelope(req_id, "UNAUTHORIZED", "Missing or invalid bearer token.", details={})
+                body = _error_envelope(
+                    req_id,
+                    "UNAUTHORIZED",
+                    "Missing or invalid bearer token.",
+                    details={},
+                )
                 headers = _base_headers(environ, req_id, duration_ms)
                 headers += [
-                    ("WWW-Authenticate", "Bearer realm=\"neo\", error=\"invalid_token\""),
+                    ("WWW-Authenticate", 'Bearer realm="neo", error="invalid_token"'),
                     ("Content-Type", "application/json; charset=utf-8"),
-                    ("Content-Length", str(len(body)))
+                    ("Content-Length", str(len(body))),
                 ]
                 start_response("401 Unauthorized", headers)
                 _log_http(method, path, 401, duration_ms, req_id)
@@ -112,10 +119,30 @@ class ObservabilityMiddleware:
                 clen = 0
             if clen > self.max_body_bytes:
                 duration_ms = int((time.perf_counter() - t0) * 1000)
-                body = _error_envelope(req_id, "PAYLOAD_TOO_LARGE", "payload exceeds MAX_BODY_BYTES", details={"content_length": clen})
+                body = _error_envelope(
+                    req_id,
+                    "PAYLOAD_TOO_LARGE",
+                    "payload exceeds MAX_BODY_BYTES",
+                    details={"content_length": clen},
+                )
                 headers = _base_headers(environ, req_id, duration_ms)
-                start_response("413 Payload Too Large", headers + [("Content-Type", "application/json; charset=utf-8"), ("Content-Length", str(len(body)))])
-                self._emit_error({"status": 413, "method": method, "path": path, "req_id": req_id, "reason": "size_limit"})
+                start_response(
+                    "413 Payload Too Large",
+                    headers
+                    + [
+                        ("Content-Type", "application/json; charset=utf-8"),
+                        ("Content-Length", str(len(body))),
+                    ],
+                )
+                self._emit_error(
+                    {
+                        "status": 413,
+                        "method": method,
+                        "path": path,
+                        "req_id": req_id,
+                        "reason": "size_limit",
+                    }
+                )
                 _log_http(method, path, 413, duration_ms, req_id)
                 return [body]
 
@@ -124,17 +151,39 @@ class ObservabilityMiddleware:
             ip = _client_ip(environ)
             if not self._allow(ip):
                 duration_ms = int((time.perf_counter() - t0) * 1000)
-                body = _error_envelope(req_id, "TOO_MANY_REQUESTS", "rate limit exceeded", details={"ip": ip})
+                body = _error_envelope(
+                    req_id,
+                    "TOO_MANY_REQUESTS",
+                    "rate limit exceeded",
+                    details={"ip": ip},
+                )
                 headers = _base_headers(environ, req_id, duration_ms)
-                start_response("429 Too Many Requests", headers + [("Content-Type", "application/json; charset=utf-8"), ("Content-Length", str(len(body)))])
-                self._emit_error({"status": 429, "method": method, "path": path, "req_id": req_id, "ip": ip})
+                start_response(
+                    "429 Too Many Requests",
+                    headers
+                    + [
+                        ("Content-Type", "application/json; charset=utf-8"),
+                        ("Content-Length", str(len(body))),
+                    ],
+                )
+                self._emit_error(
+                    {
+                        "status": 429,
+                        "method": method,
+                        "path": path,
+                        "req_id": req_id,
+                        "ip": ip,
+                    }
+                )
                 _log_http(method, path, 429, duration_ms, req_id)
                 return [body]
 
         # Call downstream app and capture status/headers
         captured: dict[str, object] = {}
 
-        def _sr(status: str, headers: list[tuple[str, str]], exc_info=None):  # noqa: ANN001
+        def _sr(
+            status: str, headers: list[tuple[str, str]], exc_info=None
+        ):  # noqa: ANN001
             captured["status"] = status
             captured["headers"] = headers
             captured["exc_info"] = exc_info
@@ -147,19 +196,42 @@ class ObservabilityMiddleware:
             status_code = int(status_text.split(" ")[0])
             duration_ms = int((time.perf_counter() - t0) * 1000)
 
-            final_headers = _merge_headers(list(captured.get("headers", [])), _base_headers(environ, req_id, duration_ms))
+            final_headers = _merge_headers(
+                list(captured.get("headers", [])),
+                _base_headers(environ, req_id, duration_ms),
+            )
 
             if status_code in {400, 404, 405, 413, 429, 500}:
                 # Build uniform error envelope; try to extract message/details from original body
                 msg, details = _extract_message_details(body_bytes)
                 code = _status_code_name(status_code)
                 body_bytes = _error_envelope(req_id, code, msg, details=details)
-                final_headers = _replace_header(final_headers, "Content-Type", "application/json; charset=utf-8")
-                final_headers = _replace_header(final_headers, "Content-Length", str(len(body_bytes)))
-                self._emit_error({"status": status_code, "method": method, "path": path, "req_id": req_id})
+                final_headers = _replace_header(
+                    final_headers, "Content-Type", "application/json; charset=utf-8"
+                )
+                final_headers = _replace_header(
+                    final_headers, "Content-Length", str(len(body_bytes))
+                )
+                self._emit_error(
+                    {
+                        "status": status_code,
+                        "method": method,
+                        "path": path,
+                        "req_id": req_id,
+                    }
+                )
             else:
                 # Non-error: optionally sample a telemetry event
-                self._emit_sampled("http:request", {"status": status_code, "method": method, "path": path, "req_id": req_id, "duration_ms": duration_ms})
+                self._emit_sampled(
+                    "http:request",
+                    {
+                        "status": status_code,
+                        "method": method,
+                        "path": path,
+                        "req_id": req_id,
+                        "duration_ms": duration_ms,
+                    },
+                )
 
             _log_http(method, path, status_code, duration_ms, req_id)
             exc_info = captured.get("exc_info")
@@ -172,8 +244,23 @@ class ObservabilityMiddleware:
             duration_ms = int((time.perf_counter() - t0) * 1000)
             body = _error_envelope(req_id, "INTERNAL_ERROR", str(exc), details={})
             headers = _base_headers(environ, req_id, duration_ms)
-            start_response("500 Internal Server Error", headers + [("Content-Type", "application/json; charset=utf-8"), ("Content-Length", str(len(body)))])
-            self._emit_error({"status": 500, "method": method, "path": path, "req_id": req_id, "exc": type(exc).__name__})
+            start_response(
+                "500 Internal Server Error",
+                headers
+                + [
+                    ("Content-Type", "application/json; charset=utf-8"),
+                    ("Content-Length", str(len(body))),
+                ],
+            )
+            self._emit_error(
+                {
+                    "status": 500,
+                    "method": method,
+                    "path": path,
+                    "req_id": req_id,
+                    "exc": type(exc).__name__,
+                }
+            )
             _log_http(method, path, 500, duration_ms, req_id)
             return [body]
 
@@ -191,6 +278,7 @@ class ObservabilityMiddleware:
         # Dynamic import to play well with monkeypatching in tests
         try:
             from . import telemetry  # type: ignore
+
             emitter = getattr(telemetry, "emit_event", None)
         except Exception:  # pragma: no cover
             emitter = None
@@ -210,6 +298,7 @@ class ObservabilityMiddleware:
     def _emit_error(self, payload: Mapping[str, object]) -> None:
         try:
             from . import telemetry  # type: ignore
+
             emitter = getattr(telemetry, "emit_event", None)
             if emitter:
                 emitter("http:error", dict(payload))
@@ -266,7 +355,13 @@ def _status_code_name(status: int) -> str:
     return mapping.get(int(status), f"HTTP_{int(status)}")
 
 
-def _error_envelope(req_id: str, code: str, message: str, *, details: Optional[Mapping[str, object]] = None) -> bytes:
+def _error_envelope(
+    req_id: str,
+    code: str,
+    message: str,
+    *,
+    details: Optional[Mapping[str, object]] = None,
+) -> bytes:
     payload = {
         "status": "error",
         "code": code,
@@ -298,7 +393,9 @@ def _extract_message_details(body: bytes) -> tuple[str, dict[str, object]]:
     return "", {}
 
 
-def _replace_header(headers: list[tuple[str, str]], name: str, value: str) -> list[tuple[str, str]]:
+def _replace_header(
+    headers: list[tuple[str, str]], name: str, value: str
+) -> list[tuple[str, str]]:
     out: list[tuple[str, str]] = []
     seen = False
     for k, v in headers:
@@ -312,7 +409,9 @@ def _replace_header(headers: list[tuple[str, str]], name: str, value: str) -> li
     return out
 
 
-def _merge_headers(existing: list[tuple[str, str]], additions: list[tuple[str, str]]) -> list[tuple[str, str]]:
+def _merge_headers(
+    existing: list[tuple[str, str]], additions: list[tuple[str, str]]
+) -> list[tuple[str, str]]:
     out = list(existing)
     for name, value in additions:
         # replace if exists
@@ -327,7 +426,9 @@ def _merge_headers(existing: list[tuple[str, str]], additions: list[tuple[str, s
     return out
 
 
-def _base_headers(environ: Mapping[str, object], req_id: str, duration_ms: int) -> list[tuple[str, str]]:
+def _base_headers(
+    environ: Mapping[str, object], req_id: str, duration_ms: int
+) -> list[tuple[str, str]]:
     return [
         ("X-Request-ID", req_id),
         ("X-Response-Time-ms", str(int(duration_ms))),
@@ -335,7 +436,9 @@ def _base_headers(environ: Mapping[str, object], req_id: str, duration_ms: int) 
     ]
 
 
-def _log_http(method: str, path: str, status: int, duration_ms: int, req_id: str) -> None:
+def _log_http(
+    method: str, path: str, status: int, duration_ms: int, req_id: str
+) -> None:
     try:
         # Attach fields for our JSON formatter when available
         LOGGER.info(

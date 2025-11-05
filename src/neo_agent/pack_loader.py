@@ -33,7 +33,6 @@ class ValidationResult:
         return self.payload.get("id") or self.payload.get("pack") or self.path.name
 
 
-
 def discover_pack_files(root: Path) -> List[Path]:
     """Return all canonical pack JSON files in ``root`` (non-recursive).
 
@@ -50,6 +49,8 @@ def discover_pack_files(root: Path) -> List[Path]:
         if len(name) >= 3 and name[0:2].isdigit() and name[2] == "_":
             files.append(p)
     return sorted(files)
+
+
 def load_json(path: Path) -> JsonDict:
     """Load a JSON document from disk."""
 
@@ -115,12 +116,16 @@ def graph_node_params(node: Any) -> JsonDict:
     return {}
 
 
-def build_adjacency(edges: Sequence[Sequence[str]]) -> Tuple[Dict[str, List[str]], Dict[str, int]]:
+def build_adjacency(
+    edges: Sequence[Sequence[str]],
+) -> Tuple[Dict[str, List[str]], Dict[str, int]]:
     adjacency: Dict[str, List[str]] = defaultdict(list)
     indegree: Dict[str, int] = defaultdict(int)
     for edge in edges:
         if len(edge) != 2:
-            raise ValueError(f"Edge definition must contain exactly two entries: {edge!r}")
+            raise ValueError(
+                f"Edge definition must contain exactly two entries: {edge!r}"
+            )
         src, dst = edge
         adjacency[src].append(dst)
         indegree.setdefault(src, indegree.get(src, 0))
@@ -131,20 +136,28 @@ def build_adjacency(edges: Sequence[Sequence[str]]) -> Tuple[Dict[str, List[str]
 class WorkflowCycleError(ValueError):
     """Error raised when a workflow graph contains a cycle."""
 
-    def __init__(self, cycle_nodes: Sequence[str], partial_order: Sequence[str] | None = None):
+    def __init__(
+        self, cycle_nodes: Sequence[str], partial_order: Sequence[str] | None = None
+    ):
         ordered_cycle = list(dict.fromkeys(sorted(cycle_nodes)))
         self.cycle_nodes = ordered_cycle
         self.partial_order = list(partial_order or [])
-        message = "Workflow graph contains a cycle involving: " + ", ".join(ordered_cycle)
+        message = "Workflow graph contains a cycle involving: " + ", ".join(
+            ordered_cycle
+        )
         super().__init__(message)
 
 
-def topological_order(nodes: Sequence[str], edges: Sequence[Sequence[str]]) -> List[str]:
+def topological_order(
+    nodes: Sequence[str], edges: Sequence[Sequence[str]]
+) -> List[str]:
     """Compute a simple topological ordering for a workflow graph."""
 
     adjacency, indegree = build_adjacency(edges)
     indegree = {node: indegree.get(node, 0) for node in nodes}
-    queue: deque[str] = deque(sorted(node for node, degree in indegree.items() if degree == 0))
+    queue: deque[str] = deque(
+        sorted(node for node, degree in indegree.items() if degree == 0)
+    )
     order: List[str] = []
 
     while queue:
@@ -170,7 +183,9 @@ def summarize_workflow_graph(graph: JsonDict) -> None:
 
     print(f"  Graph: {graph_id}")
     print(f"    Nodes ({len(nodes)}): {', '.join(node_ids)}")
-    print(f"    Edges ({len(edges)}): {', '.join(f'{src}->{dst}' for src, dst in edges)}")
+    print(
+        f"    Edges ({len(edges)}): {', '.join(f'{src}->{dst}' for src, dst in edges)}"
+    )
 
     try:
         execution_order = topological_order(node_ids, edges)
@@ -186,7 +201,9 @@ def summarize_workflow_graph(graph: JsonDict) -> None:
         node_id = graph_node_id(raw_node)
         node_type = graph_node_type(raw_node)
         params = graph_node_params(raw_node)
-        print(f"      Node {node_id} | type={node_type} | params={params if params else '{}'}")
+        print(
+            f"      Node {node_id} | type={node_type} | params={params if params else '{}'}"
+        )
 
 
 def summarize_pack(result: ValidationResult) -> None:
@@ -204,7 +221,9 @@ def summarize_pack(result: ValidationResult) -> None:
 
 
 def main(argv: Sequence[str] | None = None) -> int:
-    parser = argparse.ArgumentParser(description="Validate and summarise NEO agent packs")
+    parser = argparse.ArgumentParser(
+        description="Validate and summarise NEO agent packs"
+    )
     parser.add_argument(
         "root",
         nargs="?",
@@ -238,4 +257,3 @@ def main(argv: Sequence[str] | None = None) -> int:
 
 if __name__ == "__main__":  # pragma: no cover - exercised via CLI
     raise SystemExit(main())
-

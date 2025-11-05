@@ -40,11 +40,15 @@ def _persona_meta(profile: Mapping[str, Any]) -> Dict[str, Any] | None:
         traits = []
         if isinstance(traits_src, list):
             for item in traits_src:
-                traits.append(item if isinstance(item, Mapping) else {"name": str(item)})
+                traits.append(
+                    item if isinstance(item, Mapping) else {"name": str(item)}
+                )
         return {
             "mbti_code": str(code).upper(),
             "name": str(candidate.get("name") or candidate.get("nickname") or ""),
-            "description": str(candidate.get("description") or candidate.get("summary") or ""),
+            "description": str(
+                candidate.get("description") or candidate.get("summary") or ""
+            ),
             "axes": axes,
             "suggested_traits": traits,
         }
@@ -98,11 +102,17 @@ def compile_profile(profile: Mapping[str, Any]) -> Dict[str, Any]:
     persona = _persona_meta(profile)
 
     role = _coerce_map(profile.get("role"))
-    business_function = str(profile.get("business_function") or role.get("function") or "").strip()
+    business_function = str(
+        profile.get("business_function") or role.get("function") or ""
+    ).strip()
 
-    naics = _coerce_map(profile.get("naics") or _coerce_map(profile.get("classification")).get("naics"))
+    naics = _coerce_map(
+        profile.get("naics") or _coerce_map(profile.get("classification")).get("naics")
+    )
 
-    routing = _coerce_map(profile.get("routing_defaults") or profile.get("routing_hints"))
+    routing = _coerce_map(
+        profile.get("routing_defaults") or profile.get("routing_hints")
+    )
 
     toolsets = _coerce_map(profile.get("toolsets"))
     attributes = _coerce_map(profile.get("attributes"))
@@ -145,9 +155,21 @@ def compile_profile(profile: Mapping[str, Any]) -> Dict[str, Any]:
             "attributes_normalized": _normalized_list(attributes.get("selected", [])),
         },
         "preferences": {
-            "autonomy": int(sliders.get("autonomy")) if isinstance(sliders.get("autonomy"), (int, str)) else None,
-            "confidence": int(sliders.get("confidence")) if isinstance(sliders.get("confidence"), (int, str)) else None,
-            "collaboration": int(sliders.get("collaboration")) if isinstance(sliders.get("collaboration"), (int, str)) else None,
+            "autonomy": (
+                int(sliders.get("autonomy"))
+                if isinstance(sliders.get("autonomy"), (int, str))
+                else None
+            ),
+            "confidence": (
+                int(sliders.get("confidence"))
+                if isinstance(sliders.get("confidence"), (int, str))
+                else None
+            ),
+            "collaboration": (
+                int(sliders.get("collaboration"))
+                if isinstance(sliders.get("collaboration"), (int, str))
+                else None
+            ),
             "communication_style": preferences.get("communication_style"),
             "collaboration_mode": preferences.get("collaboration_mode"),
         },

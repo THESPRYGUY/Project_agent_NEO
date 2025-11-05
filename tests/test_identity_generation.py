@@ -13,4 +13,3 @@ def test_agent_id_variation() -> None:
     id1 = generate_agent_id("541512", "finance", "AIA-P", "Neo Agent")
     id2 = generate_agent_id("541512", "legal", "AIA-P", "Neo Agent")
     assert id1 != id2
-

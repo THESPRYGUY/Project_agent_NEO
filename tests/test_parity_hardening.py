@@ -22,7 +22,9 @@ def _read(path: Path) -> Mapping[str, Any]:
 def test_parity_hardening_true(tmp_path: Path):
     profile = {
         "identity": {"agent_id": "p4", "display_name": "Parity Agent"},
-        "classification": {"naics": {"code": "541110", "title": "Offices of Lawyers", "level": 6}},
+        "classification": {
+            "naics": {"code": "541110", "title": "Offices of Lawyers", "level": 6}
+        },
     }
     out = tmp_path / "repo"
     packs = write_repo_files(profile, out)
@@ -38,13 +40,15 @@ def test_parity_hardening_true(tmp_path: Path):
 def test_parity_hardening_deltas_from_03(tmp_path: Path):
     profile = {
         "identity": {"agent_id": "p4b", "display_name": "Parity Agent"},
-        "classification": {"naics": {"code": "541110", "title": "Offices of Lawyers", "level": 6}},
+        "classification": {
+            "naics": {"code": "541110", "title": "Offices of Lawyers", "level": 6}
+        },
     }
     out = tmp_path / "repo2"
     packs = write_repo_files(profile, out)
     # Tweak 03 activation to force mismatch
     p03 = packs.get("03_Operating-Rules_v2.json", {})
-    gates = (p03.get("gates") or {})
+    gates = p03.get("gates") or {}
     gates["activation"] = ["PRI>=0.9", "HAL<=0.1", "AUD>=0.8"]
     p03["gates"] = gates
     packs["03_Operating-Rules_v2.json"] = p03

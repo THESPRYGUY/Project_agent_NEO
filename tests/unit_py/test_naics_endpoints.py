@@ -31,8 +31,10 @@ def _call(app, method: str, path: str, query: str = ""):
         "CONTENT_LENGTH": "0",
     }
     status_headers = []
+
     def start_response(status, headers):
         status_headers.append((status, headers))
+
     data = b"".join(app.wsgi_app(env, start_response))
     status, headers = status_headers[0]
     return status, dict(headers), data
@@ -41,6 +43,7 @@ def _call(app, method: str, path: str, query: str = ""):
 def test_naics_roots_and_children(tmp_path: Path):
     _ensure_import()
     from neo_agent.intake_app import create_app
+
     app = create_app(base_dir=tmp_path)
     st, hdr, raw = _call(app, "GET", "/api/naics/roots")
     assert st == "200 OK"
@@ -52,4 +55,3 @@ def test_naics_roots_and_children(tmp_path: Path):
     assert st == "200 OK"
     items = json.loads(raw.decode("utf-8")).get("items")
     assert isinstance(items, list)
-

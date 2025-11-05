@@ -7,7 +7,11 @@ from neo_build.scaffolder import enrich_single
 def _profile_min() -> Mapping[str, object]:
     return {
         "identity": {"agent_id": "atlas", "owners": ["CAIO", "CPA", "TeamLead"]},
-        "persona": {"persona_label": "ENTJ", "tone": "crisp, analytical, executive", "formality": "high"},
+        "persona": {
+            "persona_label": "ENTJ",
+            "tone": "crisp, analytical, executive",
+            "formality": "high",
+        },
         "governance_eval": {"classification_default": "confidential"},
     }
 
@@ -32,7 +36,9 @@ def test_no_clobber_workflow_pack_gates_and_graphs() -> None:
     profile = _profile_min()
     payload = {
         "gates": {"kpi_targets": {"PRI_min": 0.99, "HAL_max": 0.01, "AUD_min": 0.91}},
-        "graphs": [{"name": "UserFlow", "nodes": [{"id": "a", "module_id": "custom.mod"}]}],
+        "graphs": [
+            {"name": "UserFlow", "nodes": [{"id": "a", "module_id": "custom.mod"}]}
+        ],
     }
     out = enrich_single(profile, "11_Workflow-Pack_v2.json", payload)
     # Ensure provided KPI targets not clobbered

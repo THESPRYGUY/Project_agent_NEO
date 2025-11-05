@@ -51,7 +51,9 @@ def get_logger(name: str | None = None) -> Logger:
     return logger
 
 
-def log_event(logger: Logger, event: str, payload: Dict[str, object] | None = None) -> None:
+def log_event(
+    logger: Logger, event: str, payload: Dict[str, object] | None = None
+) -> None:
     """Log an event payload in a consistent JSON format."""
 
     payload = payload or {}

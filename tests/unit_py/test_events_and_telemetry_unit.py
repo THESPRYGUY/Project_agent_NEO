@@ -18,9 +18,12 @@ def _ensure_import():
 def test_event_bus_subscribe_emit_unsubscribe():
     _ensure_import()
     from neo_agent.events import EventBus
+
     received = {}
+
     def listener(evt, payload):
         received[evt] = payload
+
     bus = EventBus()
     bus.subscribe("x", listener)
     assert len(tuple(bus.listeners("x"))) == 1
@@ -32,7 +35,13 @@ def test_event_bus_subscribe_emit_unsubscribe():
 
 def test_metrics_and_emitters():
     _ensure_import()
-    from neo_agent.telemetry import MetricsCollector, emit_event, emit_mbti_persona_selected, emit_repo_generated_event
+    from neo_agent.telemetry import (
+        MetricsCollector,
+        emit_event,
+        emit_mbti_persona_selected,
+        emit_repo_generated_event,
+    )
+
     m = MetricsCollector()
     m.increment("a")
     with m.time("t1"):
@@ -43,8 +52,9 @@ def test_metrics_and_emitters():
     emit_event("evt", None)
     # mbti selected: invalid payloads ignored
     emit_mbti_persona_selected({})
-    emit_mbti_persona_selected({"mbti_code": "entj", "name": "Exec", "axes": {"EI": "E"}})
+    emit_mbti_persona_selected(
+        {"mbti_code": "entj", "name": "Exec", "axes": {"EI": "E"}}
+    )
     # repo generated event
     emit_repo_generated_event(None)
     emit_repo_generated_event({"path": "/tmp/x", "name": "repo"})
-

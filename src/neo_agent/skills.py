@@ -44,7 +44,9 @@ class SkillRegistry:
 
     def configure(self, mappings: Mapping[str, Callable[[dict], dict]]) -> None:
         for name, function in mappings.items():
-            skill = Skill(name=name, description=function.__doc__ or name, function=function)
+            skill = Skill(
+                name=name, description=function.__doc__ or name, function=function
+            )
             self.register(skill)
 
     def all(self) -> Iterable[Skill]:

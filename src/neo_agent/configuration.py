@@ -32,7 +32,9 @@ class SkillConfiguration:
     def from_dict(cls, payload: Mapping[str, Any]) -> "SkillConfiguration":
         """Deserialize a :class:`SkillConfiguration` from ``payload``."""
 
-        missing = [key for key in ("name", "description", "entrypoint") if key not in payload]
+        missing = [
+            key for key in ("name", "description", "entrypoint") if key not in payload
+        ]
         if missing:
             raise ConfigurationError(f"Missing keys for skill configuration: {missing}")
 

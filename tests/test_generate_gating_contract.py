@@ -12,5 +12,4 @@ def test_generate_gating_contract_tokens_present() -> None:
     assert "naics_code" in text, "Gating should require naics_code"
     assert "business_function" in text, "Gating should require business_function"
     # Role can be satisfied by code or title
-    assert ("role_code" in text or "role_title" in text), "Gating should require role"
-
+    assert "role_code" in text or "role_title" in text, "Gating should require role"

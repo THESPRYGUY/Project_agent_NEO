@@ -24,7 +24,14 @@ def test_repo_generate_minimal_ok(tmp_path: Path, monkeypatch):
         "agent": {"name": "Test Agent", "version": "1.0.0"},
         "business_function": "governance",
         "role": {"code": "AIA-P", "title": "Planner", "seniority": "senior"},
-        "classification": {"naics": {"code": "541110", "title": "Offices of Lawyers", "level": 5, "lineage": ["54", "541", "5411", "54111"]}},
+        "classification": {
+            "naics": {
+                "code": "541110",
+                "title": "Offices of Lawyers",
+                "level": 5,
+                "lineage": ["54", "541", "5411", "54111"],
+            }
+        },
         "routing_hints": {"language": "en"},
     }
     out = rg.generate_agent_repo(profile, tmp_path)
@@ -43,10 +50,11 @@ def test_repo_generate_invalid_outdir_resolution(tmp_path: Path, monkeypatch):
     from neo_agent import repo_generator as rg
 
     profile = {"agent": {"name": "X", "version": "1.0.0"}}
+
     # Force _next_available_dir to return a path outside base to trigger guard
     def _fake_next(base: Path, slug: str) -> Path:  # type: ignore
         return Path.cwd() / "outside"
+
     monkeypatch.setattr(rg, "_next_available_dir", _fake_next)
     with pytest.raises(rg.AgentRepoGenerationError):
         rg.generate_agent_repo(profile, tmp_path)
-

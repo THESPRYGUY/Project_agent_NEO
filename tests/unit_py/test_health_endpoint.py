@@ -23,8 +23,10 @@ def _call(app, method: str, path: str):
         "CONTENT_LENGTH": "0",
     }
     status_headers = []
+
     def start_response(status, headers):
         status_headers.append((status, headers))
+
     data = b"".join(app.wsgi_app(env, start_response))
     status, headers = status_headers[0]
     return status, dict(headers), data
@@ -42,6 +44,7 @@ def _ensure_import():
 def test_health_ok_headers(tmp_path: Path):
     _ensure_import()
     from neo_agent.intake_app import create_app
+
     app = create_app(base_dir=tmp_path)
     st, hdrs, raw = _call(app, "GET", "/health")
     assert st == "200 OK"
@@ -50,4 +53,3 @@ def test_health_ok_headers(tmp_path: Path):
     assert h.get("x-neo-intake-version") == "v3.0"
     payload = json.loads(raw.decode("utf-8"))
     assert payload.get("status") == "ok"
-

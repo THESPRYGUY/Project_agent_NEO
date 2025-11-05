@@ -9,7 +9,9 @@ from __future__ import annotations
 import uuid
 
 
-def generate_agent_id(naics_code: str, business_func: str, role_code: str, agent_name: str) -> str:
+def generate_agent_id(
+    naics_code: str, business_func: str, role_code: str, agent_name: str
+) -> str:
     """Generate a deterministic agent identifier.
 
     Seed includes NAICS, business function, role code, and agent name. Uses
@@ -26,4 +28,3 @@ def generate_agent_id(naics_code: str, business_func: str, role_code: str, agent
     prefix = naics if naics else "NA"
     r = role if role else "R"
     return f"AGT-{prefix}-{r}-{suffix}"
-

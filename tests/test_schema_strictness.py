@@ -73,4 +73,3 @@ def test_validate_intake_enforces_enums() -> None:
     invalid["governance"]["classification_default"] = "top_secret"
     with pytest.raises(IntakeValidationError):
         validate_intake(invalid)
-

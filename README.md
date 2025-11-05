@@ -5,9 +5,11 @@ Status: Release 2.1.2-dev (post v2.1.1)
 Project Agent NEO is a governed, test-driven scaffold for generating and validating a 20-pack agent repository from a v3 intake. It emphasizes strict KPI parity, observability, and safe reasoning footprints while remaining model/vendor agnostic.
 
 ## 1) What is Project Agent NEO
+
 One-paragraph: NEO provides a reproducible intake â†’ build â†’ validate pipeline producing a canonical 20-file agent repo. It ships a simple WSGI service, UI helpers, builders/validators, and CI gates (parity, golden snapshot, smoke) to ensure deterministic, auditable outputs for any use-case.
 
 ## 2) TL;DR Quickstart (5 minutes)
+
 Copy env and run local compose, then hit health:
 
 ```bash
@@ -20,6 +22,7 @@ curl -i http://127.0.0.1:5000/health
 You should see HTTP 200 with headers `X-NEO-Intake-Version` and `X-Commit-SHA`.
 
 ## How the Intake works now
+
 1. Contract schema (v1) loads from `/api/intake/schema` at runtime.
 2. Memory, connectors, governance, and RBAC chips derive from packs 03/04/05/08/12.
 3. Hidden form inputs stay in sync with the Intake Contract panel state.
@@ -32,6 +35,7 @@ You should see HTTP 200 with headers `X-NEO-Intake-Version` and `X-Commit-SHA`.
 10. Connector secrets remain sanitized; retention/permissions default from pack 08.
 
 ### Governance Cross-Pack Check
+
 Run the governance cross-pack check to keep packs 02, 04, and 05 aligned.
 Invoke from repo root: `python scripts/check_governance_crosspack.py --root generated_repos/agent-build-007-2-1-1`.
 Pass any directory that contains the three pack files if you need to target another build.
@@ -43,6 +47,7 @@ PII flags must match across packs and cannot mix 'none' with other entries.
 Use --root generated_repos to scan every generated repo, and add --fail-fast to stop at the first failing repo.
 
 ### Registry Enum Sourcing
+
 - Enum choices for connectors, data sources, and datasets resolve via `neo_agent.registry_loader.load_tool_registry`.
 - The loader prefers `NEO_REGISTRY_ROOT`, then `_generated/_last_build.json`, before falling back to the baseline packs.
 - Pack `12_Tool+Data-Registry_v2.json` remains the single source of truth for connector/dataset IDs.
@@ -55,6 +60,7 @@ Use --root generated_repos to scan every generated repo, and add --fail-fast to 
 - Registry alignment checks run in under a second and fail fast on unknown or missing IDs.
 
 ## 3) Dev Setup (10 minutes)
+
 - Python 3.11 and Node 20.x
 - Install and run tests:
 
@@ -68,7 +74,9 @@ npm test
 ```
 
 ## 4) CI Matrix (Required + Advisory)
+
 Required checks (enforced in PRs):
+
 - unit-python (coverage)
 - unit-js (Vitest thresholds)
 - golden snapshot
@@ -77,15 +85,19 @@ Required checks (enforced in PRs):
 - contract-validate (contract+parity crossrefs)
 
 Advisory/non-blocking:
+
 - Integration tests (-m integ)
 - Docs check (SCA warn-only and optional markdown lint)
 
 ## 5) Parity, Contracts & Golden Snapshot
+
 - Parity model: KPI targets from intake must match across 02 vs 14; propagated to 03/11/17. CI treats mismatches as blocking.
-- Golden snapshot: builds from ixtures/intake_v3_golden.json and verifies byte-for-byte equality with ixtures/expected_pack_golden/*. Diff artifacts uploaded under _artifacts/golden-diff/** on failure.
+- Golden snapshot: builds from ixtures/intake_v3_golden.json and verifies byte-for-byte equality with ixtures/expected_pack_golden/\*. Diff artifacts uploaded under \_artifacts/golden-diff/\*\* on failure.
 
 ## 6) Release Flow
+
 Tags `v*` trigger the release workflow:
+
 - Build container, smoke `/health`, generate integrity artifacts
 - Attach to release: `repo.zip`, `INTEGRITY_REPORT.json`, `build.json`
 
@@ -96,14 +108,16 @@ See `SECURITY.md` for the full policy and reporting process.
 Supported Versions
 
 | Component | Version |
-| - | - |
-| Python | 3.11 |
-| Node.js | 20.x |
+| --------- | ------- |
+| Python    | 3.11    |
+| Node.js   | 20.x    |
+
 - Dependency pinning: Python constraints and Node lockfile; SCA runs warn-only in CI and uploads reports
 - Optional auth stub (default OFF): when `AUTH_REQUIRED=true`, all non-`/health` routes require `Authorization: Bearer <token>`; 401 JSON envelope returned on missing/invalid tokens
 - â€œNo secrets/PII in logsâ€ policy
 
 ## 8) Troubleshooting
+
 - Line endings: normalize to `\n` in snapshots to avoid diffs
 - Env flags: set `FAIL_ON_PARITY=true` to enforce hard parity gates locally; `NEO_APPLY_OVERLAYS=false` for baseline runs
 - Docker bind issues on Windows: prefer WSL2 backend; ensure `.env` exists
@@ -161,6 +175,7 @@ deprecated for one release. A 307 shim redirects legacy requests to the latest
 derived configuration and metadata artifacts used by the generator.
 
 #### Intake Section Order & Gating
+
 - Order: Agent Profile â†’ Business Context (NAICS + Domain) â†’ Business Function & Role â†’ Persona Alignment â†’ Toolsets â†’ Attributes â†’ Preferences â†’ LinkedIn â†’ Custom Notes
 - Generate Agent Repo is enabled only when: agent_name, NAICS, business_function, and role are all set.
 - Persona Suggest is enabled after choosing a role.
@@ -196,6 +211,7 @@ make smoke
 ```
 
 Artifacts are written to `_artifacts/smoke/`:
+
 - `repo.zip` â€” zipped generated repo
 - `INTEGRITY_REPORT.json` â€” integrity + parity summary
 - `build.json` â€” CI-parsed summary with `file_count`, `parity`, `integrity_errors`
@@ -212,7 +228,7 @@ The command prints a one-line status, for example:
 - Artifacts: job uploads `_artifacts/**`, `**/INTEGRITY_REPORT.json`, `**/build.json`, and any `**/*.zip` on every run (pass/fail).
 - PR Summary: CI posts a one-line outcome. Green shows:
   - `âœ… ✅ SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0`
-  Red shows:
+    Red shows:
   - `âŒ Parity failure â€” see integrity artifacts`
 - Triage: open uploaded `INTEGRITY_REPORT.json` and `build.json` for `parity` and `parity_deltas`.
   - Fix the source pack with mismatched key(s), re-run locally (`make smoke`), then push.
@@ -228,7 +244,6 @@ The command prints a one-line status, for example:
   - byte-for-byte equality vs snapshot (normalized to `\n` line endings)
 - CI: runs the golden snapshot test (blocking) and uploads `_artifacts/golden-diff/**` on mismatch.
 
-
 ## Overlays (optional)
 
 You can auto-apply overlays immediately after a successful `/build`:
@@ -241,6 +256,7 @@ You can auto-apply overlays immediately after a successful `/build`:
     - `persistence_adaptiveness` â€” applies operations from `overlays/apply.persistence_adaptiveness.yaml`
 
 Safety and integrity:
+
 - The applier performs additive, minimal diffs; required keys are not overwritten.
 - After apply, integrity and KPI parity (02/03/11/14/17) are recomputed. If any check fails, changes are rolled back.
 - Response includes `overlays_applied: true/false` and an `overlay_summary` with `applied`, `touched_packs`, `deltas`, and post-apply `parity`.
@@ -260,12 +276,9 @@ Safety and integrity:
 - Download ZIP: after a build completes or from the Last-Build banner, click â€œDownload ZIPâ€ or fetch via `GET /download/zip` to retrieve the zipped 20-pack.
 - Parity-deltas tooltips: when any parity check is false, an info icon appears next to the parity card. Activate it (click or keyboard) to see the exact key deltas, e.g. `03 PRI_min â€” 0.940 â†’ 0.950`.
 
-
-
 ## License
 
 Project NEO Agent is released under the MIT License. See `LICENSE` for details.
-
 
 ### Overlay summary
 
@@ -277,43 +290,42 @@ When overlays are applied during a build (feature flag `NEO_APPLY_OVERLAYS=true`
 
 In the UI, a â€œView overlaysâ€ button appears on the Last-Build banner when `items.length > 0`. Clicking opens an accessible modal (keyboard/ESC/focus-trap) with a table of overlay items and a â€œCopy overlay JSONâ€ action. `/last-build` response headers remain strict: `Cache-Control: no-store`, `X-NEO-Intake-Version: v3.0`.
 
-
 ### Run the intake app locally
 
 To launch the intake form from a terminal on Windows, macOS, or Linux:
 
-1. Install dependencies: ``pip install -e .[dev]``
-2. Start the server (PowerShell or VS Code terminal): ``neo-agent serve --host 127.0.0.1 --port 5000``
+1. Install dependencies: `pip install -e .[dev]`
+2. Start the server (PowerShell or VS Code terminal): `neo-agent serve --host 127.0.0.1 --port 5000`
 3. Open http://127.0.0.1:5000/ in your browser. The server logs the health check and profile output paths.
 
 Alternative entry points are also available if you prefer invoking Python directly:
 
-- ``python -m neo_agent.intake_app``
-- ``python -c "from neo_agent.intake_app import create_app; create_app().serve(host='127.0.0.1', port=5000)"``
+- `python -m neo_agent.intake_app`
+- `python -c "from neo_agent.intake_app import create_app; create_app().serve(host='127.0.0.1', port=5000)"`
 
-Both commands respect the ``HOST`` and ``PORT`` environment variables, allowing you to override the bind address without changing code.
+Both commands respect the `HOST` and `PORT` environment variables, allowing you to override the bind address without changing code.
 
 A quick smoke check after startup:
 
-- ``curl http://127.0.0.1:5000/`` should return the intake HTML.
-- ``curl http://127.0.0.1:5000/api/profile/validate -X POST -H "Content-Type: application/json" -d '{}'`` returns JSON containing ``status`` and ``issues`` fields.
+- `curl http://127.0.0.1:5000/` should return the intake HTML.
+- `curl http://127.0.0.1:5000/api/profile/validate -X POST -H "Content-Type: application/json" -d '{}'` returns JSON containing `status` and `issues` fields.
 
 ## Docker Quickstart
 
-- Build image: ``docker build -t neo-intake:local --build-arg GIT_SHA=$(git rev-parse --short HEAD) .``
-- Run: ``docker run -p 5000:5000 --env-file .env neo-intake:local``
-- Health: ``curl -i http://127.0.0.1:5000/health`` â†’ 200, headers include `X-NEO-Intake-Version` and `X-Commit-SHA`.
+- Build image: `docker build -t neo-intake:local --build-arg GIT_SHA=$(git rev-parse --short HEAD) .`
+- Run: `docker run -p 5000:5000 --env-file .env neo-intake:local`
+- Health: `curl -i http://127.0.0.1:5000/health` â†’ 200, headers include `X-NEO-Intake-Version` and `X-Commit-SHA`.
 
 ### Compose (dev)
 
-Use ``docker-compose.dev.yml`` for local iteration:
+Use `docker-compose.dev.yml` for local iteration:
 
 ```bash
 cp .env.example .env
 docker compose -f docker-compose.dev.yml up --build
 ```
 
-The service listens on ``http://127.0.0.1:5000`` and emits structured JSON logs to stdout.
+The service listens on `http://127.0.0.1:5000` and emits structured JSON logs to stdout.
 
 ### Headers you'll see
 
@@ -323,19 +335,25 @@ The service listens on ``http://127.0.0.1:5000`` and emits structured JSON logs 
 Error envelope example (uniform for 400/404/405/413/429/500):
 
 ```json
-{"status":"error","code":"NOT_FOUND","message":"Not Found","details":{},"req_id":"..."}
+{
+  "status": "error",
+  "code": "NOT_FOUND",
+  "message": "Not Found",
+  "details": {},
+  "req_id": "..."
+}
 ```
 
 ## Legacy payloads
 
 - Behavior matrix:
-  - Legacy-only payload (top-level ``legacy`` present, no v3 concept keys ``context``/``role``/``governance_eval``) â†’ auto-migrated to v3 before validation and saved if required v3 fields are satisfied.
-  - Mixed legacy+v3 for the same concept â†’ rejected with code ``DUPLICATE_LEGACY_V3_CONFLICT`` and per-field paths; telemetry is emitted with ``{"legacy_detected": true, "conflicts": <n>}``.
+  - Legacy-only payload (top-level `legacy` present, no v3 concept keys `context`/`role`/`governance_eval`) â†’ auto-migrated to v3 before validation and saved if required v3 fields are satisfied.
+  - Mixed legacy+v3 for the same concept â†’ rejected with code `DUPLICATE_LEGACY_V3_CONFLICT` and per-field paths; telemetry is emitted with `{"legacy_detected": true, "conflicts": <n>}`.
   - Pure v3 payload â†’ validated and saved as-is.
 
 ### Error codes
 
-- ``DUPLICATE_LEGACY_V3_CONFLICT``: legacy fields coexist with v3 fields for the same concept.
+- `DUPLICATE_LEGACY_V3_CONFLICT`: legacy fields coexist with v3 fields for the same concept.
   - Example shape:
     ```json
     {
@@ -404,7 +422,7 @@ CI filter note (v2.1.2): Added `feat/**` and `hotfix/**` to workflow push filter
 
 ### Where to find KPI report
 
-- Nightly artifact: Actions → **KPI Report (cron)** → latest run (reports/kpi\_report.\*).
+- Nightly artifact: Actions → **KPI Report (cron)** → latest run (reports/kpi_report.\*).
 - On-demand: Run `python scripts/gen_kpi_report.py --root generated_repos/agent-build-007-2-1-1 --out reports/`.
 
 ### Quickstart: Intake → Mapper → CI → KPI
@@ -426,6 +444,13 @@ graph TD
 ```
 
 > If Mermaid is unavailable, follow the flow: Intake UI → Mapper → Generated Packs → CI → KPI Workflows.
+
+### Quality & Protections
+
+- Branch protection on `main` now enforces ≥1 approving review (`gh api --method PUT ... required_approving_review_count=1`).
+- Required checks stay locked: schema-validate, intake-mapper-guard, placeholder-sweep, repo-audit, unit-python, unit-js, ui-schema-smoke, registry-consistency, governance-crosscheck.
+- `.pre-commit-config.yaml` adds placeholder scanning, pack type guard, and black/ruff plus Prettier/ESLint hooks (advisory CI job).
+- Run `pre-commit run -a` locally to mirror CI guardrails before pushing.
 
 ### Tag conventions & release steps
 

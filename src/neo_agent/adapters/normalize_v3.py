@@ -86,4 +86,3 @@ def normalize_context_role(v3: Mapping[str, Any]) -> Dict[str, Any]:
         },
     }
     return out
-

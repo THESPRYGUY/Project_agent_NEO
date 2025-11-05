@@ -52,11 +52,11 @@ def test_multi_error_is_sorted_and_stable() -> None:
         if line.strip() and not line.startswith("Intake contract validation failed")
     ]
     prefixes = [
-        'connectors',
-        'memory/permissions/AdminTeam/read',
-        'metadata/agent_id',
-        'metadata/project_code',
+        "connectors",
+        "memory/permissions/AdminTeam/read",
+        "metadata/agent_id",
+        "metadata/project_code",
     ]
     assert len(lines) == 4
-    observed = [line.split(':', 1)[0] for line in lines]
+    observed = [line.split(":", 1)[0] for line in lines]
     assert observed == prefixes

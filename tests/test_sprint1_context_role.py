@@ -26,7 +26,11 @@ def test_normalize_context_role_unit() -> None:
     assert out["role_profile"]["role_title"] == "Legal & Compliance Lead"
     assert out["sector_profile"]["sector"] == "Offices of Lawyers"
     # Regions CA + US produce union of frameworks; order is sorted
-    assert out["sector_profile"]["regulatory"] == ["ISO_IEC_42001", "NIST_AI_RMF", "PIPEDA"]
+    assert out["sector_profile"]["regulatory"] == [
+        "ISO_IEC_42001",
+        "NIST_AI_RMF",
+        "PIPEDA",
+    ]
 
 
 def test_e2e_build_from_v3_context(tmp_path: Path) -> None:
@@ -66,11 +70,17 @@ def test_e2e_build_from_v3_context(tmp_path: Path) -> None:
     # 02 and 04 carry regulators consistently
     p02 = packs["02_Global-Instructions_v2.json"]
     p04 = packs["04_Governance+Risk-Register_v2.json"]
-    assert set(p02["safety"]["regulatory"]) == set(p04["frameworks"]["regulators"]) == {"ISO_IEC_42001", "NIST_AI_RMF", "PIPEDA"}
+    assert (
+        set(p02["safety"]["regulatory"])
+        == set(p04["frameworks"]["regulators"])
+        == {"ISO_IEC_42001", "NIST_AI_RMF", "PIPEDA"}
+    )
 
     # Integrity: KPI parity checks remain satisfied across 11/14/17 (02 has no KPI)
     report = integrity_report(profile, packs)
     assert report["checks"]["kpi_sync"] is True
     assert report["checks"]["observability"] is True
-    assert report["checks"]["owners_present"] in (True, False)  # owners may be empty in this minimal profile
-
+    assert report["checks"]["owners_present"] in (
+        True,
+        False,
+    )  # owners may be empty in this minimal profile

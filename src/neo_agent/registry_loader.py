@@ -13,7 +13,10 @@ from pathlib import Path
 from typing import Any, Dict, Iterable, List, Optional
 
 _PACK_FILENAME = "12_Tool+Data-Registry_v2.json"
-_DEFAULT_BUILD_ROOT = Path(__file__).resolve().parents[2] / "generated_repos" / "agent-build-007-2-1-1"
+_DEFAULT_BUILD_ROOT = (
+    Path(__file__).resolve().parents[2] / "generated_repos" / "agent-build-007-2-1-1"
+)
+_REGISTRY_CACHE: Dict[Path, "RegistrySnapshot"] = {}
 
 
 @dataclass(frozen=True)
@@ -125,28 +128,11 @@ def _load_json(path: Path) -> Dict[str, Any]:
     return data
 
 
-def load_tool_registry(root: Optional[Path | str] = None) -> RegistrySnapshot:
-    """Load and normalise tool/data registry content.
+def _empty_snapshot() -> RegistrySnapshot:
+    return RegistrySnapshot(connectors=[], data_sources=[], datasets=[])
 
-    Parameters
-    ----------
-    root:
-        Optional base directory (or direct pack path) to resolve the pack file.
-        When omitted, the loader honours `NEO_REGISTRY_ROOT`, then
-        `NEO_REPO_OUTDIR` (and its `_last_build.json` pointer), finally falling
-        back to the checked-in baseline under
-        `generated_repos/agent-build-007-2-1-1`.
 
-    Returns
-    -------
-    RegistrySnapshot
-        Connectors, data sources, and datasets ready for UI bindings.
-    """
-
-    explicit = Path(root) if root is not None else None
-    pack_path = _resolve_pack_path(explicit)
-    payload = _load_json(pack_path)
-
+def _snapshot_from_payload(payload: Dict[str, Any]) -> RegistrySnapshot:
     connectors: List[RegistryConnector] = []
     for item in payload.get("connectors") or []:
         if not isinstance(item, dict):
@@ -158,7 +144,11 @@ def load_tool_registry(root: Optional[Path | str] = None) -> RegistrySnapshot:
             RegistryConnector(
                 id=ident,
                 name=_normalise_id(item.get("name") or ident),
-                scopes=[_normalise_id(scope) for scope in item.get("scopes") or [] if _normalise_id(scope)],
+                scopes=[
+                    _normalise_id(scope)
+                    for scope in item.get("scopes") or []
+                    if _normalise_id(scope)
+                ],
                 secret_ref=_normalise_id(item.get("secret_ref")),
                 enabled=bool(item.get("enabled", True)),
             )
@@ -166,7 +156,11 @@ def load_tool_registry(root: Optional[Path | str] = None) -> RegistrySnapshot:
     connectors.sort(key=lambda conn: conn.name.casefold())
 
     data_sources = sorted(
-        {_normalise_id(src) for src in payload.get("data_sources") or [] if _normalise_id(src)},
+        {
+            _normalise_id(src)
+            for src in payload.get("data_sources") or []
+            if _normalise_id(src)
+        },
         key=str.casefold,
     )
 
@@ -187,7 +181,59 @@ def load_tool_registry(root: Optional[Path | str] = None) -> RegistrySnapshot:
         )
     datasets.sort(key=lambda dataset: dataset.name.casefold())
 
-    return RegistrySnapshot(connectors=connectors, data_sources=data_sources, datasets=datasets)
+    return RegistrySnapshot(
+        connectors=connectors, data_sources=data_sources, datasets=datasets
+    )
+
+
+def clear_registry_cache() -> None:
+    """Reset the in-memory registry cache (primarily for tests)."""
+
+    _REGISTRY_CACHE.clear()
+
+
+def load_tool_registry(root: Optional[Path | str] = None) -> RegistrySnapshot:
+    """Load and normalise tool/data registry content.
+
+    Parameters
+    ----------
+    root:
+        Optional base directory (or direct pack path) to resolve the pack file.
+        When omitted, the loader honours `NEO_REGISTRY_ROOT`, then
+        `NEO_REPO_OUTDIR` (and its `_last_build.json` pointer), finally falling
+        back to the checked-in baseline under
+        `generated_repos/agent-build-007-2-1-1`.
+
+    Returns
+    -------
+    RegistrySnapshot
+        Connectors, data sources, and datasets ready for UI bindings.
+    """
+    explicit = Path(root) if root is not None else None
+    if explicit is not None and explicit.name == _PACK_FILENAME:
+        if explicit.exists():
+            pack_path = explicit
+        else:
+            return _empty_snapshot()
+    else:
+        try:
+            pack_path = _resolve_pack_path(explicit)
+        except FileNotFoundError:
+            return _empty_snapshot()
+
+    cache_key = pack_path.resolve()
+    if cache_key in _REGISTRY_CACHE:
+        return _REGISTRY_CACHE[cache_key]
+
+    try:
+        payload = _load_json(pack_path)
+    except (ValueError, json.JSONDecodeError, OSError):
+        snapshot = _empty_snapshot()
+    else:
+        snapshot = _snapshot_from_payload(payload)
+
+    _REGISTRY_CACHE[cache_key] = snapshot
+    return snapshot
 
 
 __all__ = [
@@ -195,4 +241,5 @@ __all__ = [
     "RegistryDataset",
     "RegistrySnapshot",
     "load_tool_registry",
+    "clear_registry_cache",
 ]

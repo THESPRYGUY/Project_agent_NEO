@@ -57,4 +57,3 @@ def test_compiled_profile_written(tmp_path: Path) -> None:
     # Spot-check keys
     for key in ("meta", "slugs", "agent", "routing", "gating"):
         assert key in compiled
-

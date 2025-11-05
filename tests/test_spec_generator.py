@@ -62,7 +62,9 @@ def test_build_agent_configuration_fallback_skill() -> None:
     assert configuration.skill_map()["echo"].entrypoint == "neo_agent.skills:echo"
 
 
-def test_scrape_linkedin_profile_handles_errors(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_scrape_linkedin_profile_handles_errors(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     from urllib import error, request
 
     def _raise(*_args, **_kwargs):
@@ -74,7 +76,9 @@ def test_scrape_linkedin_profile_handles_errors(monkeypatch: pytest.MonkeyPatch)
     assert "error" in result
 
 
-def test_scrape_linkedin_profile_extracts_keywords(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_scrape_linkedin_profile_extracts_keywords(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     class DummyResponse:
         def __init__(self, text: str) -> None:
             self.text = text
@@ -109,4 +113,3 @@ def test_scrape_linkedin_profile_extracts_keywords(monkeypatch: pytest.MonkeyPat
     assert "finance" in [item.lower() for item in result.get("domain_expertise", [])]
     assert "python" in [item.lower() for item in result.get("skills", [])]
     assert result.get("headline") == "Senior Data Scientist"
-

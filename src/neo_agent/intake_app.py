@@ -49,6 +49,7 @@ LOGGER = get_logger("intake")
 # For Intake v3 stabilization phase, expose the intake version constant in headers
 INTAKE_BUILD_TAG = "v3.0"
 
+
 def _read_app_version(project_root: Path) -> str:
     try:
         pyproj = project_root / "pyproject.toml"
@@ -63,6 +64,7 @@ def _read_app_version(project_root: Path) -> str:
         pass
     return "0.0.0"
 
+
 def _git_sha() -> str:
     """Return a short git SHA for builds; prefer env ``GIT_SHA``.
 
@@ -74,7 +76,7 @@ def _git_sha() -> str:
         if env_sha:
             return env_sha
         # Lightweight fallback: parse .git/HEAD and ref
-        git_dir = (Path(__file__).resolve().parents[2] / ".git")
+        git_dir = Path(__file__).resolve().parents[2] / ".git"
         head_path = git_dir / "HEAD"
         if head_path.exists():
             head = head_path.read_text(encoding="utf-8", errors="ignore").strip()
@@ -82,14 +84,18 @@ def _git_sha() -> str:
                 ref = head.split(" ", 1)[1].strip()
                 ref_path = git_dir / ref
                 if ref_path.exists():
-                    return ref_path.read_text(encoding="utf-8", errors="ignore").strip()[:12]
+                    return ref_path.read_text(
+                        encoding="utf-8", errors="ignore"
+                    ).strip()[:12]
             return head[:12]
     except Exception:
         pass
     return "UNKNOWN"
 
 
-def _std_headers(content_type: str, size: int, *, extra: Optional[list[tuple[str,str]]] = None) -> list[tuple[str,str]]:
+def _std_headers(
+    content_type: str, size: int, *, extra: Optional[list[tuple[str, str]]] = None
+) -> list[tuple[str, str]]:
     base = [
         ("Content-Type", content_type),
         ("Cache-Control", "no-store, must-revalidate"),
@@ -100,6 +106,7 @@ def _std_headers(content_type: str, size: int, *, extra: Optional[list[tuple[str
     if extra:
         base.extend(extra)
     return base
+
 
 WSGIResponse = tuple[str, list[tuple[str, str]], bytes]
 
@@ -177,7 +184,6 @@ CURATED_DOMAIN_FALLBACK: Dict[str, List[str]] = {
 }
 
 
-
 def _mbti_axes(code: str) -> Dict[str, str]:
     code = (code or "").upper()
     labels = ("EI", "SN", "TF", "JP")
@@ -186,20 +192,23 @@ def _mbti_axes(code: str) -> Dict[str, str]:
         axes[label] = code[idx] if len(code) > idx else ""
     return axes
 
+
 def _split_csv(value: str | None) -> List[str]:
     if not value:
         return []
     return [item.strip() for item in value.split(",") if item.strip()]
 
 
-def _option_list(
-    options: Iterable[str], *, selected: Optional[str] = None
-) -> str:
+def _option_list(options: Iterable[str], *, selected: Optional[str] = None) -> str:
     selected_value = str(selected) if selected is not None else None
     rendered: list[str] = []
     for option in options:
         value = str(option)
-        attrs = " selected" if selected_value is not None and value == selected_value else ""
+        attrs = (
+            " selected"
+            if selected_value is not None and value == selected_value
+            else ""
+        )
         rendered.append(
             f'<option value="{html.escape(value, quote=True)}"{attrs}>'
             f"{html.escape(value)}"
@@ -233,7 +242,7 @@ def _checkboxes(
 
 
 FORM_TEMPLATE = Template(
-        """
+    """
 <!doctype html>
 <html lang="en">
     <head>
@@ -598,16 +607,17 @@ def _notice(message: str | None) -> str:
     return f'<div class="notice"><p>{message}</p></div>'
 
 
-def _summary_block(profile: Mapping[str, Any] | None, profile_path: str, spec_path: str) -> str:
+def _summary_block(
+    profile: Mapping[str, Any] | None, profile_path: str, spec_path: str
+) -> str:
     if not profile:
         return ""
     encoded = json.dumps(profile, indent=2)
     return (
-        "<div class=\"summary\">"
+        '<div class="summary">'
         f"<h2>Generated Agent Profile</h2><p>Profile saved to <code>{profile_path}</code></p>"
         f"<p>Specs generated in <code>{spec_path}</code></p><pre>{encoded}</pre></div>"
     )
-
 
 
 class IntakeApplication:
@@ -624,13 +634,21 @@ class IntakeApplication:
         self.data_root = self.project_root / "data"
         self.naics_path = self.data_root / "naics" / "naics_2022.json"
         self.naics_sample_path = self.data_root / "naics" / "naics_2022.sample.json"
-        self.functions_catalog_path = self.data_root / "functions" / "functions_catalog.json"
-        self.business_functions_path = self.data_root / "functions" / "business_functions.json"
+        self.functions_catalog_path = (
+            self.data_root / "functions" / "functions_catalog.json"
+        )
+        self.business_functions_path = (
+            self.data_root / "functions" / "business_functions.json"
+        )
         self.role_catalog_path = self.data_root / "roles" / "role_catalog.json"
-        self.routing_defaults_path = self.data_root / "routing" / "function_role_map.json"
+        self.routing_defaults_path = (
+            self.data_root / "routing" / "function_role_map.json"
+        )
         self.base_dir = self._resolve_base_dir(base_dir)
         self.profile_path = self.base_dir / "agent_profile.json"
-        self.spec_dir = self.base_dir / "generated_specs"  # legacy path (no longer used for writes)
+        self.spec_dir = (
+            self.base_dir / "generated_specs"
+        )  # legacy path (no longer used for writes)
         self.repo_output_dir = self.base_dir / "generated_repos"
         self.repo_output_dir.mkdir(parents=True, exist_ok=True)
         # New: dedicated location to store versioned agent profiles
@@ -644,45 +662,77 @@ class IntakeApplication:
             self._started_at = None
         self.persona_assets = self._load_persona_assets()
         self.persona_config = self._load_persona_config()
-        self.mbti_lookup = self._index_mbti_types(self.persona_config.get("mbti_types", []))
+        self.mbti_lookup = self._index_mbti_types(
+            self.persona_config.get("mbti_types", [])
+        )
         # Legacy shim hit counter for /generated_specs redirects
         self._legacy_redirect_hits = 0
         # NAICS caches (filled on-demand)
         self._naics_cache = None
         self._naics_by_code = None
         self._function_role_data = self._load_function_role_data()
-        self._domain_selector_html = self._safe_read_text(self.ui_dir / "domain_selector.html")
-        self._domain_selector_css = self._safe_read_text(self.ui_dir / "domain_selector.css")
-        self._domain_selector_js = self._safe_read_text(self.ui_dir / "domain_selector.js")
+        self._domain_selector_html = self._safe_read_text(
+            self.ui_dir / "domain_selector.html"
+        )
+        self._domain_selector_css = self._safe_read_text(
+            self.ui_dir / "domain_selector.css"
+        )
+        self._domain_selector_js = self._safe_read_text(
+            self.ui_dir / "domain_selector.js"
+        )
         # Build panel assets
         self._build_panel_js = self._safe_read_text(self.ui_dir / "build_panel.js")
         self._build_panel_css = self._safe_read_text(self.ui_dir / "build_panel.css")
-        self._domain_bundle_css = self._safe_read_text(self.ui_dir / "domain_bundle.css")
+        self._domain_bundle_css = self._safe_read_text(
+            self.ui_dir / "domain_bundle.css"
+        )
         self._domain_bundle_js = self._safe_read_text(self.ui_dir / "domain_bundle.js")
         self._domain_selector_assets = self._load_domain_selector_assets()
-        self._function_select_html = self._safe_read_text(self.ui_dir / "function_select.html")
-        self._function_role_html = self._safe_read_text(self.ui_dir / "function_role_picker.html")
-        self._function_role_css = self._safe_read_text(self.ui_dir / "function_role.css")
+        self._function_select_html = self._safe_read_text(
+            self.ui_dir / "function_select.html"
+        )
+        self._function_role_html = self._safe_read_text(
+            self.ui_dir / "function_role_picker.html"
+        )
+        self._function_role_css = self._safe_read_text(
+            self.ui_dir / "function_role.css"
+        )
         self._function_role_js = self._safe_read_text(self.ui_dir / "function_role.js")
-        self._generate_agent_js = self._safe_read_text(self.ui_dir / "generate_agent.js")
-        self._intake_contract_css = self._safe_read_text(self.ui_dir / "intake_contract.css")
+        self._generate_agent_js = self._safe_read_text(
+            self.ui_dir / "generate_agent.js"
+        )
+        self._intake_contract_css = self._safe_read_text(
+            self.ui_dir / "intake_contract.css"
+        )
         self._schema_loader_js = self._safe_read_text(self.ui_dir / "schema_loader.js")
         self._api_client_js = self._safe_read_text(self.ui_dir / "api_client.js")
         self._form_memory_js = self._safe_read_text(self.ui_dir / "form_memory.js")
-        self._form_connectors_js = self._safe_read_text(self.ui_dir / "form_connectors.js")
-        self._form_governance_js = self._safe_read_text(self.ui_dir / "form_governance.js")
+        self._form_connectors_js = self._safe_read_text(
+            self.ui_dir / "form_connectors.js"
+        )
+        self._form_governance_js = self._safe_read_text(
+            self.ui_dir / "form_governance.js"
+        )
         self._form_rbac_js = self._safe_read_text(self.ui_dir / "form_rbac_hitl.js")
         self._results_panel_js = self._safe_read_text(self.ui_dir / "results_panel.js")
-        self._intake_contract_panel_js = self._safe_read_text(self.ui_dir / "intake_contract_panel.js")
-        self._naics_selector_html = self._safe_read_text(self.ui_dir / "naics_selector.html")
+        self._intake_contract_panel_js = self._safe_read_text(
+            self.ui_dir / "intake_contract_panel.js"
+        )
+        self._naics_selector_html = self._safe_read_text(
+            self.ui_dir / "naics_selector.html"
+        )
         self._intake_contract_sample = self._safe_read_json(
             self.data_root / "intake_contract_v1_sample.json",
             {},
         )
-        self._default_build_root = self.project_root / "generated_repos" / "agent-build-007-2-1-1"
-        LOGGER.debug("Loaded function/role assets: functions=%d roles=%d",
-                     len(self._function_role_data.get("functions", [])),
-                     len(self._function_role_data.get("roles", [])))
+        self._default_build_root = (
+            self.project_root / "generated_repos" / "agent-build-007-2-1-1"
+        )
+        LOGGER.debug(
+            "Loaded function/role assets: functions=%d roles=%d",
+            len(self._function_role_data.get("functions", [])),
+            len(self._function_role_data.get("roles", [])),
+        )
         LOGGER.debug(
             "Initialised intake application with base_dir=%s persona_state=%s",
             self.base_dir,
@@ -763,6 +813,7 @@ class IntakeApplication:
         import io
         import hashlib
         import zipfile
+
         # Build deterministic listing (exclude the same items as /download/zip)
         excluded_names = {"_last_build.json", ".DS_Store"}
         excluded_dirs = {"__pycache__", ".pytest_cache", ".git"}
@@ -793,13 +844,17 @@ class IntakeApplication:
         sha = hashlib.sha256(raw).hexdigest()
         return sha, len(raw)
 
-    def _transactional_build(self, profile: Mapping[str, Any], environ: Mapping[str, Any]) -> tuple[int, dict]:
+    def _transactional_build(
+        self, profile: Mapping[str, Any], environ: Mapping[str, Any]
+    ) -> tuple[int, dict]:
         """Build into temp path then atomically move to final SoT path.
 
         Success: (200, {agent_id,outdir,files,ts, parity, integrity_errors})
         Failure: (500, {status:"error", code:"BUILD_FAILED", message, details:{trace_id}, req_id})
         """
-        out_root_env = os.environ.get("NEO_REPO_OUTDIR") or str((self.base_dir / "_generated").resolve())
+        out_root_env = os.environ.get("NEO_REPO_OUTDIR") or str(
+            (self.base_dir / "_generated").resolve()
+        )
         out_root = Path(out_root_env)
         if "onedrive" in str(out_root).lower():
             out_root = (self.base_dir / "_generated").resolve()
@@ -812,23 +867,43 @@ class IntakeApplication:
         agent_id = str(ident.get("agent_id") or "").strip()
         if not agent_id:
             try:
-                naics_code = str(((profile.get("classification") or {}).get("naics") or {}).get("code") or (profile.get("naics") or {}).get("code") or "")
+                naics_code = str(
+                    ((profile.get("classification") or {}).get("naics") or {}).get(
+                        "code"
+                    )
+                    or (profile.get("naics") or {}).get("code")
+                    or ""
+                )
             except Exception:
                 naics_code = ""
             try:
-                business_func = str((profile.get("role") or {}).get("function_code") or profile.get("business_function") or "")
+                business_func = str(
+                    (profile.get("role") or {}).get("function_code")
+                    or profile.get("business_function")
+                    or ""
+                )
             except Exception:
                 business_func = ""
             try:
-                role_code = str((profile.get("role") or {}).get("role_code") or (profile.get("role") or {}).get("code") or "")
+                role_code = str(
+                    (profile.get("role") or {}).get("role_code")
+                    or (profile.get("role") or {}).get("code")
+                    or ""
+                )
             except Exception:
                 role_code = ""
             try:
-                agent_name = str((profile.get("identity") or {}).get("display_name") or (profile.get("agent") or {}).get("name") or "agent")
+                agent_name = str(
+                    (profile.get("identity") or {}).get("display_name")
+                    or (profile.get("agent") or {}).get("name")
+                    or "agent"
+                )
             except Exception:
                 agent_name = "agent"
             try:
-                agent_id = generate_agent_id(naics_code, business_func, role_code, agent_name)
+                agent_id = generate_agent_id(
+                    naics_code, business_func, role_code, agent_name
+                )
             except Exception:
                 # Fallback simple suffix when util unavailable
                 agent_id = f"agent-{int(time.time())}"
@@ -836,6 +911,7 @@ class IntakeApplication:
 
         # Acquire per-agent build lock before tmp creation
         from uuid import uuid4
+
         req_id = str(environ.get("neo.req_id") or "")
         lock_path = out_root / agent_id / ".build.lock"
         lock = FileLock(lock_path)
@@ -846,7 +922,9 @@ class IntakeApplication:
             # Contention or failure acquiring lock
             try:
                 if emit_event:
-                    emit_event("build.locked.count", {"agent_id": agent_id, "req_id": req_id})
+                    emit_event(
+                        "build.locked.count", {"agent_id": agent_id, "req_id": req_id}
+                    )
             except Exception:
                 pass
             return 423, {"status": "error", "code": "BUILD_LOCKED", "req_id": req_id}
@@ -857,7 +935,10 @@ class IntakeApplication:
         t0 = time.perf_counter()
         if emit_event:
             try:
-                emit_event("build:start", {"agent_id": agent_id, "tmp": str(tmp_dir), "req_id": req_id})
+                emit_event(
+                    "build:start",
+                    {"agent_id": agent_id, "tmp": str(tmp_dir), "req_id": req_id},
+                )
             except Exception:
                 pass
 
@@ -866,7 +947,9 @@ class IntakeApplication:
             # Render packs into tmp
             packs = write_repo_files(profile, tmp_dir)
             report = integrity_report(profile, packs)
-            (tmp_dir / "INTEGRITY_REPORT.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+            (tmp_dir / "INTEGRITY_REPORT.json").write_text(
+                json.dumps(report, indent=2), encoding="utf-8"
+            )
 
             ts = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
             final_dir = out_root / agent_id / ts
@@ -876,13 +959,16 @@ class IntakeApplication:
                 tmp_dir.rename(final_dir)
             except Exception:
                 import shutil
+
                 try:
                     shutil.move(str(tmp_dir), str(final_dir))
                 except Exception as _fs_exc:
                     err_code = "E_FS"
                     raise _fs_exc
 
-            files = len(list(final_dir.glob("*.json"))) + len(list(final_dir.glob("*.md")))
+            files = len(list(final_dir.glob("*.json"))) + len(
+                list(final_dir.glob("*.md"))
+            )
 
             # Transactional last-build write with schema and zip hash
             try:
@@ -926,12 +1012,19 @@ class IntakeApplication:
                         },
                     )
                     # Explicit counter-style events for dashboards
-                    emit_event("build.success.time_ms", {"value": dur_ms, "agent_id": agent_id})
-                    emit_event("build.zip_bytes", {"value": int(zip_bytes), "agent_id": agent_id})
+                    emit_event(
+                        "build.success.time_ms", {"value": dur_ms, "agent_id": agent_id}
+                    )
+                    emit_event(
+                        "build.zip_bytes",
+                        {"value": int(zip_bytes), "agent_id": agent_id},
+                    )
                 except Exception:
                     pass
 
-            parity_map = (report or {}).get("parity", {}) if isinstance(report, Mapping) else {}
+            parity_map = (
+                (report or {}).get("parity", {}) if isinstance(report, Mapping) else {}
+            )
             integrity_errors = list((report or {}).get("errors", []) or [])
             return 200, {
                 "agent_id": agent_id,
@@ -950,6 +1043,7 @@ class IntakeApplication:
             # Cleanup temp dir
             try:
                 import shutil
+
                 shutil.rmtree(tmp_dir, ignore_errors=True)
             except Exception:
                 pass
@@ -962,11 +1056,22 @@ class IntakeApplication:
                 try:
                     emit_event(
                         "build:error",
-                        {"agent_id": agent_id, "code": err_code, "trace_id": req_id, "req_id": req_id},
+                        {
+                            "agent_id": agent_id,
+                            "code": err_code,
+                            "trace_id": req_id,
+                            "req_id": req_id,
+                        },
                     )
                 except Exception:
                     pass
-            return 500, {"status": "error", "code": err_code, "message": str(exc), "req_id": req_id, "trace_id": req_id}
+            return 500, {
+                "status": "error",
+                "code": err_code,
+                "message": str(exc),
+                "req_id": req_id,
+                "trace_id": req_id,
+            }
         finally:
             try:
                 lock.release()
@@ -980,8 +1085,6 @@ class IntakeApplication:
         return "\n".join(
             f"{prefix}{line}" if line else "" for line in content.splitlines()
         )
-
-
 
     def _safe_read_text(self, path: Path) -> str:
         """Read a text asset safely, tolerating mixed encodings.
@@ -1008,7 +1111,9 @@ class IntakeApplication:
                     self._warned_once = set()
                 key = f"non_utf8:{path}"
                 if key not in self._warned_once:
-                    LOGGER.warning("Non-UTF-8 characters in %s; replaced invalid bytes", path)
+                    LOGGER.warning(
+                        "Non-UTF-8 characters in %s; replaced invalid bytes", path
+                    )
                     self._warned_once.add(key)
                 return text
             except Exception:
@@ -1035,101 +1140,148 @@ class IntakeApplication:
             except Exception:
                 LOGGER.exception("Failed to parse JSON at %s", path)
                 return default
+
     def _json_response(self, start_response, status: int, payload: Any) -> list[bytes]:
-        body = json.dumps(payload, ensure_ascii=False).encode('utf-8')
+        body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
         status_map = {
-            200: '200 OK',
-            201: '201 Created',
-            204: '204 No Content',
-            400: '400 Bad Request',
-            404: '404 Not Found',
-            500: '500 Internal Server Error',
+            200: "200 OK",
+            201: "201 Created",
+            204: "204 No Content",
+            400: "400 Bad Request",
+            404: "404 Not Found",
+            500: "500 Internal Server Error",
         }
-        status_line = status_map.get(status, f'{status} OK')
-        headers = _std_headers('application/json; charset=utf-8', len(body))
+        status_line = status_map.get(status, f"{status} OK")
+        headers = _std_headers("application/json; charset=utf-8", len(body))
         start_response(status_line, headers)
         return [body]
 
     def _load_pack_json(self, filename: str) -> dict[str, Any] | list[Any]:
-        root = getattr(self, '_default_build_root', None)
+        root = getattr(self, "_default_build_root", None)
         try:
             if isinstance(root, Path):
                 path = root / filename
             else:
-                path = self.project_root / 'generated_repos' / 'agent-build-007-2-1-1' / filename
+                path = (
+                    self.project_root
+                    / "generated_repos"
+                    / "agent-build-007-2-1-1"
+                    / filename
+                )
         except Exception:
-            path = self.project_root / 'generated_repos' / 'agent-build-007-2-1-1' / filename
+            path = (
+                self.project_root
+                / "generated_repos"
+                / "agent-build-007-2-1-1"
+                / filename
+            )
         data = self._safe_read_json(path, {})
         return data if isinstance(data, (dict, list)) else {}
 
     def _intake_schema_payload(self) -> dict[str, Any]:
-        contract = self._safe_read_json(self.project_root / 'contracts' / 'intake_contract_v1.json', {})
-        sample = self._intake_contract_sample if isinstance(self._intake_contract_sample, Mapping) else {}
-        sample_copy = json.loads(json.dumps(sample, ensure_ascii=False)) if sample else {}
-        pack08 = self._load_pack_json('08_Memory-Schema_v2.json') or {}
-        registry = load_tool_registry(getattr(self, '_default_build_root', None))
-        pack03 = self._load_pack_json('03_Operating-Rules_v2.json') or {}
+        contract = self._safe_read_json(
+            self.project_root / "contracts" / "intake_contract_v1.json", {}
+        )
+        sample = (
+            self._intake_contract_sample
+            if isinstance(self._intake_contract_sample, Mapping)
+            else {}
+        )
+        sample_copy = (
+            json.loads(json.dumps(sample, ensure_ascii=False)) if sample else {}
+        )
+        pack08 = self._load_pack_json("08_Memory-Schema_v2.json") or {}
+        registry = load_tool_registry(getattr(self, "_default_build_root", None))
+        pack03 = self._load_pack_json("03_Operating-Rules_v2.json") or {}
         memory_defaults = {
-            'scopes': list(pack08.get('memory_scopes') or []),
-            'retention': pack08.get('retention') or {},
-            'permissions': (pack08.get('permissions') or {}).get('roles', {}),
-            'writeback_rules': list(pack08.get('writeback_rules') or []),
+            "scopes": list(pack08.get("memory_scopes") or []),
+            "retention": pack08.get("retention") or {},
+            "permissions": (pack08.get("permissions") or {}).get("roles", {}),
+            "writeback_rules": list(pack08.get("writeback_rules") or []),
         }
         connectors = [
             {
-                'id': conn.id,
-                'name': conn.name,
-                'enabled': conn.enabled,
-                'scopes': list(conn.scopes),
-                'secret_ref': conn.secret_ref,
-                'selected': True,
+                "id": conn.id,
+                "name": conn.name,
+                "enabled": conn.enabled,
+                "scopes": list(conn.scopes),
+                "secret_ref": conn.secret_ref,
+                "selected": True,
             }
             for conn in registry.connectors
         ]
         datasets = [
             {
-                'id': dataset.id,
-                'name': dataset.name,
-                'description': dataset.description,
-                'classification': dataset.classification,
+                "id": dataset.id,
+                "name": dataset.name,
+                "description": dataset.description,
+                "classification": dataset.classification,
             }
             for dataset in registry.datasets
         ]
-        governance_props = (contract.get('properties', {}) or {}).get('governance', {}).get('properties', {})
-        classification_enum = list((governance_props.get('classification_default') or {}).get('enum', []) or [])
-        pii_enum = list((((governance_props.get('pii_flags') or {}).get('items') or {}).get('enum') or []) or [])
-        human_gate_enum = list((((contract.get('properties', {}) or {}).get('human_gate') or {}).get('properties', {})
-                               .get('actions', {})
-                               .get('items', {})
-                               .get('enum', []) or []))
+        governance_props = (
+            (contract.get("properties", {}) or {})
+            .get("governance", {})
+            .get("properties", {})
+        )
+        classification_enum = list(
+            (governance_props.get("classification_default") or {}).get("enum", []) or []
+        )
+        pii_enum = list(
+            (
+                ((governance_props.get("pii_flags") or {}).get("items") or {}).get(
+                    "enum"
+                )
+                or []
+            )
+            or []
+        )
+        human_gate_enum = list(
+            (
+                ((contract.get("properties", {}) or {}).get("human_gate") or {})
+                .get("properties", {})
+                .get("actions", {})
+                .get("items", {})
+                .get("enum", [])
+                or []
+            )
+        )
         defaults = {
-            'memory': memory_defaults,
-            'connectors': connectors,
-            'data_sources': list(registry.data_sources),
-            'datasets': datasets,
-            'governance': {
-                'classification_default': {
-                    'default': (sample_copy.get('governance') or {}).get('classification_default')
-                               or (classification_enum[0] if classification_enum else 'confidential'),
+            "memory": memory_defaults,
+            "connectors": connectors,
+            "data_sources": list(registry.data_sources),
+            "datasets": datasets,
+            "governance": {
+                "classification_default": {
+                    "default": (sample_copy.get("governance") or {}).get(
+                        "classification_default"
+                    )
+                    or (
+                        classification_enum[0]
+                        if classification_enum
+                        else "confidential"
+                    ),
                 },
-                'classification_default_options': classification_enum,
-                'pii_flags_options': pii_enum,
-                'pii_flags': list((sample_copy.get('governance') or {}).get('pii_flags') or []),
+                "classification_default_options": classification_enum,
+                "pii_flags_options": pii_enum,
+                "pii_flags": list(
+                    (sample_copy.get("governance") or {}).get("pii_flags") or []
+                ),
             },
-            'roles': list(((pack03.get('rbac') or {}).get('roles') or [])),
-            'human_gate_actions': human_gate_enum,
+            "roles": list(((pack03.get("rbac") or {}).get("roles") or [])),
+            "human_gate_actions": human_gate_enum,
         }
         return {
-            'contract': contract,
-            'defaults': defaults,
-            'sample': sample_copy or {},
+            "contract": contract,
+            "defaults": defaults,
+            "sample": sample_copy or {},
         }
 
     def _extract_mapper_errors(self, exc: IntakeValidationError) -> list[str]:
         lines = []
         for line in str(exc).splitlines():
             line = line.strip()
-            if not line or line.startswith('Intake contract validation failed'):
+            if not line or line.startswith("Intake contract validation failed"):
                 continue
             lines.append(line)
         return lines
@@ -1140,33 +1292,54 @@ class IntakeApplication:
 
     def _handle_intake_mapper(self, environ, start_response):
         try:
-            length = int(environ.get('CONTENT_LENGTH') or '0')
+            length = int(environ.get("CONTENT_LENGTH") or "0")
         except (TypeError, ValueError):
             length = 0
-        raw_body = environ.get('wsgi.input').read(length) if length else environ.get('wsgi.input').read(0)
+        raw_body = (
+            environ.get("wsgi.input").read(length)
+            if length
+            else environ.get("wsgi.input").read(0)
+        )
         try:
-            data = json.loads(raw_body.decode('utf-8')) if raw_body else {}
+            data = json.loads(raw_body.decode("utf-8")) if raw_body else {}
         except Exception:
-            return self._json_response(start_response, 400, {'status': 'error', 'message': 'invalid_json'})
+            return self._json_response(
+                start_response, 400, {"status": "error", "message": "invalid_json"}
+            )
         if not isinstance(data, Mapping):
-            return self._json_response(start_response, 400, {'status': 'error', 'message': 'invalid_payload'})
-        payload = data.get('payload')
+            return self._json_response(
+                start_response, 400, {"status": "error", "message": "invalid_payload"}
+            )
+        payload = data.get("payload")
         if not isinstance(payload, Mapping):
-            return self._json_response(start_response, 400, {'status': 'error', 'message': 'payload_required'})
-        dry_run = bool(data.get('dry_run', True))
+            return self._json_response(
+                start_response, 400, {"status": "error", "message": "payload_required"}
+            )
+        dry_run = bool(data.get("dry_run", True))
         try:
-            result = apply_intake(dict(payload), getattr(self, '_default_build_root', None) or (self.project_root / 'generated_repos' / 'agent-build-007-2-1-1'), dry_run=dry_run)
+            result = apply_intake(
+                dict(payload),
+                getattr(self, "_default_build_root", None)
+                or (self.project_root / "generated_repos" / "agent-build-007-2-1-1"),
+                dry_run=dry_run,
+            )
         except IntakeValidationError as exc:
-            return self._json_response(start_response, 400, {'status': 'invalid', 'errors': self._extract_mapper_errors(exc)})
+            return self._json_response(
+                start_response,
+                400,
+                {"status": "invalid", "errors": self._extract_mapper_errors(exc)},
+            )
         except Exception as exc:
-            LOGGER.exception('Mapper invocation failed')
-            return self._json_response(start_response, 500, {'status': 'error', 'message': str(exc)})
+            LOGGER.exception("Mapper invocation failed")
+            return self._json_response(
+                start_response, 500, {"status": "error", "message": str(exc)}
+            )
         response = {
-            'status': 'ok',
-            'dry_run': dry_run,
-            'changed_files': result.get('changed_files', []),
-            'mapping_report': result.get('mapping_report', []),
-            'diff_report': result.get('diff_report', []),
+            "status": "ok",
+            "dry_run": dry_run,
+            "changed_files": result.get("changed_files", []),
+            "mapping_report": result.get("mapping_report", []),
+            "diff_report": result.get("diff_report", []),
         }
         return self._json_response(start_response, 200, response)
 
@@ -1176,11 +1349,18 @@ class IntakeApplication:
         tooltip_css = self._safe_read_text(self.static_dir / "mbti_tooltip.css")
         combined_css = base_css
         if tooltip_css:
-            combined_css = (combined_css + "\n" + tooltip_css) if combined_css else tooltip_css
+            combined_css = (
+                (combined_css + "\n" + tooltip_css) if combined_css else tooltip_css
+            )
         css = self._indent_block(combined_css)
-        script = self._indent_block(self._safe_read_text(self.ui_dir / "persona.js"), spaces=4)
+        script = self._indent_block(
+            self._safe_read_text(self.ui_dir / "persona.js"), spaces=4
+        )
         return {"html": html, "css": css, "js": script}
-    def _index_mbti_types(self, entries: Iterable[Mapping[str, Any]]) -> Dict[str, Mapping[str, Any]]:
+
+    def _index_mbti_types(
+        self, entries: Iterable[Mapping[str, Any]]
+    ) -> Dict[str, Mapping[str, Any]]:
         lookup: Dict[str, Mapping[str, Any]] = {}
         for entry in entries or []:
             if not isinstance(entry, Mapping):
@@ -1193,7 +1373,11 @@ class IntakeApplication:
     def _enrich_persona_metadata(self, code: str | None) -> Dict[str, Any] | None:
         if not code:
             return None
-        entry = self.mbti_lookup.get(str(code).upper()) if hasattr(self, "mbti_lookup") else None
+        entry = (
+            self.mbti_lookup.get(str(code).upper())
+            if hasattr(self, "mbti_lookup")
+            else None
+        )
         if not entry:
             return None
         axes = _mbti_axes(entry.get("code", code))
@@ -1285,7 +1469,10 @@ class IntakeApplication:
 
         # If we have an allow-list (from roles/defaults), filter candidates to it; otherwise keep candidates
         if allowed:
-            final_functions = sorted({name for name in candidates if name in allowed}, key=lambda s: s.lower())
+            final_functions = sorted(
+                {name for name in candidates if name in allowed},
+                key=lambda s: s.lower(),
+            )
         else:
             final_functions = sorted(candidates, key=lambda s: s.lower())
 
@@ -1317,9 +1504,13 @@ class IntakeApplication:
                 if isinstance(value, list):
                     curated[str(key)] = [str(item) for item in value]
         if not curated:
-            curated = {key: list(values) for key, values in CURATED_DOMAIN_FALLBACK.items()}
+            curated = {
+                key: list(values) for key, values in CURATED_DOMAIN_FALLBACK.items()
+            }
         if "Sector Domains" not in curated:
-            curated["Sector Domains"] = list(CURATED_DOMAIN_FALLBACK.get("Sector Domains", []))
+            curated["Sector Domains"] = list(
+                CURATED_DOMAIN_FALLBACK.get("Sector Domains", [])
+            )
         return {
             "html": self._domain_selector_html,
             "css": self._domain_selector_css,
@@ -1336,7 +1527,9 @@ class IntakeApplication:
         message: str | None = None,
         profile: Mapping[str, Any] | None = None,
     ) -> str:
-        submitted_profile_arg = profile if isinstance(profile, Mapping) and profile else None
+        submitted_profile_arg = (
+            profile if isinstance(profile, Mapping) and profile else None
+        )
         if not isinstance(profile, Mapping):
             # Prefill from the last saved profile if present; otherwise provide a light demo profile
             try:
@@ -1350,11 +1543,22 @@ class IntakeApplication:
                 profile = saved
             else:
                 profile = {
-                    "agent": {"name": "Sample Agent", "version": "1.0.0", "persona": "ENTJ"},
-                    "toolsets": {"selected": ["Data Analysis", "Reporting"], "custom": []},
+                    "agent": {
+                        "name": "Sample Agent",
+                        "version": "1.0.0",
+                        "persona": "ENTJ",
+                    },
+                    "toolsets": {
+                        "selected": ["Data Analysis", "Reporting"],
+                        "custom": [],
+                    },
                     "attributes": {"selected": ["Strategic"], "custom": []},
                     "preferences": {
-                        "sliders": {"autonomy": 70, "confidence": 65, "collaboration": 60},
+                        "sliders": {
+                            "autonomy": 70,
+                            "confidence": 65,
+                            "collaboration": 60,
+                        },
                         "communication_style": "Formal",
                         "collaboration_mode": "Cross-Functional",
                     },
@@ -1366,19 +1570,37 @@ class IntakeApplication:
                         "attribution_policy": "original",
                     },
                 }
-        agent_section_candidate = profile.get("agent") if isinstance(profile, Mapping) else None
-        agent_section = agent_section_candidate if isinstance(agent_section_candidate, Mapping) else {}
-        toolset_section_candidate = profile.get("toolsets") if isinstance(profile, Mapping) else None
+        agent_section_candidate = (
+            profile.get("agent") if isinstance(profile, Mapping) else None
+        )
+        agent_section = (
+            agent_section_candidate
+            if isinstance(agent_section_candidate, Mapping)
+            else {}
+        )
+        toolset_section_candidate = (
+            profile.get("toolsets") if isinstance(profile, Mapping) else None
+        )
         toolset_section = (
-            toolset_section_candidate if isinstance(toolset_section_candidate, Mapping) else {}
+            toolset_section_candidate
+            if isinstance(toolset_section_candidate, Mapping)
+            else {}
         )
-        attribute_section_candidate = profile.get("attributes") if isinstance(profile, Mapping) else None
+        attribute_section_candidate = (
+            profile.get("attributes") if isinstance(profile, Mapping) else None
+        )
         attribute_section = (
-            attribute_section_candidate if isinstance(attribute_section_candidate, Mapping) else {}
+            attribute_section_candidate
+            if isinstance(attribute_section_candidate, Mapping)
+            else {}
         )
-        preferences_section_candidate = profile.get("preferences") if isinstance(profile, Mapping) else None
+        preferences_section_candidate = (
+            profile.get("preferences") if isinstance(profile, Mapping) else None
+        )
         preferences_section = (
-            preferences_section_candidate if isinstance(preferences_section_candidate, Mapping) else {}
+            preferences_section_candidate
+            if isinstance(preferences_section_candidate, Mapping)
+            else {}
         )
 
         persona_style_block = self.persona_assets.get("css", "")
@@ -1396,11 +1618,17 @@ window.addEventListener('DOMContentLoaded', function () {
   });
 });
 """
-        sliders_candidate = preferences_section.get("sliders") if isinstance(preferences_section, Mapping) else None
+        sliders_candidate = (
+            preferences_section.get("sliders")
+            if isinstance(preferences_section, Mapping)
+            else None
+        )
         if not isinstance(profile, Mapping):
             profile = {}
 
-        slider_section = sliders_candidate if isinstance(sliders_candidate, Mapping) else {}
+        slider_section = (
+            sliders_candidate if isinstance(sliders_candidate, Mapping) else {}
+        )
 
         def _str(value: Any, default: str = "") -> str:
             return str(value) if value is not None else default
@@ -1415,28 +1643,64 @@ window.addEventListener('DOMContentLoaded', function () {
             if not persona_hidden:
                 persona_hidden = _str(agent_section.get("persona", ""))
 
-        selected_toolsets = toolset_section.get("selected", []) if isinstance(toolset_section, Mapping) else []
-        selected_attributes = attribute_section.get("selected", []) if isinstance(attribute_section, Mapping) else []
-        custom_toolsets_value = ", ".join(toolset_section.get("custom", [])) if isinstance(toolset_section, Mapping) else ""
-        custom_attributes_value = ", ".join(attribute_section.get("custom", [])) if isinstance(attribute_section, Mapping) else ""
+        selected_toolsets = (
+            toolset_section.get("selected", [])
+            if isinstance(toolset_section, Mapping)
+            else []
+        )
+        selected_attributes = (
+            attribute_section.get("selected", [])
+            if isinstance(attribute_section, Mapping)
+            else []
+        )
+        custom_toolsets_value = (
+            ", ".join(toolset_section.get("custom", []))
+            if isinstance(toolset_section, Mapping)
+            else ""
+        )
+        custom_attributes_value = (
+            ", ".join(attribute_section.get("custom", []))
+            if isinstance(attribute_section, Mapping)
+            else ""
+        )
 
         autonomy_value = int(slider_section.get("autonomy", 50) or 50)
         confidence_value = int(slider_section.get("confidence", 50) or 50)
         collaboration_value = int(slider_section.get("collaboration", 50) or 50)
 
-        communication_style = preferences_section.get("communication_style") if isinstance(preferences_section, Mapping) else None
-        collaboration_mode = preferences_section.get("collaboration_mode") if isinstance(preferences_section, Mapping) else None
+        communication_style = (
+            preferences_section.get("communication_style")
+            if isinstance(preferences_section, Mapping)
+            else None
+        )
+        collaboration_mode = (
+            preferences_section.get("collaboration_mode")
+            if isinstance(preferences_section, Mapping)
+            else None
+        )
 
-        linkedin_section = profile.get("linkedin", {}) if isinstance(profile, Mapping) else {}
+        linkedin_section = (
+            profile.get("linkedin", {}) if isinstance(profile, Mapping) else {}
+        )
         linkedin_url = ""
         if isinstance(linkedin_section, Mapping):
-            linkedin_url = _str(linkedin_section.get("url") or linkedin_section.get("profile") or "")
+            linkedin_url = _str(
+                linkedin_section.get("url") or linkedin_section.get("profile") or ""
+            )
 
         domain_selector_state = ""
-        if isinstance(agent_section, Mapping) and isinstance(agent_section.get("domain_selector"), Mapping):
-            domain_selector_state = json.dumps(agent_section["domain_selector"], ensure_ascii=False)
-        elif isinstance(profile, Mapping) and isinstance(profile.get("domain_selector"), Mapping):
-            domain_selector_state = json.dumps(profile["domain_selector"], ensure_ascii=False)
+        if isinstance(agent_section, Mapping) and isinstance(
+            agent_section.get("domain_selector"), Mapping
+        ):
+            domain_selector_state = json.dumps(
+                agent_section["domain_selector"], ensure_ascii=False
+            )
+        elif isinstance(profile, Mapping) and isinstance(
+            profile.get("domain_selector"), Mapping
+        ):
+            domain_selector_state = json.dumps(
+                profile["domain_selector"], ensure_ascii=False
+            )
 
         naics_section: Mapping[str, Any] | None = None
         if isinstance(profile, Mapping):
@@ -1457,33 +1721,60 @@ window.addEventListener('DOMContentLoaded', function () {
         if naics_section and isinstance(naics_section.get("lineage"), list):
             naics_lineage = json.dumps(naics_section["lineage"], ensure_ascii=False)
 
-        business_function = _str(profile.get("business_function") or agent_section.get("business_function") or "")
+        business_function = _str(
+            profile.get("business_function")
+            or agent_section.get("business_function")
+            or ""
+        )
         role_payload = profile.get("role") if isinstance(profile, Mapping) else None
         if not isinstance(role_payload, Mapping):
-            role_payload = agent_section.get("role") if isinstance(agent_section, Mapping) else {}
+            role_payload = (
+                agent_section.get("role") if isinstance(agent_section, Mapping) else {}
+            )
         if isinstance(role_payload, str):
             role_payload = {"title": role_payload, "code": role_payload}
         role_payload = role_payload if isinstance(role_payload, Mapping) else {}
 
-        routing_defaults = profile.get("routing_defaults") if isinstance(profile, Mapping) else None
+        routing_defaults = (
+            profile.get("routing_defaults") if isinstance(profile, Mapping) else None
+        )
         if not isinstance(routing_defaults, Mapping):
-            routing_defaults = profile.get("routing_hints") if isinstance(profile, Mapping) else None
-        routing_defaults = routing_defaults if isinstance(routing_defaults, Mapping) else {}
+            routing_defaults = (
+                profile.get("routing_hints") if isinstance(profile, Mapping) else None
+            )
+        routing_defaults = (
+            routing_defaults if isinstance(routing_defaults, Mapping) else {}
+        )
 
         # Merge routing defaults with precedence: baseline < function < role
         try:
-            fr_data = self._function_role_data if isinstance(self._function_role_data, Mapping) else {}
-            fr_map = fr_data.get("functionDefaults") if isinstance(fr_data.get("functionDefaults"), Mapping) else {}
+            fr_data = (
+                self._function_role_data
+                if isinstance(self._function_role_data, Mapping)
+                else {}
+            )
+            fr_map = (
+                fr_data.get("functionDefaults")
+                if isinstance(fr_data.get("functionDefaults"), Mapping)
+                else {}
+            )
             baseline_defaults = fr_map.get("baseline") or fr_map.get("_baseline") or {}
-            baseline_defaults = baseline_defaults if isinstance(baseline_defaults, Mapping) else {}
+            baseline_defaults = (
+                baseline_defaults if isinstance(baseline_defaults, Mapping) else {}
+            )
             func_defaults = fr_map.get(business_function) if business_function else None
             func_defaults = func_defaults if isinstance(func_defaults, Mapping) else {}
-            roles_catalog = fr_data.get("roles") if isinstance(fr_data.get("roles"), list) else []
+            roles_catalog = (
+                fr_data.get("roles") if isinstance(fr_data.get("roles"), list) else []
+            )
             role_code_value = _str(role_payload.get("code", ""))
             role_defaults = {}
             if role_code_value:
                 for r in roles_catalog:
-                    if isinstance(r, Mapping) and _str(r.get("code", "")) == role_code_value:
+                    if (
+                        isinstance(r, Mapping)
+                        and _str(r.get("code", "")) == role_code_value
+                    ):
                         cand = r.get("defaults")
                         if isinstance(cand, Mapping):
                             role_defaults = cand
@@ -1495,11 +1786,19 @@ window.addEventListener('DOMContentLoaded', function () {
         except Exception:
             effective_defaults = {}
 
-        function_category = _str(profile.get("function_category") or agent_section.get("function_category") or "")
+        function_category = _str(
+            profile.get("function_category")
+            or agent_section.get("function_category")
+            or ""
+        )
         function_specialties = profile.get("function_specialties")
         if not isinstance(function_specialties, list):
             function_specialties = []
-        function_specialties_json = json.dumps(function_specialties, ensure_ascii=False) if function_specialties else ""
+        function_specialties_json = (
+            json.dumps(function_specialties, ensure_ascii=False)
+            if function_specialties
+            else ""
+        )
 
         function_role_state = {
             "business_function": business_function,
@@ -1509,15 +1808,23 @@ window.addEventListener('DOMContentLoaded', function () {
             "routing_defaults_json": (
                 json.dumps(routing_defaults, ensure_ascii=False)
                 if routing_defaults
-                else (json.dumps(effective_defaults, ensure_ascii=False) if effective_defaults else "")
+                else (
+                    json.dumps(effective_defaults, ensure_ascii=False)
+                    if effective_defaults
+                    else ""
+                )
             ),
         }
 
         function_role_bootstrap = self._indent_block(
             "\n".join(
                 [
-                    "window.__FUNCTION_ROLE_DATA__ = " + json.dumps(self._function_role_data, ensure_ascii=False) + ";",
-                    "window.__FUNCTION_ROLE_STATE__ = " + json.dumps(function_role_state, ensure_ascii=False) + ";",
+                    "window.__FUNCTION_ROLE_DATA__ = "
+                    + json.dumps(self._function_role_data, ensure_ascii=False)
+                    + ";",
+                    "window.__FUNCTION_ROLE_STATE__ = "
+                    + json.dumps(function_role_state, ensure_ascii=False)
+                    + ";",
                 ]
             ),
             spaces=4,
@@ -1536,7 +1843,9 @@ window.addEventListener('DOMContentLoaded', function () {
             ),
         )
 
-        domain_selector_html = self._indent_block(self._domain_selector_assets.get("html", ""), spaces=8)
+        domain_selector_html = self._indent_block(
+            self._domain_selector_assets.get("html", ""), spaces=8
+        )
         naics_selector_html = self._indent_block(self._naics_selector_html, spaces=8)
         function_select_html = self._indent_block(self._function_select_html, spaces=8)
         # Pre-populate business function options server-side as a resilient fallback
@@ -1548,15 +1857,25 @@ window.addEventListener('DOMContentLoaded', function () {
                 fn_list = self._function_role_data.get("functions", [])
                 if isinstance(fn_list, list) and fn_list:
                     selected_fn = business_function
+
                     def _opt(label: str) -> str:
-                        sel = ' selected' if selected_fn and str(selected_fn) == str(label) else ''
+                        sel = (
+                            " selected"
+                            if selected_fn and str(selected_fn) == str(label)
+                            else ""
+                        )
                         return f'<option value="{html.escape(str(label), quote=True)}"{sel}>{html.escape(str(label))}</option>'
+
                     extra_opts = "\n".join(_opt(fn) for fn in fn_list)
-                    fr_html_raw = fr_html_raw.replace(marker, marker + "\n" + extra_opts, 1)
+                    fr_html_raw = fr_html_raw.replace(
+                        marker, marker + "\n" + extra_opts, 1
+                    )
             # Also pre-populate role options for the currently selected function (if any).
             # Do NOT prepopulate with all roles by default; we prefer a disabled select
             # until the user chooses a business function so the list stays scoped.
-            selected_fn_norm = (business_function or "").strip().lower().replace("&", "&")
+            selected_fn_norm = (
+                (business_function or "").strip().lower().replace("&", "&")
+            )
             role_default_marker = '<option value="">Select a role</option>'
             roles_src = self._function_role_data.get("roles", [])
             roles_for_select: list[dict[str, Any]] = []
@@ -1569,24 +1888,46 @@ window.addEventListener('DOMContentLoaded', function () {
                         roles_for_select.append(r)
             if selected_fn_norm and roles_for_select:
                 # Enable the select (remove disabled) and inject options
-                fr_html_raw = fr_html_raw.replace('data-role-select disabled', 'data-role-select')
+                fr_html_raw = fr_html_raw.replace(
+                    "data-role-select disabled", "data-role-select"
+                )
+
                 def _role_label(role: Mapping[str, Any]) -> str:
-                    titles = role.get("titles") if isinstance(role.get("titles"), list) else []
+                    titles = (
+                        role.get("titles")
+                        if isinstance(role.get("titles"), list)
+                        else []
+                    )
                     primary = titles[0] if titles else ""
                     code = role.get("code") or ""
-                    label = (str(primary) + (f" ({code})" if code else "")).strip() or str(code)
+                    label = (
+                        str(primary) + (f" ({code})" if code else "")
+                    ).strip() or str(code)
                     return label
+
                 # Sort by label for stable UI
                 roles_for_select.sort(key=lambda r: _role_label(r).lower())
                 role_opts = []
-                current_code = _str(role_payload.get("code", "")) if isinstance(role_payload, Mapping) else ""
+                current_code = (
+                    _str(role_payload.get("code", ""))
+                    if isinstance(role_payload, Mapping)
+                    else ""
+                )
                 for r in roles_for_select:
                     code = html.escape(str(r.get("code", "")), quote=True)
                     label = html.escape(_role_label(r))
-                    sel = ' selected' if current_code and str(r.get("code", "")) == current_code else ''
+                    sel = (
+                        " selected"
+                        if current_code and str(r.get("code", "")) == current_code
+                        else ""
+                    )
                     role_opts.append(f'<option value="{code}"{sel}>{label}</option>')
                 if role_default_marker in fr_html_raw:
-                    fr_html_raw = fr_html_raw.replace(role_default_marker, role_default_marker + "\n" + "\n".join(role_opts), 1)
+                    fr_html_raw = fr_html_raw.replace(
+                        role_default_marker,
+                        role_default_marker + "\n" + "\n".join(role_opts),
+                        1,
+                    )
         except Exception:
             # If anything goes wrong, keep the original template and rely on JS init.
             pass
@@ -1609,13 +1950,21 @@ window.addEventListener('DOMContentLoaded', function () {
         agent_version = _str(agent_section.get("version", "1.0.0")) or "1.0.0"
         notes_value = _str(profile.get("notes") if isinstance(profile, Mapping) else "")
 
-        communication_options = _option_list(COMMUNICATION_STYLES, selected=communication_style)
-        collaboration_options = _option_list(COLLABORATION_MODES, selected=collaboration_mode)
+        communication_options = _option_list(
+            COMMUNICATION_STYLES, selected=communication_style
+        )
+        collaboration_options = _option_list(
+            COLLABORATION_MODES, selected=collaboration_mode
+        )
         domain_options = _option_list(DOMAINS, selected=agent_section.get("domain"))
         role_options = _option_list(ROLES, selected=agent_section.get("role"))
 
-        toolset_checkboxes = _checkboxes("toolsets", TOOLSETS, selected=selected_toolsets)
-        attribute_checkboxes = _checkboxes("attributes", ATTRIBUTES, selected=selected_attributes)
+        toolset_checkboxes = _checkboxes(
+            "toolsets", TOOLSETS, selected=selected_toolsets
+        )
+        attribute_checkboxes = _checkboxes(
+            "attributes", ATTRIBUTES, selected=selected_attributes
+        )
 
         generate_agent_script = self._indent_block(self._generate_agent_js, spaces=8)
         function_role_script = self._indent_block(self._function_role_js, spaces=8)
@@ -1661,17 +2010,19 @@ window.addEventListener('DOMContentLoaded', function () {
             summary_source = self._safe_read_json(self.profile_path, None)
             if not isinstance(summary_source, Mapping):
                 summary_source = None
-        summary_html = _summary_block(summary_source, str(self.profile_path), str(self.spec_dir))
+        summary_html = _summary_block(
+            summary_source, str(self.profile_path), str(self.spec_dir)
+        )
 
         # NAICS coercion to strings before escaping/injecting
-        naics_code     = str(naics_code)
-        naics_title    = str(naics_title)
-        naics_level    = str(naics_level)
-        naics_lineage  = str(naics_lineage)
-        safe_code      = html.escape(naics_code)
-        safe_title     = html.escape(naics_title)
-        safe_level     = html.escape(naics_level)
-        safe_lineage   = html.escape(naics_lineage)
+        naics_code = str(naics_code)
+        naics_title = str(naics_title)
+        naics_level = str(naics_level)
+        naics_lineage = str(naics_lineage)
+        safe_code = html.escape(naics_code)
+        safe_title = html.escape(naics_title)
+        safe_level = html.escape(naics_level)
+        safe_lineage = html.escape(naics_lineage)
 
         # Identity persistence (agent_id)
         agent_id_value = ""
@@ -1689,14 +2040,30 @@ window.addEventListener('DOMContentLoaded', function () {
             extra_styles=extra_styles or "",
             notice=_notice(message),
             persona_tabs=persona_html or "",
-            intake_schema_loader_script=self._indent_block(self._schema_loader_js or "", spaces=8),
-            intake_api_client_script=self._indent_block(self._api_client_js or "", spaces=8),
-            intake_form_memory_script=self._indent_block(self._form_memory_js or "", spaces=8),
-            intake_form_connectors_script=self._indent_block(self._form_connectors_js or "", spaces=8),
-            intake_form_governance_script=self._indent_block(self._form_governance_js or "", spaces=8),
-            intake_form_rbac_script=self._indent_block(self._form_rbac_js or "", spaces=8),
-            intake_results_panel_script=self._indent_block(self._results_panel_js or "", spaces=8),
-            intake_contract_panel_script=self._indent_block(self._intake_contract_panel_js or "", spaces=8),
+            intake_schema_loader_script=self._indent_block(
+                self._schema_loader_js or "", spaces=8
+            ),
+            intake_api_client_script=self._indent_block(
+                self._api_client_js or "", spaces=8
+            ),
+            intake_form_memory_script=self._indent_block(
+                self._form_memory_js or "", spaces=8
+            ),
+            intake_form_connectors_script=self._indent_block(
+                self._form_connectors_js or "", spaces=8
+            ),
+            intake_form_governance_script=self._indent_block(
+                self._form_governance_js or "", spaces=8
+            ),
+            intake_form_rbac_script=self._indent_block(
+                self._form_rbac_js or "", spaces=8
+            ),
+            intake_results_panel_script=self._indent_block(
+                self._results_panel_js or "", spaces=8
+            ),
+            intake_contract_panel_script=self._indent_block(
+                self._intake_contract_panel_js or "", spaces=8
+            ),
             persona_script=persona_script or "",
             persona_hidden_value=persona_hidden or "",
             summary=summary_html or "",
@@ -1731,7 +2098,9 @@ window.addEventListener('DOMContentLoaded', function () {
             identity_script=identity_script or "",
             generate_agent_script=generate_agent_script or "",
             build_panel_script=self._indent_block(self._build_panel_js or "", spaces=8),
-            build_panel_styles=self._indent_block(self._build_panel_css or "", spaces=12),
+            build_panel_styles=self._indent_block(
+                self._build_panel_css or "", spaces=12
+            ),
         )
         return page
 
@@ -1786,7 +2155,9 @@ window.addEventListener('DOMContentLoaded', function () {
                             level = len(code_digits)
                             if level < 2 or level > 6:
                                 continue
-                            entries.append({"code": code_digits, "title": title, "level": level})
+                            entries.append(
+                                {"code": code_digits, "title": title, "level": level}
+                            )
             except Exception:
                 LOGGER.exception("Failed to load NAICS CSV")
 
@@ -1798,13 +2169,19 @@ window.addEventListener('DOMContentLoaded', function () {
             if not c or c in seen:
                 continue
             seen.add(c)
-            dedup.append({"code": c, "title": str(e.get("title") or ""), "level": int(e.get("level") or len(c))})
+            dedup.append(
+                {
+                    "code": c,
+                    "title": str(e.get("title") or ""),
+                    "level": int(e.get("level") or len(c)),
+                }
+            )
         dedup.sort(key=lambda d: (int(d.get("level", 0)), str(d.get("code", ""))))
 
         # Build index by code for fast lookup
         by_code: dict[str, dict] = {}
         for e in dedup:
-            by_code[str(e["code"])]=e
+            by_code[str(e["code"])] = e
 
         self._naics_cache = dedup
         self._naics_by_code = by_code
@@ -1867,10 +2244,21 @@ window.addEventListener('DOMContentLoaded', function () {
                 prefix = c[:i]
                 pe = by_code.get(prefix)
                 if pe:
-                    lineage.append({"code": pe["code"], "title": pe["title"], "level": pe.get("level", i)})
+                    lineage.append(
+                        {
+                            "code": pe["code"],
+                            "title": pe["title"],
+                            "level": pe.get("level", i),
+                        }
+                    )
         except Exception:
             pass
-        return {"code": e.get("code"), "title": e.get("title"), "level": e.get("level", len(c)), "lineage": lineage}
+        return {
+            "code": e.get("code"),
+            "title": e.get("title"),
+            "level": e.get("level", len(c)),
+            "lineage": lineage,
+        }
 
     # ------------------------------ Persistence ------------------------------
     def _save_persona_state(self, state: Mapping[str, Any]) -> Mapping[str, Any]:
@@ -1898,24 +2286,40 @@ window.addEventListener('DOMContentLoaded', function () {
 
     def _load_persona_state(self) -> Mapping[str, Any]:
         def _default() -> Mapping[str, Any]:
-            return {"operator": None, "agent": None, "alternates": [], "persona_details": {}}
+            return {
+                "operator": None,
+                "agent": None,
+                "alternates": [],
+                "persona_details": {},
+            }
+
         try:
             with self.persona_state_path.open("r", encoding="utf-8") as handle:
                 data = json.load(handle)
             if not isinstance(data, Mapping):
                 return _default()
             out = dict(_default())
-            out.update({k: data.get(k) for k in ("operator", "agent", "alternates", "persona_details")})
+            out.update(
+                {
+                    k: data.get(k)
+                    for k in ("operator", "agent", "alternates", "persona_details")
+                }
+            )
             return out
         except Exception:
             return _default()
 
-    def _build_profile(self, params: Mapping[str, list[str] | str], persona_state: Mapping[str, Any] | None) -> Mapping[str, Any]:
+    def _build_profile(
+        self,
+        params: Mapping[str, list[str] | str],
+        persona_state: Mapping[str, Any] | None,
+    ) -> Mapping[str, Any]:
         def _get(name: str, default: str = "") -> str:
             v = params.get(name)
             if isinstance(v, list):
                 return str(v[0]) if v else default
             return str(v) if isinstance(v, str) else default
+
         def _get_list(name: str) -> list[str]:
             v = params.get(name)
             if isinstance(v, list):
@@ -1957,7 +2361,12 @@ window.addEventListener('DOMContentLoaded', function () {
                 "name": _get("agent_name"),
                 "version": _get("agent_version", "1.0.0"),
                 "persona": persona_code,
-                "mbti": self._enrich_persona_metadata(persona_code) or ({"mbti_code": persona_code, "axes": _mbti_axes(persona_code)} if persona_code else None),
+                "mbti": self._enrich_persona_metadata(persona_code)
+                or (
+                    {"mbti_code": persona_code, "axes": _mbti_axes(persona_code)}
+                    if persona_code
+                    else None
+                ),
                 "domain": _get("domain"),
                 "role": _get("role"),
                 "business_function": business_function_value,
@@ -1978,10 +2387,28 @@ window.addEventListener('DOMContentLoaded', function () {
                 "function": business_function_value,
             },
             # Persist NAICS
-            "naics": {"code": naics_code, "title": naics_title, "level": naics_level, "lineage": naics_lineage},
-            "classification": {"naics": {"code": naics_code, "title": naics_title, "level": naics_level, "lineage": naics_lineage}},
-            "toolsets": {"selected": _get_list("toolsets"), "custom": _get("toolsets_custom")},
-            "attributes": {"selected": _get_list("attributes"), "custom": _get("attributes_custom")},
+            "naics": {
+                "code": naics_code,
+                "title": naics_title,
+                "level": naics_level,
+                "lineage": naics_lineage,
+            },
+            "classification": {
+                "naics": {
+                    "code": naics_code,
+                    "title": naics_title,
+                    "level": naics_level,
+                    "lineage": naics_lineage,
+                }
+            },
+            "toolsets": {
+                "selected": _get_list("toolsets"),
+                "custom": _get("toolsets_custom"),
+            },
+            "attributes": {
+                "selected": _get_list("attributes"),
+                "custom": _get("attributes_custom"),
+            },
             "preferences": {
                 "sliders": {
                     "autonomy": int(_get("autonomy", "50") or 50),
@@ -1998,7 +2425,10 @@ window.addEventListener('DOMContentLoaded', function () {
         # Emit telemetry event when persona present (for unit tests)
         try:
             from . import telemetry as _telemetry  # type: ignore
-            meta = profile["agent"].get("mbti") or self._enrich_persona_metadata(persona_code)
+
+            meta = profile["agent"].get("mbti") or self._enrich_persona_metadata(
+                persona_code
+            )
             if not meta and persona_code:
                 meta = {"mbti_code": persona_code, "axes": _mbti_axes(persona_code)}
             if persona_code and hasattr(_telemetry, "emit_event"):
@@ -2034,7 +2464,9 @@ window.addEventListener('DOMContentLoaded', function () {
             }
             try:
                 if self._started_at:
-                    payload["uptime_s"] = int(max(0.0, time.time() - float(self._started_at)))
+                    payload["uptime_s"] = int(
+                        max(0.0, time.time() - float(self._started_at))
+                    )
             except Exception:
                 pass
             raw = json.dumps(payload).encode("utf-8")
@@ -2042,7 +2474,9 @@ window.addEventListener('DOMContentLoaded', function () {
             return [raw]
         # Last build: compact JSON summary saved by /build
         if path == "/last-build" and method == "GET":
-            out_root_env = os.environ.get("NEO_REPO_OUTDIR") or str((self.base_dir / "_generated").resolve())
+            out_root_env = os.environ.get("NEO_REPO_OUTDIR") or str(
+                (self.base_dir / "_generated").resolve()
+            )
             out_root = Path(out_root_env)
             last_path = out_root / "_last_build.json"
             if not last_path.exists():
@@ -2058,8 +2492,13 @@ window.addEventListener('DOMContentLoaded', function () {
                 start_response("200 OK", _std_headers("application/json", len(raw)))
                 return [raw]
             except Exception as exc:
-                payload = json.dumps({"status": "error", "issues": [str(exc)]}).encode("utf-8")
-                start_response("500 Internal Server Error", _std_headers("application/json", len(payload)))
+                payload = json.dumps({"status": "error", "issues": [str(exc)]}).encode(
+                    "utf-8"
+                )
+                start_response(
+                    "500 Internal Server Error",
+                    _std_headers("application/json", len(payload)),
+                )
                 return [payload]
         # Build ZIP download (validated subpath under out root)
         # Alias: support both /build/zip (deprecated) and /download/zip (preferred)
@@ -2068,40 +2507,62 @@ window.addEventListener('DOMContentLoaded', function () {
             outdir_q = (qs.get("outdir") or [""])[0]
             # Sprint-21: default to last-build when not provided
             if not outdir_q:
-                out_root_env = os.environ.get("NEO_REPO_OUTDIR") or str((self.base_dir / "_generated").resolve())
+                out_root_env = os.environ.get("NEO_REPO_OUTDIR") or str(
+                    (self.base_dir / "_generated").resolve()
+                )
                 out_root_probe = Path(out_root_env)
                 last_path = out_root_probe / "_last_build.json"
                 if last_path.exists():
                     try:
                         obj = json.loads(last_path.read_text(encoding="utf-8"))
-                        outdir_q = str(obj.get("outdir") or "") if isinstance(obj, Mapping) else ""
+                        outdir_q = (
+                            str(obj.get("outdir") or "")
+                            if isinstance(obj, Mapping)
+                            else ""
+                        )
                     except Exception:
                         outdir_q = ""
             if not outdir_q:
-                payload = json.dumps({"status": "invalid", "errors": ["missing outdir"]}).encode("utf-8")
-                start_response("400 Bad Request", _std_headers("application/json", len(payload)))
+                payload = json.dumps(
+                    {"status": "invalid", "errors": ["missing outdir"]}
+                ).encode("utf-8")
+                start_response(
+                    "400 Bad Request", _std_headers("application/json", len(payload))
+                )
                 return [payload]
-            out_root_env = os.environ.get("NEO_REPO_OUTDIR") or str((self.base_dir / "_generated").resolve())
+            out_root_env = os.environ.get("NEO_REPO_OUTDIR") or str(
+                (self.base_dir / "_generated").resolve()
+            )
             out_root = Path(out_root_env)
             candidate = Path(outdir_q)
             if not self._is_safe_subpath(out_root, candidate):
-                payload = json.dumps({"status": "invalid", "errors": ["outdir outside allowed root"]}).encode("utf-8")
-                start_response("400 Bad Request", _std_headers("application/json", len(payload)))
+                payload = json.dumps(
+                    {"status": "invalid", "errors": ["outdir outside allowed root"]}
+                ).encode("utf-8")
+                start_response(
+                    "400 Bad Request", _std_headers("application/json", len(payload))
+                )
                 return [payload]
             if not candidate.exists() or not candidate.is_dir():
                 payload = json.dumps({"status": "not_found"}).encode("utf-8")
-                start_response("404 Not Found", _std_headers("application/json", len(payload)))
+                start_response(
+                    "404 Not Found", _std_headers("application/json", len(payload))
+                )
                 return [payload]
 
             # Prepare archive name
             def _sanitize_name(text: str) -> str:
-                allowed = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-"
+                allowed = (
+                    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._-"
+                )
                 cleaned = "".join(ch for ch in (text or "") if ch in allowed)
                 return cleaned or "repo"
+
             arch = f"{_sanitize_name(candidate.name)}.zip"
 
             # Collect files; estimate size and count; filter excluded
             from neo_build.contracts import CANONICAL_PACK_FILENAMES as _NAMES
+
             excluded_names = {"_last_build.json", ".DS_Store"}
             excluded_dirs = {"__pycache__", ".pytest_cache", ".git"}
             files: list[Path] = []
@@ -2148,7 +2609,9 @@ window.addEventListener('DOMContentLoaded', function () {
             spooled = tempfile.SpooledTemporaryFile(max_size=8 * 1024 * 1024)
             with zipfile.ZipFile(spooled, "w", zipfile.ZIP_DEFLATED) as zf:
                 # Deterministic ordering by relative path
-                rels = sorted((p.relative_to(candidate) for p in files), key=lambda r: str(r))
+                rels = sorted(
+                    (p.relative_to(candidate) for p in files), key=lambda r: str(r)
+                )
                 for rel in rels:
                     try:
                         data = (candidate / rel).read_bytes()
@@ -2166,21 +2629,29 @@ window.addEventListener('DOMContentLoaded', function () {
             spooled.seek(0, os.SEEK_END)
             total = spooled.tell()
             spooled.seek(0)
-            headers = _std_headers("application/zip", total, extra=[
-                ("Content-Disposition", f"attachment; filename=\"{arch}\""),
-            ])
+            headers = _std_headers(
+                "application/zip",
+                total,
+                extra=[
+                    ("Content-Disposition", f'attachment; filename="{arch}"'),
+                ],
+            )
             try:
                 if emit_event:
-                    emit_event("zip_download", {
-                        "agent_id": agent_id or "",
-                        "outdir": str(candidate),
-                        "file_count": int(file_count),
-                        "size_bytes_est": int(size_est),
-                        "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-                    })
+                    emit_event(
+                        "zip_download",
+                        {
+                            "agent_id": agent_id or "",
+                            "outdir": str(candidate),
+                            "file_count": int(file_count),
+                            "size_bytes_est": int(size_est),
+                            "ts": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                        },
+                    )
             except Exception:
                 pass
             start_response("200 OK", headers)
+
             def _stream() -> Iterable[bytes]:
                 try:
                     while True:
@@ -2193,6 +2664,7 @@ window.addEventListener('DOMContentLoaded', function () {
                         spooled.close()
                     except Exception:
                         pass
+
             return _stream()
         # Save v3 intake profile (JSON) with schema validation and normalization
         if path == "/save" and method == "POST":
@@ -2229,16 +2701,24 @@ window.addEventListener('DOMContentLoaded', function () {
                     payload = json.dumps(resp).encode("utf-8")
                     if emit_event:
                         try:
-                            emit_event("intake.legacy", {"legacy_detected": True, "conflicts": len(conflicts)})
+                            emit_event(
+                                "intake.legacy",
+                                {"legacy_detected": True, "conflicts": len(conflicts)},
+                            )
                         except Exception:
                             pass
-                    start_response("400 Bad Request", _std_headers("application/json", len(payload)))
+                    start_response(
+                        "400 Bad Request",
+                        _std_headers("application/json", len(payload)),
+                    )
                     return [payload]
 
                 # Auto-migrate legacy-only payloads (no v3 concepts present)
                 if isinstance(data.get("legacy"), Mapping):
                     legacy_detected = True
-                    has_v3_concepts = any(k in data for k in ("context", "role", "governance_eval"))
+                    has_v3_concepts = any(
+                        k in data for k in ("context", "role", "governance_eval")
+                    )
                     if not has_v3_concepts:
                         try:
                             migrated, _diag = legacy_transform(data)
@@ -2246,7 +2726,13 @@ window.addEventListener('DOMContentLoaded', function () {
                             if isinstance(data.get("identity"), Mapping):
                                 ident = dict(data.get("identity"))
                                 mig_ident = dict(migrated.get("identity") or {})
-                                mig_ident.update({k: v for k, v in ident.items() if k not in mig_ident})
+                                mig_ident.update(
+                                    {
+                                        k: v
+                                        for k, v in ident.items()
+                                        if k not in mig_ident
+                                    }
+                                )
                                 migrated["identity"] = mig_ident
                             data = migrated
                         except Exception as exc:
@@ -2265,7 +2751,16 @@ window.addEventListener('DOMContentLoaded', function () {
                 if isinstance(cur, list) and len(cur) == 0:
                     errors.append(f"Empty list: {'.'.join(path)}")
 
-            legacy_keys = ("legacy", "legacy_industry", "legacy_tool_toggles", "manual_log_level", "meta", "agent_profile", "governance", "privacy")
+            legacy_keys = (
+                "legacy",
+                "legacy_industry",
+                "legacy_tool_toggles",
+                "manual_log_level",
+                "meta",
+                "agent_profile",
+                "governance",
+                "privacy",
+            )
             if isinstance(data, Mapping):
                 if str(data.get("intake_version")) != "v3.0":
                     errors.append("intake_version must equal 'v3.0'")
@@ -2289,11 +2784,17 @@ window.addEventListener('DOMContentLoaded', function () {
                 # Emit telemetry if legacy was detected (no conflicts path)
                 if emit_event and legacy_detected and not conflicts:
                     try:
-                        emit_event("intake.legacy", {"legacy_detected": True, "conflicts": 0})
+                        emit_event(
+                            "intake.legacy", {"legacy_detected": True, "conflicts": 0}
+                        )
                     except Exception:
                         pass
-                payload = json.dumps({"status": "invalid", "errors": errors}).encode("utf-8")
-                start_response("400 Bad Request", _std_headers("application/json", len(payload)))
+                payload = json.dumps({"status": "invalid", "errors": errors}).encode(
+                    "utf-8"
+                )
+                start_response(
+                    "400 Bad Request", _std_headers("application/json", len(payload))
+                )
                 return [payload]
 
             # Normalize to builder-compatible keys
@@ -2314,52 +2815,103 @@ window.addEventListener('DOMContentLoaded', function () {
 
             # Persist and respond
             try:
-                self.profile_path.write_text(json.dumps(profile, indent=2), encoding="utf-8")
+                self.profile_path.write_text(
+                    json.dumps(profile, indent=2), encoding="utf-8"
+                )
                 # Also write a versioned copy under generated_profiles/<slug>/agent_profile.json
                 try:
                     import re
-                    agent_section = profile.get("agent") if isinstance(profile, Mapping) else {}
+
+                    agent_section = (
+                        profile.get("agent") if isinstance(profile, Mapping) else {}
+                    )
                     if not isinstance(agent_section, Mapping):
                         agent_section = {}
-                    identity_section = profile.get("identity") if isinstance(profile, Mapping) else {}
+                    identity_section = (
+                        profile.get("identity") if isinstance(profile, Mapping) else {}
+                    )
                     if not isinstance(identity_section, Mapping):
                         identity_section = {}
-                    agent_name = str((identity_section.get("display_name") or agent_section.get("name") or "agent"))
-                    agent_version = str(agent_section.get("version", "1.0.0")).replace(".", "-")
-                    slug_base = re.sub(r"[^a-z0-9\-]+", "-", agent_name.lower().strip()).strip("-") or "agent"
+                    agent_name = str(
+                        (
+                            identity_section.get("display_name")
+                            or agent_section.get("name")
+                            or "agent"
+                        )
+                    )
+                    agent_version = str(agent_section.get("version", "1.0.0")).replace(
+                        ".", "-"
+                    )
+                    slug_base = (
+                        re.sub(r"[^a-z0-9\-]+", "-", agent_name.lower().strip()).strip(
+                            "-"
+                        )
+                        or "agent"
+                    )
                     slug = f"{slug_base}-{agent_version}"
                     prof_dir = self.profile_output_dir / slug
                     prof_dir.mkdir(parents=True, exist_ok=True)
-                    (prof_dir / "agent_profile.json").write_text(json.dumps(profile, indent=2), encoding="utf-8")
+                    (prof_dir / "agent_profile.json").write_text(
+                        json.dumps(profile, indent=2), encoding="utf-8"
+                    )
                 except Exception:
                     # Non-fatal; legacy path still saved
                     pass
-                agent_id = str(((profile.get("identity") or {}).get("agent_id") or "")).strip()
-                naics_code = str((((profile.get("context") or {}).get("naics") or {}).get("code") or "")).strip()
-                role_code = str(((profile.get("role") or {}).get("role_code") or "")).strip()
-                LOGGER.info("/save agent_id=%s naics=%s role=%s", agent_id, naics_code, role_code)
+                agent_id = str(
+                    ((profile.get("identity") or {}).get("agent_id") or "")
+                ).strip()
+                naics_code = str(
+                    (
+                        ((profile.get("context") or {}).get("naics") or {}).get("code")
+                        or ""
+                    )
+                ).strip()
+                role_code = str(
+                    ((profile.get("role") or {}).get("role_code") or "")
+                ).strip()
+                LOGGER.info(
+                    "/save agent_id=%s naics=%s role=%s",
+                    agent_id,
+                    naics_code,
+                    role_code,
+                )
                 # Telemetry for legacy detection (no conflicts in success path)
                 if emit_event and legacy_detected:
                     try:
-                        emit_event("intake.legacy", {"legacy_detected": True, "conflicts": 0})
+                        emit_event(
+                            "intake.legacy", {"legacy_detected": True, "conflicts": 0}
+                        )
                     except Exception:
                         pass
-                payload = json.dumps({"status": "ok", "path": str(self.profile_path), "agent_id": agent_id}).encode("utf-8")
+                payload = json.dumps(
+                    {
+                        "status": "ok",
+                        "path": str(self.profile_path),
+                        "agent_id": agent_id,
+                    }
+                ).encode("utf-8")
                 start_response("200 OK", _std_headers("application/json", len(payload)))
                 return [payload]
             except Exception as exc:
-                payload = json.dumps({"status": "error", "errors": [str(exc)]}).encode("utf-8")
-                start_response("500 Internal Server Error", _std_headers("application/json", len(payload)))
+                payload = json.dumps({"status": "error", "errors": [str(exc)]}).encode(
+                    "utf-8"
+                )
+                start_response(
+                    "500 Internal Server Error",
+                    _std_headers("application/json", len(payload)),
+                )
                 return [payload]
 
         # --- NAICS endpoints ---
         if path == "/api/naics/roots" and method == "GET":
             items = [e for e in self._naics_children("", 2)]
             payload = json.dumps({"status": "ok", "items": items}).encode("utf-8")
-            headers = [("Content-Type", "application/json"),
-                       ("X-NEO-Intake-Version", INTAKE_BUILD_TAG),
-                       ("Cache-Control", "no-store, must-revalidate"),
-                       ("Content-Length", str(len(payload)))]
+            headers = [
+                ("Content-Type", "application/json"),
+                ("X-NEO-Intake-Version", INTAKE_BUILD_TAG),
+                ("Cache-Control", "no-store, must-revalidate"),
+                ("Content-Length", str(len(payload))),
+            ]
             start_response("200 OK", headers)
             return [payload]
 
@@ -2372,10 +2924,12 @@ window.addEventListener('DOMContentLoaded', function () {
                 level = 0
             items = self._naics_children(parent, level if level else None)
             payload = json.dumps({"status": "ok", "items": items}).encode("utf-8")
-            headers = [("Content-Type", "application/json"),
-                       ("X-NEO-Intake-Version", INTAKE_BUILD_TAG),
-                       ("Cache-Control", "no-store, must-revalidate"),
-                       ("Content-Length", str(len(payload)))]
+            headers = [
+                ("Content-Type", "application/json"),
+                ("X-NEO-Intake-Version", INTAKE_BUILD_TAG),
+                ("Cache-Control", "no-store, must-revalidate"),
+                ("Content-Length", str(len(payload))),
+            ]
             start_response("200 OK", headers)
             return [payload]
 
@@ -2387,7 +2941,10 @@ window.addEventListener('DOMContentLoaded', function () {
                 q = ""
             items = self._naics_search(q)
             payload = json.dumps({"status": "ok", "items": items}).encode("utf-8")
-            headers = [("Content-Type", "application/json"), ("Content-Length", str(len(payload)))]
+            headers = [
+                ("Content-Type", "application/json"),
+                ("Content-Length", str(len(payload))),
+            ]
             start_response("200 OK", headers)
             return [payload]
 
@@ -2395,7 +2952,10 @@ window.addEventListener('DOMContentLoaded', function () {
             code = path.split("/api/naics/code/")[-1]
             entry = self._naics_detail(code)
             payload = json.dumps({"status": "ok", "entry": entry}).encode("utf-8")
-            headers = [("Content-Type", "application/json"), ("Content-Length", str(len(payload)))]
+            headers = [
+                ("Content-Type", "application/json"),
+                ("Content-Length", str(len(payload))),
+            ]
             start_response("200 OK", headers)
             return [payload]
         if path == "/api/identity/generate" and method == "POST":
@@ -2410,18 +2970,26 @@ window.addEventListener('DOMContentLoaded', function () {
                 data = {}
             agent_id = generate_agent_id(
                 str(data.get("naics_code", "NAICS000000")),
-                str(data.get("business_func", data.get("business_function", "func-na"))),
+                str(
+                    data.get("business_func", data.get("business_function", "func-na"))
+                ),
                 str(data.get("role_code", "role-na")),
                 str(data.get("agent_name", "agent-na")),
             )
             payload = json.dumps({"agent_id": agent_id}).encode("utf-8")
-            headers = [("Content-Type", "application/json"), ("Content-Length", str(len(payload)))]
+            headers = [
+                ("Content-Type", "application/json"),
+                ("Content-Length", str(len(payload))),
+            ]
             start_response("200 OK", headers)
             return [payload]
 
         if path == "/api/persona/config" and method == "GET":
             payload = json.dumps(self.persona_config).encode("utf-8")
-            headers = [("Content-Type", "application/json"), ("Content-Length", str(len(payload)))]
+            headers = [
+                ("Content-Type", "application/json"),
+                ("Content-Length", str(len(payload))),
+            ]
             start_response("200 OK", headers)
             return [payload]
 
@@ -2431,16 +2999,23 @@ window.addEventListener('DOMContentLoaded', function () {
                     length = int(environ.get("CONTENT_LENGTH") or 0)
                 except Exception:
                     length = 0
-                body = (environ.get("wsgi.input").read(length) if length else b"") or b"{}"
+                body = (
+                    environ.get("wsgi.input").read(length) if length else b""
+                ) or b"{}"
                 try:
                     data = json.loads(body.decode("utf-8"))
                 except Exception:
                     data = {}
-                saved = self._save_persona_state(data if isinstance(data, Mapping) else {})
+                saved = self._save_persona_state(
+                    data if isinstance(data, Mapping) else {}
+                )
                 payload = json.dumps(saved).encode("utf-8")
             else:  # GET
                 payload = json.dumps(self._load_persona_state()).encode("utf-8")
-            headers = [("Content-Type", "application/json"), ("Content-Length", str(len(payload)))]
+            headers = [
+                ("Content-Type", "application/json"),
+                ("Content-Length", str(len(payload))),
+            ]
             start_response("200 OK", headers)
             return [payload]
 
@@ -2457,8 +3032,13 @@ window.addEventListener('DOMContentLoaded', function () {
                 data = {}
             profile = data.get("profile") if isinstance(data, dict) else None
             if not isinstance(profile, dict):
-                payload = json.dumps({"status": "error", "issues": ["Missing profile in payload."]}).encode("utf-8")
-                headers = [("Content-Type", "application/json"), ("Content-Length", str(len(payload)))]
+                payload = json.dumps(
+                    {"status": "error", "issues": ["Missing profile in payload."]}
+                ).encode("utf-8")
+                headers = [
+                    ("Content-Type", "application/json"),
+                    ("Content-Length", str(len(payload))),
+                ]
                 start_response("400 Bad Request", headers)
                 return [payload]
 
@@ -2472,19 +3052,31 @@ window.addEventListener('DOMContentLoaded', function () {
                     region_vals = profile["sector_profile"].get("region", [])
                 if not isinstance(region_vals, list):
                     region_vals = []
-                
-                naics_data = (profile.get("classification") or {}).get("naics") or profile.get("naics") or {}
-                
+
+                naics_data = (
+                    (profile.get("classification") or {}).get("naics")
+                    or profile.get("naics")
+                    or {}
+                )
+
                 v3 = {
                     "context": {
                         "naics": naics_data,
-                        "region": region_vals if region_vals else ["CA"],  # Default to CA if empty
+                        "region": (
+                            region_vals if region_vals else ["CA"]
+                        ),  # Default to CA if empty
                     },
                     "role": {
                         "function_code": str(profile.get("business_function", "")),
-                        "role_code": str(((profile.get("role") or {}).get("code") or "")),
-                        "role_title": str(((profile.get("role") or {}).get("title") or "")),
-                        "objectives": list(((profile.get("role") or {}).get("objectives") or [])),
+                        "role_code": str(
+                            ((profile.get("role") or {}).get("code") or "")
+                        ),
+                        "role_title": str(
+                            ((profile.get("role") or {}).get("title") or "")
+                        ),
+                        "objectives": list(
+                            ((profile.get("role") or {}).get("objectives") or [])
+                        ),
                     },
                 }
                 normalized = normalize_context_role(v3)
@@ -2501,27 +3093,43 @@ window.addEventListener('DOMContentLoaded', function () {
             # Write repo to generated_repos/{slug}
             try:
                 # Create unique repo subdirectory based on agent identity
-                agent_section = merged.get("agent") if isinstance(merged, Mapping) else {}
+                agent_section = (
+                    merged.get("agent") if isinstance(merged, Mapping) else {}
+                )
                 if not isinstance(agent_section, Mapping):
                     agent_section = {}
-                identity_section = merged.get("identity") if isinstance(merged, Mapping) else {}
+                identity_section = (
+                    merged.get("identity") if isinstance(merged, Mapping) else {}
+                )
                 if not isinstance(identity_section, Mapping):
                     identity_section = {}
-                agent_name = str((identity_section.get("display_name") or agent_section.get("name") or "agent"))
-                agent_version = str(agent_section.get("version", "1-0-0")).replace(".", "-")
-                
+                agent_name = str(
+                    (
+                        identity_section.get("display_name")
+                        or agent_section.get("name")
+                        or "agent"
+                    )
+                )
+                agent_version = str(agent_section.get("version", "1-0-0")).replace(
+                    ".", "-"
+                )
+
                 # Slugify agent name
                 import re
-                slug_base = re.sub(r"[^a-z0-9\-]+", "-", agent_name.lower().strip()).strip("-") or "agent"
+
+                slug_base = (
+                    re.sub(r"[^a-z0-9\-]+", "-", agent_name.lower().strip()).strip("-")
+                    or "agent"
+                )
                 slug = f"{slug_base}-{agent_version}"
-                
+
                 # Find next available directory
                 repo_dir = self.repo_output_dir / slug
                 counter = 2
                 while repo_dir.exists():
                     repo_dir = self.repo_output_dir / f"{slug}-{counter}"
                     counter += 1
-                
+
                 # Write repo files to the unique subdirectory
                 packs = write_repo_files(merged, repo_dir)
                 # Generate and write integrity report
@@ -2530,7 +3138,7 @@ window.addEventListener('DOMContentLoaded', function () {
                 with integrity_path.open("w", encoding="utf-8") as handle:
                     json.dump(report, handle, indent=2, ensure_ascii=False)
                     handle.write("\n")
-                
+
                 out = {
                     "status": "ok",
                     "out_dir": str(repo_dir),
@@ -2542,7 +3150,9 @@ window.addEventListener('DOMContentLoaded', function () {
                 return [payload]
             except Exception as exc:
                 LOGGER.exception("Failed to generate repo")
-                payload = json.dumps({"status": "error", "issues": [str(exc)]}).encode("utf-8")
+                payload = json.dumps({"status": "error", "issues": [str(exc)]}).encode(
+                    "utf-8"
+                )
                 headers = _std_headers("application/json", len(payload))
                 start_response("500 Internal Server Error", headers)
                 return [payload]
@@ -2551,14 +3161,31 @@ window.addEventListener('DOMContentLoaded', function () {
         if path == "/build" and method == "POST":
             # Load validated profile
             if not self.profile_path.exists():
-                payload = json.dumps({"status": "error", "issues": ["agent_profile.json not found. Save a v3 profile first via /save."]}).encode("utf-8")
-                start_response("400 Bad Request", _std_headers("application/json", len(payload)))
+                payload = json.dumps(
+                    {
+                        "status": "error",
+                        "issues": [
+                            "agent_profile.json not found. Save a v3 profile first via /save."
+                        ],
+                    }
+                ).encode("utf-8")
+                start_response(
+                    "400 Bad Request", _std_headers("application/json", len(payload))
+                )
                 return [payload]
             try:
                 profile = json.loads(self.profile_path.read_text(encoding="utf-8"))
             except Exception as exc:
-                payload = json.dumps({"status": "error", "issues": [f"Failed to read agent_profile.json: {exc}"]}).encode("utf-8")
-                start_response("500 Internal Server Error", _std_headers("application/json", len(payload)))
+                payload = json.dumps(
+                    {
+                        "status": "error",
+                        "issues": [f"Failed to read agent_profile.json: {exc}"],
+                    }
+                ).encode("utf-8")
+                start_response(
+                    "500 Internal Server Error",
+                    _std_headers("application/json", len(payload)),
+                )
                 return [payload]
             try:
                 normalized = normalize_context_role(profile)
@@ -2568,10 +3195,14 @@ window.addEventListener('DOMContentLoaded', function () {
             status_code, resp = self._transactional_build(profile, environ)
             # Ensure spec previews are generated under SoT path
             try:
-                if status_code == 200 and isinstance(resp, Mapping) and resp.get("outdir"):
+                if (
+                    status_code == 200
+                    and isinstance(resp, Mapping)
+                    and resp.get("outdir")
+                ):
                     spec_dir = Path(str(resp.get("outdir"))) / "spec_preview"
                     generate_agent_specs(profile, spec_dir)
-                
+
             except Exception:
                 pass
             payload = json.dumps(resp).encode("utf-8")
@@ -2579,15 +3210,22 @@ window.addEventListener('DOMContentLoaded', function () {
                 start_response("200 OK", _std_headers("application/json", len(payload)))
                 return [payload]
             if status_code == 423:
-                headers = _std_headers("application/json", len(payload), extra=[("Retry-After", "5")])
+                headers = _std_headers(
+                    "application/json", len(payload), extra=[("Retry-After", "5")]
+                )
                 start_response("423 Locked", headers)
                 return [payload]
-            start_response("500 Internal Server Error", _std_headers("application/json", len(payload)))
+            start_response(
+                "500 Internal Server Error",
+                _std_headers("application/json", len(payload)),
+            )
             return [payload]
 
         # Legacy path shim: redirect generated_specs to latest spec_preview
         if path.startswith("/generated_specs") and method == "GET":
-            out_root_env = os.environ.get("NEO_REPO_OUTDIR") or str((self.base_dir / "_generated").resolve())
+            out_root_env = os.environ.get("NEO_REPO_OUTDIR") or str(
+                (self.base_dir / "_generated").resolve()
+            )
             out_root = Path(out_root_env)
             last_path = out_root / "_last_build.json"
             location = "/"
@@ -2605,9 +3243,17 @@ window.addEventListener('DOMContentLoaded', function () {
             try:
                 self._legacy_redirect_hits += 1
                 if emit_event:
-                    emit_event("redirect.generated_specs.hit", {"agent_id": agent_id_val, "req_id": str(environ.get("neo.req_id") or "")})
+                    emit_event(
+                        "redirect.generated_specs.hit",
+                        {
+                            "agent_id": agent_id_val,
+                            "req_id": str(environ.get("neo.req_id") or ""),
+                        },
+                    )
                 if self._legacy_redirect_hits == 1:
-                    LOGGER.warning("Legacy generated_specs redirect in use; please migrate to spec_preview")
+                    LOGGER.warning(
+                        "Legacy generated_specs redirect in use; please migrate to spec_preview"
+                    )
             except Exception:
                 pass
             start_response("307 Temporary Redirect", headers)
@@ -2618,14 +3264,31 @@ window.addEventListener('DOMContentLoaded', function () {
             warnings: list[str] = []
             # Load only the validated agent_profile.json from disk
             if not self.profile_path.exists():
-                payload = json.dumps({"status": "error", "issues": ["agent_profile.json not found. Save a v3 profile first via /save."]}).encode("utf-8")
-                start_response("400 Bad Request", _std_headers("application/json", len(payload)))
+                payload = json.dumps(
+                    {
+                        "status": "error",
+                        "issues": [
+                            "agent_profile.json not found. Save a v3 profile first via /save."
+                        ],
+                    }
+                ).encode("utf-8")
+                start_response(
+                    "400 Bad Request", _std_headers("application/json", len(payload))
+                )
                 return [payload]
             try:
                 profile = json.loads(self.profile_path.read_text(encoding="utf-8"))
             except Exception as exc:
-                payload = json.dumps({"status": "error", "issues": [f"Failed to read agent_profile.json: {exc}"]}).encode("utf-8")
-                start_response("500 Internal Server Error", _std_headers("application/json", len(payload)))
+                payload = json.dumps(
+                    {
+                        "status": "error",
+                        "issues": [f"Failed to read agent_profile.json: {exc}"],
+                    }
+                ).encode("utf-8")
+                start_response(
+                    "500 Internal Server Error",
+                    _std_headers("application/json", len(payload)),
+                )
                 return [payload]
 
             # Normalize v3 payload for builder compatibility (role_profile/sector_profile)
@@ -2636,10 +3299,14 @@ window.addEventListener('DOMContentLoaded', function () {
                 warnings.append(f"normalize_failed: {exc}")
 
             # Choose outdir: respect NEO_REPO_OUTDIR, ensure not OneDrive
-            out_root_env = os.environ.get("NEO_REPO_OUTDIR") or str((self.base_dir / "_generated").resolve())
+            out_root_env = os.environ.get("NEO_REPO_OUTDIR") or str(
+                (self.base_dir / "_generated").resolve()
+            )
             out_root = Path(out_root_env)
             if "onedrive" in str(out_root).lower():
-                warnings.append("selected_outdir_is_onedrive; using local _generated instead")
+                warnings.append(
+                    "selected_outdir_is_onedrive; using local _generated instead"
+                )
                 out_root = (self.base_dir / "_generated").resolve()
             out_root.mkdir(parents=True, exist_ok=True)
 
@@ -2654,36 +3321,66 @@ window.addEventListener('DOMContentLoaded', function () {
             # Build files
             try:
                 if emit_event:
-                    emit_event("build:requested", {"agent_id": agent_id, "out_root": str(out_root)})
+                    emit_event(
+                        "build:requested",
+                        {"agent_id": agent_id, "out_root": str(out_root)},
+                    )
                 packs = write_repo_files(profile, out_dir)
                 # integrity report
                 report = integrity_report(profile, packs)
-                (out_dir / "INTEGRITY_REPORT.json").write_text(json.dumps(report, indent=2), encoding="utf-8")
+                (out_dir / "INTEGRITY_REPORT.json").write_text(
+                    json.dumps(report, indent=2), encoding="utf-8"
+                )
 
                 # Gate parity summary
-                kpi_02 = ((packs.get("02_Global-Instructions_v2.json") or {}).get("observability") or {}).get("kpi_targets", {})
-                kpi_14 = (packs.get("14_KPI+Evaluation-Framework_v2.json") or {}).get("targets", {})
-                gates_11_all = (packs.get("11_Workflow-Pack_v2.json") or {}).get("gates", {})
-                kpi_11 = gates_11_all.get("kpi_targets", {}) if isinstance(gates_11_all, Mapping) else {}
+                kpi_02 = (
+                    (packs.get("02_Global-Instructions_v2.json") or {}).get(
+                        "observability"
+                    )
+                    or {}
+                ).get("kpi_targets", {})
+                kpi_14 = (packs.get("14_KPI+Evaluation-Framework_v2.json") or {}).get(
+                    "targets", {}
+                )
+                gates_11_all = (packs.get("11_Workflow-Pack_v2.json") or {}).get(
+                    "gates", {}
+                )
+                kpi_11 = (
+                    gates_11_all.get("kpi_targets", {})
+                    if isinstance(gates_11_all, Mapping)
+                    else {}
+                )
                 parity_02_14 = bool(kpi_02 == kpi_14)
                 parity_11_02 = bool(kpi_11 == kpi_02)
 
                 # Optional copy to OneDrive
                 try:
-                    copy_flag = str(os.environ.get("NEO_COPY_TO_ONEDRIVE") or "false").lower() in ("1", "true", "yes")
+                    copy_flag = str(
+                        os.environ.get("NEO_COPY_TO_ONEDRIVE") or "false"
+                    ).lower() in ("1", "true", "yes")
                     if copy_flag:
                         import shutil
+
                         dest = self.repo_output_dir / agent_id / ts
                         shutil.copytree(out_dir, dest, dirs_exist_ok=True)
                 except Exception as exc:
                     warnings.append(f"copy_to_onedrive_failed: {exc}")
 
                 # Include sprint-4 parity map and deltas from integrity report
-                parity_map = (report or {}).get("parity", {}) if isinstance(report, Mapping) else {}
-                parity_deltas = (report or {}).get("parity_deltas", {}) if isinstance(report, Mapping) else {}
+                parity_map = (
+                    (report or {}).get("parity", {})
+                    if isinstance(report, Mapping)
+                    else {}
+                )
+                parity_deltas = (
+                    (report or {}).get("parity_deltas", {})
+                    if isinstance(report, Mapping)
+                    else {}
+                )
                 resp = {
                     "outdir": str(out_dir),
-                    "file_count": len(list(out_dir.glob("*.json"))) + len(list(out_dir.glob("*.md"))),
+                    "file_count": len(list(out_dir.glob("*.json")))
+                    + len(list(out_dir.glob("*.md"))),
                     "parity": {
                         "02_vs_14": bool(parity_map.get("02_vs_14", parity_02_14)),
                         "11_vs_02": bool(parity_map.get("11_vs_02", parity_11_02)),
@@ -2691,14 +3388,22 @@ window.addEventListener('DOMContentLoaded', function () {
                         "17_vs_02": bool(parity_map.get("17_vs_02", True)),
                     },
                     "parity_deltas": parity_deltas,
-                    "integrity_errors": report.get("errors", []) if isinstance(report, Mapping) else [],
+                    "integrity_errors": (
+                        report.get("errors", []) if isinstance(report, Mapping) else []
+                    ),
                     "warnings": warnings,
                 }
                 # Optional overlay auto-apply (Sprint-6)
                 try:
-                    apply_flag = str(os.environ.get("NEO_APPLY_OVERLAYS", "false")).lower() in ("1", "true", "yes")
+                    apply_flag = str(
+                        os.environ.get("NEO_APPLY_OVERLAYS", "false")
+                    ).lower() in ("1", "true", "yes")
                     if apply_flag:
-                        from neo_build.overlays import load_overlay_config, apply_overlays
+                        from neo_build.overlays import (
+                            load_overlay_config,
+                            apply_overlays,
+                        )
+
                         overlay_cfg = load_overlay_config()
                         summary = apply_overlays(out_dir, overlay_cfg)
                         # Reload packs from disk and recompute integrity/parity
@@ -2706,19 +3411,35 @@ window.addEventListener('DOMContentLoaded', function () {
                         for name in CANONICAL_PACK_FILENAMES:
                             pth = out_dir / name
                             if pth.exists():
-                                updated[name] = json.loads(pth.read_text(encoding="utf-8"))
+                                updated[name] = json.loads(
+                                    pth.read_text(encoding="utf-8")
+                                )
                         report2 = integrity_report(profile, updated)
-                        (out_dir / "INTEGRITY_REPORT.json").write_text(json.dumps(report2, indent=2), encoding="utf-8")
+                        (out_dir / "INTEGRITY_REPORT.json").write_text(
+                            json.dumps(report2, indent=2), encoding="utf-8"
+                        )
                         # Overwrite parity and integrity in response with post-overlay values
-                        p2 = (report2 or {}).get("parity", {}) if isinstance(report2, Mapping) else {}
+                        p2 = (
+                            (report2 or {}).get("parity", {})
+                            if isinstance(report2, Mapping)
+                            else {}
+                        )
                         resp["parity"] = {
                             "02_vs_14": bool(p2.get("02_vs_14", True)),
                             "11_vs_02": bool(p2.get("11_vs_02", True)),
                             "03_vs_02": bool(p2.get("03_vs_02", True)),
                             "17_vs_02": bool(p2.get("17_vs_02", True)),
                         }
-                        resp["parity_deltas"] = (report2 or {}).get("parity_deltas", {}) if isinstance(report2, Mapping) else {}
-                        resp["integrity_errors"] = (report2 or {}).get("errors", []) if isinstance(report2, Mapping) else []
+                        resp["parity_deltas"] = (
+                            (report2 or {}).get("parity_deltas", {})
+                            if isinstance(report2, Mapping)
+                            else {}
+                        )
+                        resp["integrity_errors"] = (
+                            (report2 or {}).get("errors", [])
+                            if isinstance(report2, Mapping)
+                            else []
+                        )
                         resp["overlays_applied"] = not bool(summary.get("rolled_back"))
                         if summary.get("rolled_back"):
                             resp["rolled_back"] = True
@@ -2732,6 +3453,7 @@ window.addEventListener('DOMContentLoaded', function () {
                 # Persist last-build summary at out_root for quick UI retrieval
                 try:
                     out_root_last = out_root / "_last_build.json"
+
                     def _deltas_list(d: Mapping[str, Any] | None) -> list[dict]:
                         items: list[dict] = []
                         if not isinstance(d, Mapping):
@@ -2739,56 +3461,94 @@ window.addEventListener('DOMContentLoaded', function () {
                         for pack_key, diffs in d.items():
                             try:
                                 for k, tup in (diffs or {}).items():
-                                    got, expected = (tup[0], tup[1]) if isinstance(tup, (list, tuple)) and len(tup) == 2 else (None, None)
-                                    items.append({
-                                        "pack": str(pack_key),
-                                        "key": str(k),
-                                        "got": got,
-                                        "expected": expected,
-                                    })
+                                    got, expected = (
+                                        (tup[0], tup[1])
+                                        if isinstance(tup, (list, tuple))
+                                        and len(tup) == 2
+                                        else (None, None)
+                                    )
+                                    items.append(
+                                        {
+                                            "pack": str(pack_key),
+                                            "key": str(k),
+                                            "got": got,
+                                            "expected": expected,
+                                        }
+                                    )
                             except Exception:
                                 continue
                         return items
+
                     # Build overlay_summary structure for last-build consumers
                     try:
-                        overlay_summary = resp.get("overlay_summary") if isinstance(resp, Mapping) else None
+                        overlay_summary = (
+                            resp.get("overlay_summary")
+                            if isinstance(resp, Mapping)
+                            else None
+                        )
                     except Exception:
                         overlay_summary = None
+
                     def _now_iso():
                         try:
                             return time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime())
                         except Exception:
                             return ""
-                    def _overlay_items_from_summary(s: Mapping[str, Any] | None) -> list[dict]:
+
+                    def _overlay_items_from_summary(
+                        s: Mapping[str, Any] | None
+                    ) -> list[dict]:
                         items: list[dict] = []
                         try:
                             applied_steps = list((s or {}).get("applied") or [])
                             rolled_back = bool((s or {}).get("rolled_back"))
                             for idx, step in enumerate(applied_steps, start=1):
-                                items.append({
-                                    "id": f"ovl-{idx:03d}",
-                                    "name": str(step),
-                                    "version": "v1.0",
-                                    "source": "allowlist",
-                                    "allowlisted": True,
-                                    "status": "rolled_back" if rolled_back else "applied",
-                                    "notes": (s or {}).get("reason") or "ok",
-                                    "actions": [f"apply:{step}"]
-                                })
+                                items.append(
+                                    {
+                                        "id": f"ovl-{idx:03d}",
+                                        "name": str(step),
+                                        "version": "v1.0",
+                                        "source": "allowlist",
+                                        "allowlisted": True,
+                                        "status": (
+                                            "rolled_back" if rolled_back else "applied"
+                                        ),
+                                        "notes": (s or {}).get("reason") or "ok",
+                                        "actions": [f"apply:{step}"],
+                                    }
+                                )
                         except Exception:
                             pass
                         return items
+
                     def _overlay_block() -> dict:
                         # Backward-compatible default when overlays disabled
                         if not isinstance(overlay_summary, Mapping):
-                            return {"applied": False, "items": [], "rollback": {"supported": True, "last_action": "none", "ts": _now_iso()}}
+                            return {
+                                "applied": False,
+                                "items": [],
+                                "rollback": {
+                                    "supported": True,
+                                    "last_action": "none",
+                                    "ts": _now_iso(),
+                                },
+                            }
                         items = _overlay_items_from_summary(overlay_summary)
-                        rb = "rollback" if bool(overlay_summary.get("rolled_back")) else "none"
+                        rb = (
+                            "rollback"
+                            if bool(overlay_summary.get("rolled_back"))
+                            else "none"
+                        )
                         return {
                             "applied": bool(items),
                             "items": items,
-                            "rollback": {"supported": True, "last_action": rb, "ts": _now_iso()}
+                            "rollback": {
+                                "supported": True,
+                                "last_action": rb,
+                                "ts": _now_iso(),
+                            },
                         }
+
                     last_payload = {
                         "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
                         "outdir": resp.get("outdir"),
@@ -2797,31 +3557,54 @@ window.addEventListener('DOMContentLoaded', function () {
                         "integrity_errors": list(resp.get("integrity_errors") or []),
                         "overlays_applied": bool(resp.get("overlays_applied")),
                         "overlay_summary": _overlay_block(),
-                        "parity_deltas": _deltas_list(resp.get("parity_deltas") if isinstance(resp, Mapping) else {}),
+                        "parity_deltas": _deltas_list(
+                            resp.get("parity_deltas")
+                            if isinstance(resp, Mapping)
+                            else {}
+                        ),
                     }
-                    out_root_last.write_text(json.dumps(last_payload, indent=2), encoding="utf-8")
+                    out_root_last.write_text(
+                        json.dumps(last_payload, indent=2), encoding="utf-8"
+                    )
                 except Exception:
                     pass
                 # Telemetry: parity checked summary
                 if emit_event:
                     try:
                         vals = list(resp["parity"].values())
-                        emit_event("gate_parity_checked", {
-                            "true_count": int(sum(1 for v in vals if v)),
-                            "false_count": int(sum(1 for v in vals if not v)),
-                            "deviated": [k for k, ok in resp["parity"].items() if not ok],
-                        })
+                        emit_event(
+                            "gate_parity_checked",
+                            {
+                                "true_count": int(sum(1 for v in vals if v)),
+                                "false_count": int(sum(1 for v in vals if not v)),
+                                "deviated": [
+                                    k for k, ok in resp["parity"].items() if not ok
+                                ],
+                            },
+                        )
                     except Exception:
                         pass
                 if emit_event:
-                    emit_event("build:completed", {"agent_id": agent_id, "outdir": resp["outdir"], "parity": resp["parity"]})
+                    emit_event(
+                        "build:completed",
+                        {
+                            "agent_id": agent_id,
+                            "outdir": resp["outdir"],
+                            "parity": resp["parity"],
+                        },
+                    )
                     emit_repo_generated_event({"outdir": resp["outdir"]})
                 payload = json.dumps(resp).encode("utf-8")
                 start_response("200 OK", _std_headers("application/json", len(payload)))
                 return [payload]
             except Exception as exc:
-                payload = json.dumps({"status": "error", "issues": [str(exc)]}).encode("utf-8")
-                start_response("500 Internal Server Error", _std_headers("application/json", len(payload)))
+                payload = json.dumps({"status": "error", "issues": [str(exc)]}).encode(
+                    "utf-8"
+                )
+                start_response(
+                    "500 Internal Server Error",
+                    _std_headers("application/json", len(payload)),
+                )
                 return [payload]
 
         if path == "/api/function_roles" and method == "GET":
@@ -2832,12 +3615,17 @@ window.addEventListener('DOMContentLoaded', function () {
                 roles = self._function_role_data.get("roles", [])
                 for r in roles or []:
                     if isinstance(r, Mapping):
-                        if not fn or str(r.get("function", "")).strip() == str(fn).strip():
-                            items.append({
-                                "code": r.get("code"),
-                                "title": (r.get("titles") or [None])[0],
-                                "function": r.get("function"),
-                            })
+                        if (
+                            not fn
+                            or str(r.get("function", "")).strip() == str(fn).strip()
+                        ):
+                            items.append(
+                                {
+                                    "code": r.get("code"),
+                                    "title": (r.get("titles") or [None])[0],
+                                    "function": r.get("function"),
+                                }
+                            )
             except Exception:
                 items = []
             payload = json.dumps({"status": "ok", "items": items}).encode("utf-8")
@@ -2879,6 +3667,7 @@ window.addEventListener('DOMContentLoaded', function () {
 
                 # Sprint-1: Normalize v3 context/role into builder keys and build repo immediately
                 try:
+
                     def _p(key: str) -> str:
                         v = params.get(key)
                         if isinstance(v, list):
@@ -2899,7 +3688,11 @@ window.addEventListener('DOMContentLoaded', function () {
                             naics_lineage = []
 
                     # Region: prefer explicit; else default inside normalizer
-                    region_vals = params.get("context.region") or params.get("sector_profile.region") or []
+                    region_vals = (
+                        params.get("context.region")
+                        or params.get("sector_profile.region")
+                        or []
+                    )
                     region = [str(x) for x in region_vals if x]
 
                     v3_payload = {
@@ -2907,15 +3700,21 @@ window.addEventListener('DOMContentLoaded', function () {
                             "naics": {
                                 "code": naics_code,
                                 "title": naics_title,
-                                "level": int(naics_level) if str(naics_level).isdigit() else naics_level,
+                                "level": (
+                                    int(naics_level)
+                                    if str(naics_level).isdigit()
+                                    else naics_level
+                                ),
                                 "lineage": naics_lineage,
                             },
                             "region": region,
                         },
                         "role": {
                             "function_code": _p("business_function"),
-                            "role_code": _p("role_code") or _p("role_profile.archetype"),
-                            "role_title": _p("role_title") or _p("role_profile.role_title"),
+                            "role_code": _p("role_code")
+                            or _p("role_profile.archetype"),
+                            "role_title": _p("role_title")
+                            or _p("role_profile.role_title"),
                             "objectives": [],
                         },
                     }
@@ -2945,29 +3744,53 @@ window.addEventListener('DOMContentLoaded', function () {
                         fp["identity"] = ident
                         # classification.naics + top-level naics
                         cls = dict(fp.get("classification") or {})
-                        if not isinstance(cls.get("naics"), Mapping) or not cls.get("naics"):
-                            ls_na = ((last_saved.get("classification") or {}).get("naics")
-                                     or last_saved.get("naics") or {})
+                        if not isinstance(cls.get("naics"), Mapping) or not cls.get(
+                            "naics"
+                        ):
+                            ls_na = (
+                                (last_saved.get("classification") or {}).get("naics")
+                                or last_saved.get("naics")
+                                or {}
+                            )
                             if isinstance(ls_na, Mapping) and ls_na:
                                 cls["naics"] = ls_na
                         fp["classification"] = cls
-                        if not isinstance(fp.get("naics"), Mapping) or not fp.get("naics"):
-                            if isinstance(cls.get("naics"), Mapping) and cls.get("naics"):
+                        if not isinstance(fp.get("naics"), Mapping) or not fp.get(
+                            "naics"
+                        ):
+                            if isinstance(cls.get("naics"), Mapping) and cls.get(
+                                "naics"
+                            ):
                                 fp["naics"] = cls["naics"]
                         # business function / role
                         if not str(fp.get("business_function") or "").strip():
                             bf = last_saved.get("business_function")
                             if bf:
                                 fp["business_function"] = bf
-                        role_cur = fp.get("role") if isinstance(fp.get("role"), Mapping) else {}
+                        role_cur = (
+                            fp.get("role")
+                            if isinstance(fp.get("role"), Mapping)
+                            else {}
+                        )
                         if not role_cur:
-                            ls_role = last_saved.get("role") if isinstance(last_saved.get("role"), Mapping) else {}
+                            ls_role = (
+                                last_saved.get("role")
+                                if isinstance(last_saved.get("role"), Mapping)
+                                else {}
+                            )
                             if ls_role:
                                 fp["role"] = ls_role
                         else:
-                            ls_role = last_saved.get("role") if isinstance(last_saved.get("role"), Mapping) else {}
+                            ls_role = (
+                                last_saved.get("role")
+                                if isinstance(last_saved.get("role"), Mapping)
+                                else {}
+                            )
                             for k in ("code", "title", "seniority", "function"):
-                                if not str(role_cur.get(k) or "").strip() and str((ls_role or {}).get(k) or "").strip():
+                                if (
+                                    not str(role_cur.get(k) or "").strip()
+                                    and str((ls_role or {}).get(k) or "").strip()
+                                ):
                                     role_cur[k] = ls_role[k]
                             fp["role"] = role_cur
                         form_profile = fp
@@ -2983,12 +3806,16 @@ window.addEventListener('DOMContentLoaded', function () {
                         # Ensure last-build pointer exists for immediate save() consumers
                         try:
                             parents = outdir.parents
-                            out_root = parents[1] if len(parents) >= 2 else outdir.parent
+                            out_root = (
+                                parents[1] if len(parents) >= 2 else outdir.parent
+                            )
                             if out_root:
                                 last_path = out_root / "_last_build.json"
                                 if not last_path.exists():
                                     try:
-                                        zip_hash, _zip_bytes = self._canonical_zip_hash(outdir)
+                                        zip_hash, _zip_bytes = self._canonical_zip_hash(
+                                            outdir
+                                        )
                                     except Exception:
                                         zip_hash = ""
                                     payload = {
@@ -2999,19 +3826,28 @@ window.addEventListener('DOMContentLoaded', function () {
                                         "ts": str(resp.get("ts") or ""),
                                         "zip_hash": zip_hash,
                                         "status": "complete",
-                                        "timestamp": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+                                        "timestamp": time.strftime(
+                                            "%Y-%m-%dT%H:%M:%SZ", time.gmtime()
+                                        ),
                                     }
-                                    last_path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+                                    last_path.write_text(
+                                        json.dumps(payload, indent=2), encoding="utf-8"
+                                    )
                         except Exception:
                             pass
                         # Compile profile (best-effort) and generate spec preview alongside SoT
                         try:
                             from .profile_compiler import compile_profile
+
                             compiled = compile_profile(form_profile)
                             form_profile["_compiled"] = compiled
-                            with self.profile_path.open("w", encoding="utf-8") as handle:
+                            with self.profile_path.open(
+                                "w", encoding="utf-8"
+                            ) as handle:
                                 json.dump(form_profile, handle, indent=2)
-                            with (self.profile_path.parent / "agent_profile.compiled.json").open("w", encoding="utf-8") as handle:
+                            with (
+                                self.profile_path.parent / "agent_profile.compiled.json"
+                            ).open("w", encoding="utf-8") as handle:
                                 json.dump(compiled, handle, indent=2)
                             spec_dir = outdir / "spec_preview"
                             generate_agent_specs(form_profile, spec_dir)
@@ -3022,7 +3858,10 @@ window.addEventListener('DOMContentLoaded', function () {
                         try:
                             ir_path = outdir / "INTEGRITY_REPORT.json"
                             if ir_path.exists():
-                                checks = (json.loads(ir_path.read_text(encoding="utf-8")) or {}).get("checks", {})
+                                checks = (
+                                    json.loads(ir_path.read_text(encoding="utf-8"))
+                                    or {}
+                                ).get("checks", {})
                         except Exception:
                             checks = {}
                         notice = f"Agent profile generated successfully (repo generated at {outdir.name})"
@@ -3033,7 +3872,9 @@ window.addEventListener('DOMContentLoaded', function () {
                                 pass
                     else:
                         # Keep profile success; surface build error minimally without blocking save
-                        LOGGER.warning("Transactional build failed during save: %s", resp)
+                        LOGGER.warning(
+                            "Transactional build failed during save: %s", resp
+                        )
                         notice = "Agent profile generated successfully"
                 except Exception as exc:
                     notice = f"Failed to generate specs: {exc}"
@@ -3041,19 +3882,29 @@ window.addEventListener('DOMContentLoaded', function () {
             body_html = self.render_form(message=notice, profile=form_profile)
             body_bytes = body_html.encode("utf-8")
             headers = self._ensure_content_length(
-                [("Content-Type", "text/html; charset=utf-8"),
-                 ("Cache-Control", "no-store, must-revalidate"),
-                 ("Pragma", "no-cache"),
-                 ("Expires", "0"),
-                 ("X-NEO-Intake-Version", INTAKE_BUILD_TAG)],
-                len(body_bytes)
+                [
+                    ("Content-Type", "text/html; charset=utf-8"),
+                    ("Cache-Control", "no-store, must-revalidate"),
+                    ("Pragma", "no-cache"),
+                    ("Expires", "0"),
+                    ("X-NEO-Intake-Version", INTAKE_BUILD_TAG),
+                ],
+                len(body_bytes),
             )
             start_response("200 OK", headers)
             return [body_bytes]
 
         # Fallback 404
         payload = b"Not Found"
-        start_response("404 Not Found", [("Content-Type", "text/plain"), ("X-NEO-Intake-Version", INTAKE_BUILD_TAG), ("Cache-Control", "no-store, must-revalidate"), ("Content-Length", str(len(payload)))])
+        start_response(
+            "404 Not Found",
+            [
+                ("Content-Type", "text/plain"),
+                ("X-NEO-Intake-Version", INTAKE_BUILD_TAG),
+                ("Cache-Control", "no-store, must-revalidate"),
+                ("Content-Length", str(len(payload))),
+            ],
+        )
         return [payload]
 
     def serve(self, *, host: Optional[str] = None, port: Optional[int] = None) -> None:
@@ -3080,6 +3931,7 @@ window.addEventListener('DOMContentLoaded', function () {
 def create_app(*, base_dir: Optional[Path] = None) -> IntakeApplication:
     """Factory for tests and CLI to create the intake application."""
     return IntakeApplication(base_dir=base_dir)
+
 
 if __name__ == "__main__":  # pragma: no cover - manual run helper
     create_app().serve()

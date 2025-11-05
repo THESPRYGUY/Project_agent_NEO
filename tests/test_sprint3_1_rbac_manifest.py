@@ -70,7 +70,9 @@ def test_manifest_role_title(outdir: Path) -> None:
     # 09 should mirror selected role_title
     amc = _read_json(outdir / "09_Agent-Manifests_Catalog_v2.json")
     agents = amc.get("agents", [])
-    assert isinstance(agents, list) and agents, "agents list should have at least one entry"
+    assert (
+        isinstance(agents, list) and agents
+    ), "agents list should have at least one entry"
     assert agents[0].get("role_title") == "Selected Role Title"
 
 
