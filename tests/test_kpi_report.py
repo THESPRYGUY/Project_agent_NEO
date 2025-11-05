@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -80,10 +81,20 @@ def test_gen_kpi_report_creates_outputs(tmp_path, monkeypatch):
     monkeypatch.setenv("CI_JOB_STATUS", "success")
 
     repo_root = Path(__file__).resolve().parents[1]
+    src_path = str(repo_root / "src")
+    existing_pythonpath = os.environ.get("PYTHONPATH")
+    combined_pythonpath = (
+        f"{src_path}{os.pathsep}{existing_pythonpath}"
+        if existing_pythonpath
+        else src_path
+    )
+    monkeypatch.setenv("PYTHONPATH", combined_pythonpath)
+
     result = subprocess.run(
         [
             sys.executable,
-            "scripts/gen_kpi_report.py",
+            "-m",
+            "scripts.gen_kpi_report",
             "--root",
             str(build_root),
             "--out",

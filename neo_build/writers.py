@@ -17,7 +17,7 @@ from .contracts import (
     CANONICAL_PACK_FILENAMES,
     KPI_TARGETS,
 )
-from .utils import json_write, deep_sorted
+from .utils import json_write
 from .scaffolder import get_contract_mode, enrich_packs
 from .validators import (
     compute_effective_autonomy,
@@ -26,6 +26,7 @@ from .validators import (
     kpi_targets_sync,
     preferences_flow_flags,
 )
+from neo_agent.writer import normalise_pii_flags
 
 CONTRACT_MODE = os.getenv("NEO_CONTRACT_MODE", "scaffold").strip().lower()
 if CONTRACT_MODE not in {"full", "preview"}:
@@ -41,14 +42,16 @@ def _get(mapping: Mapping[str, Any] | None, key: str, default: Any = None) -> An
 
 def _dget(mapping: Mapping[str, Any] | None, path: str, default: Any = None) -> Any:
     cur: Any = mapping
-    for part in path.split('.'):
+    for part in path.split("."):
         if not isinstance(cur, Mapping):
             return default
         cur = cur.get(part)
     return cur if cur is not None else default
 
 
-def _profile_sections(profile: Mapping[str, Any]) -> Tuple[dict, dict, dict, dict, dict, dict, dict]:
+def _profile_sections(
+    profile: Mapping[str, Any]
+) -> Tuple[dict, dict, dict, dict, dict, dict, dict]:
     identity = _get(profile, "identity", {}) or {}
     role_profile = _get(profile, "role_profile", {}) or {}
     sector_profile = _get(profile, "sector_profile", {}) or {}
@@ -56,7 +59,15 @@ def _profile_sections(profile: Mapping[str, Any]) -> Tuple[dict, dict, dict, dic
     memory = _get(profile, "memory", {}) or {}
     governance_eval = _get(profile, "governance_eval", {}) or {}
     preferences = _get(profile, "preferences", {}) or {}
-    return identity, role_profile, sector_profile, capabilities_tools, memory, governance_eval, preferences
+    return (
+        identity,
+        role_profile,
+        sector_profile,
+        capabilities_tools,
+        memory,
+        governance_eval,
+        preferences,
+    )
 
 
 def _naics_summary(profile: Mapping[str, Any]) -> dict:
@@ -84,7 +95,15 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
 
     packs: Dict[str, Any] = {}
 
-    identity, role_profile, sector_profile, capabilities_tools, memory, governance_eval, preferences = _profile_sections(profile)
+    (
+        identity,
+        role_profile,
+        sector_profile,
+        capabilities_tools,
+        memory,
+        governance_eval,
+        preferences,
+    ) = _profile_sections(profile)
 
     # 01 README+Directory Map
     files = list(CANONICAL_PACK_FILENAMES)
@@ -94,11 +113,16 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
 
     # 02 Global Instructions
     naics = _naics_summary(profile)
-    eff_autonomy = compute_effective_autonomy(preferences, _get(profile, "routing_defaults", {}))
+    eff_autonomy = compute_effective_autonomy(
+        preferences, _get(profile, "routing_defaults", {})
+    )
     gi = {
         "version": 2,
         "context": {"naics": naics},
-        "references": {"reasoning_schema": "16_Reasoning-Footprints_Schema_v1.json", "memory_schema": "08_Memory-Schema_v2.json"},
+        "references": {
+            "reasoning_schema": "16_Reasoning-Footprints_Schema_v1.json",
+            "memory_schema": "08_Memory-Schema_v2.json",
+        },
         "effective_autonomy": eff_autonomy,
         "store_raw_cot": False,
         # Sprint-1: carry derived regulators into 02 for downstream parity checks
@@ -113,10 +137,14 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
     json_write(out_dir / "02_Global-Instructions_v2.json", gi)
 
     # 03 Operating Rules
-    hg = human_gate_actions(_get(_get(capabilities_tools, "human_gate", {}), "actions", []))
+    hg = human_gate_actions(
+        _get(_get(capabilities_tools, "human_gate", {}), "actions", [])
+    )
     # Sprint-3.1: RBAC owners propagation (additive) when identity.owners present
     base_roles = list(_dget(profile, "governance.rbac.roles", []) or [])
-    owners_from_identity = list((_get(identity, "owners") or [])) if isinstance(identity, Mapping) else []
+    owners_from_identity = (
+        list((_get(identity, "owners") or [])) if isinstance(identity, Mapping) else []
+    )
     if owners_from_identity:
         # Canonical deterministic order: defaults triad first, then owners sorted (casefold), unique
         defaults = _owners()
@@ -130,7 +158,9 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
             if s and k not in seen:
                 seen.add(k)
                 uniq_owners.append(s)
-        sorted_owners = sorted([o for o in uniq_owners if o.casefold() not in triad_cf], key=str.casefold)
+        sorted_owners = sorted(
+            [o for o in uniq_owners if o.casefold() not in triad_cf], key=str.casefold
+        )
         roles_out: List[str] = list(defaults) + sorted_owners
     else:
         # leave defaults unchanged
@@ -158,19 +188,47 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
     )
 
     # 04 Governance + Risk Register
+    governance_pii_flags = normalise_pii_flags(
+        _get(_get(profile, "governance_eval", {}), "pii_flags", []) or []
+    )
+    privacy_pii_flags = normalise_pii_flags(
+        _dget(profile, "privacy.pii_flags", governance_pii_flags) or []
+    )
+
     gro = {
         "version": 2,
-        "classification_default": _get(_get(profile, "governance_eval", {}), "classification_default", "confidential"),
-        "risk_register_tags": list(_get(_get(profile, "governance_eval", {}), "risk_register_tags", []) or []),
-        "pii_flags": list(_get(_get(profile, "governance_eval", {}), "pii_flags", []) or []),
+        "classification_default": _get(
+            _get(profile, "governance_eval", {}),
+            "classification_default",
+            "confidential",
+        ),
+        "risk_register_tags": list(
+            _get(_get(profile, "governance_eval", {}), "risk_register_tags", []) or []
+        ),
+        "pii_flags": governance_pii_flags,
         "regulators": list(_get(sector_profile, "regulatory", []) or []),
         # v3 nested targets
         "policy": {
-            "classification_default": _dget(profile, "governance.policy.classification_default", _get(_get(profile, "governance_eval", {}), "classification_default", "confidential")),
+            "classification_default": _dget(
+                profile,
+                "governance.policy.classification_default",
+                _get(
+                    _get(profile, "governance_eval", {}),
+                    "classification_default",
+                    "confidential",
+                ),
+            ),
             "no_impersonation": bool(_get(identity, "no_impersonation", True)),
         },
         "frameworks": {
-            "regulators": list(_dget(profile, "compliance.regulators", _get(sector_profile, "regulatory", [])) or []),
+            "regulators": list(
+                _dget(
+                    profile,
+                    "compliance.regulators",
+                    _get(sector_profile, "regulatory", []),
+                )
+                or []
+            ),
         },
     }
     packs["04_Governance+Risk-Register_v2.json"] = gro
@@ -182,15 +240,15 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
         "no_impersonation": bool(_get(identity, "no_impersonation", True)),
         "pii_mask_on_ingest": True,
         # v3 targets
-        "privacy_policies": {
-            "pii_flags": list(_dget(profile, "privacy.pii_flags", _get(_get(profile, "governance_eval", {}), "pii_flags", [])) or []),
-        },
+        "privacy_policies": {"pii_flags": privacy_pii_flags},
     }
     packs["05_Safety+Privacy_Guardrails_v2.json"] = sp
     json_write(out_dir / "05_Safety+Privacy_Guardrails_v2.json", sp)
 
     # 06 Role Recipes Index
-    primary_role_code = str(_dget(profile, "role.primary.code", _get(role_profile, "archetype", "")))
+    primary_role_code = str(
+        _dget(profile, "role.primary.code", _get(role_profile, "archetype", ""))
+    )
     rri = {
         "version": 2,
         "role_recipe_ref": str(_get(role_profile, "role_recipe_ref", "")),
@@ -202,18 +260,27 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
             "primary_role_code": primary_role_code,
             "agent_id": str(_get(identity, "agent_id", "")),
         },
-        "roles_index": [{
-            "code": str(_get(role_profile, "archetype", "")) or primary_role_code,
-            "title": str(_dget(profile, "role.title", _get(role_profile, "role_title", ""))),
-            "objectives": list(_get(role_profile, "objectives", []) or []),
-        }],
+        "roles_index": [
+            {
+                "code": str(_get(role_profile, "archetype", "")) or primary_role_code,
+                "title": str(
+                    _dget(profile, "role.title", _get(role_profile, "role_title", ""))
+                ),
+                "objectives": list(_get(role_profile, "objectives", []) or []),
+            }
+        ],
     }
     packs["06_Role-Recipes_Index_v2.json"] = rri
     json_write(out_dir / "06_Role-Recipes_Index_v2.json", rri)
 
     # 07 Subagent Role Recipes (flow flags)
     flags = preferences_flow_flags(_get(preferences, "collaboration_mode", ""))
-    srr = {"version": 2, "planner_builder_evaluator": flags["planner_builder_evaluator"], "auto_plan_step": flags["auto_plan_step"], "recipes": []}
+    srr = {
+        "version": 2,
+        "planner_builder_evaluator": flags["planner_builder_evaluator"],
+        "auto_plan_step": flags["auto_plan_step"],
+        "recipes": [],
+    }
     packs["07_Subagent_Role-Recipes_v2.json"] = srr
     json_write(out_dir / "07_Subagent_Role-Recipes_v2.json", srr)
 
@@ -228,15 +295,43 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
         "initial_memory_packs": list(_get(memory, "initial_memory_packs", []) or []),
         "optional_packs": list(_get(memory, "optional_packs", []) or []),
         # v3 targets
-        "scopes": list(_dget(profile, "memory.scopes", _get(memory, "memory_scopes", [])) or []),
-        "packs": {"initial": list(_dget(profile, "memory.packs.initial", _get(memory, "initial_memory_packs", [])) or []), "optional": list(_dget(profile, "memory.packs.optional", _get(memory, "optional_packs", [])) or [])},
-        "sync": {"allowed_sources": list(_dget(profile, "memory.sync.allowed_sources", _get(memory, "data_sources", [])) or [])},
+        "scopes": list(
+            _dget(profile, "memory.scopes", _get(memory, "memory_scopes", [])) or []
+        ),
+        "packs": {
+            "initial": list(
+                _dget(
+                    profile,
+                    "memory.packs.initial",
+                    _get(memory, "initial_memory_packs", []),
+                )
+                or []
+            ),
+            "optional": list(
+                _dget(
+                    profile, "memory.packs.optional", _get(memory, "optional_packs", [])
+                )
+                or []
+            ),
+        },
+        "sync": {
+            "allowed_sources": list(
+                _dget(
+                    profile,
+                    "memory.sync.allowed_sources",
+                    _get(memory, "data_sources", []),
+                )
+                or []
+            )
+        },
     }
     packs["08_Memory-Schema_v2.json"] = ms
     json_write(out_dir / "08_Memory-Schema_v2.json", ms)
 
     # 09 Agent Manifests Catalog
-    owners_from_identity = list((_get(identity, "owners") or [])) if isinstance(identity, Mapping) else []
+    owners_from_identity = (
+        list((_get(identity, "owners") or [])) if isinstance(identity, Mapping) else []
+    )
     owners = owners_from_identity or _owners()
     # Selected role title precedence: role.role_title -> role_profile.role_title -> first_non_empty(06.roles_index[*].title)
     selected_role_title = str(_dget(profile, "role.role_title", "")).strip()
@@ -244,7 +339,9 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
         selected_role_title = str(_get(role_profile, "role_title", "")).strip()
     if not selected_role_title:
         try:
-            titles = [str(x.get("title", "")).strip() for x in (rri.get("roles_index") or [])]
+            titles = [
+                str(x.get("title", "")).strip() for x in (rri.get("roles_index") or [])
+            ]
             selected_role_title = next((t for t in titles if t), "")
         except Exception:
             selected_role_title = ""
@@ -262,7 +359,13 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
         # v3 target agents list
         "agents": [
             {
-                "display_name": str(_get(identity, "display_name", _get(_get(profile, "agent", {}), "name", ""))),
+                "display_name": str(
+                    _get(
+                        identity,
+                        "display_name",
+                        _get(_get(profile, "agent", {}), "name", ""),
+                    )
+                ),
                 "owners": owners,
                 "agent_id": str(_get(identity, "agent_id", "")),
                 "role_title": selected_role_title,
@@ -279,8 +382,18 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
 
     # 11 Workflow Pack with KPI gates
     gates = {"kpi_targets": kpi_targets_sync(), "effective_autonomy": eff_autonomy}
-    persona_defaults = {"persona": _dget(profile, "persona.mbti", _get(_get(profile, "agent", {}), "persona", "")), "tone": _dget(profile, "persona.tone", "")}
-    wp = {"version": 2, "name": "DefaultFlow", "gates": gates, "defaults": persona_defaults}
+    persona_defaults = {
+        "persona": _dget(
+            profile, "persona.mbti", _get(_get(profile, "agent", {}), "persona", "")
+        ),
+        "tone": _dget(profile, "persona.tone", ""),
+    }
+    wp = {
+        "version": 2,
+        "name": "DefaultFlow",
+        "gates": gates,
+        "defaults": persona_defaults,
+    }
     packs["11_Workflow-Pack_v2.json"] = wp
     json_write(out_dir / "11_Workflow-Pack_v2.json", wp)
 
@@ -309,7 +422,14 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
                 scopes = ["read"]
             if not secret or "SET_ME" in secret.upper():
                 secret = f"secret_manager:{name}"
-            connectors.append({"name": name, "enabled": enabled, "scopes": scopes, "secret_ref": secret})
+            connectors.append(
+                {
+                    "name": name,
+                    "enabled": enabled,
+                    "scopes": scopes,
+                    "secret_ref": secret,
+                }
+            )
     tr = {"version": 2, "connectors": connectors}
     packs["12_Tool+Data-Registry_v2.json"] = tr
     json_write(out_dir / "12_Tool+Data-Registry_v2.json", tr)
@@ -400,13 +520,16 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
         "escalation_flag",
         "escalation_reason",
     ]
-    rp = {"version": 2, "templates": [
-        {
-            "id": "default",
-            "name": "Default Template",
-            "fields": rp_fields,
-        }
-    ]}
+    rp = {
+        "version": 2,
+        "templates": [
+            {
+                "id": "default",
+                "name": "Default Template",
+                "fields": rp_fields,
+            }
+        ],
+    }
     if CONTRACT_FULL:
         rp.update(
             {
@@ -505,7 +628,10 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
                 },
                 "brand": {
                     "tone": "executive",
-                    "guidelines": ["Keep messaging concise", "Highlight audit readiness"],
+                    "guidelines": [
+                        "Keep messaging concise",
+                        "Highlight audit readiness",
+                    ],
                 },
                 "legal": {
                     "notices": ["Use for internal advisory only."],
@@ -532,7 +658,8 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
             if fname == "03_Operating-Rules_v2.json":
                 # Preserve RBAC roles ordering as in initial write
                 (out_dir / fname).write_text(
-                    json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
+                    json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=True)
+                    + "\n",
                     encoding="utf-8",
                     newline="\n",
                 )
@@ -572,13 +699,18 @@ def write_repo_files(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any
         "## Directory Map & Narrative",
         "See 01_README+Directory-Map_v2.json for canonical file listing.",
     ]
-    (out_dir / "README.md").write_text("\n".join(readme_lines) + "\n", encoding="utf-8", newline="\n")
+    (out_dir / "README.md").write_text(
+        "\n".join(readme_lines) + "\n", encoding="utf-8", newline="\n"
+    )
 
     # neo_agent_config.json (minimal)
     cfg = {
         "agent": {
             "id": str(_get(identity, "agent_id", "") or uuid.uuid4().hex[:8]),
-            "display_name": str(_get(identity, "display_name", _get(agent, "name", "")) or "Unnamed Agent"),
+            "display_name": str(
+                _get(identity, "display_name", _get(agent, "name", ""))
+                or "Unnamed Agent"
+            ),
         },
     }
     json_write(out_dir / "neo_agent_config.json", cfg)
@@ -596,9 +728,16 @@ def write_repo_files(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any
         out_dir_path = Path(out_dir)
         identity = _get(profile, "identity", {}) or {}
         agent_meta = _get(profile, "agent", {}) or {}
-        agent_id = str(identity.get("agent_id") or agent_meta.get("name") or out_dir_path.parent.name or "agent").strip()
+        agent_id = str(
+            identity.get("agent_id")
+            or agent_meta.get("name")
+            or out_dir_path.parent.name
+            or "agent"
+        ).strip()
         timestamp = out_dir_path.name or "latest"
-        file_count = len(list(out_dir_path.glob("*.json"))) + len(list(out_dir_path.glob("*.md")))
+        file_count = len(list(out_dir_path.glob("*.json"))) + len(
+            list(out_dir_path.glob("*.md"))
+        )
         schema_version = str(_get(profile, "schema_version") or "2.1.1")
 
         excluded_names = {"_last_build.json", ".DS_Store", "contract_report.json"}
@@ -650,7 +789,9 @@ def write_repo_files(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any
             out_root = out_dir_path.parent
         if out_root:
             out_root.mkdir(parents=True, exist_ok=True)
-            (out_root / "_last_build.json").write_text(_json.dumps(payload, indent=2), encoding="utf-8")
+            (out_root / "_last_build.json").write_text(
+                _json.dumps(payload, indent=2), encoding="utf-8"
+            )
     except Exception:
         pass
     return packs

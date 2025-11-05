@@ -2,8 +2,8 @@ name: CI
 env:
   NEO_CONTRACT_MODE: full
 on:
-  pull_request: { branches: [ main ], types: [ opened, reopened, synchronize ] }
-  push: { branches: [ main, feature/**, hotfix/** ] }
+  pull_request: { branches: [main], types: [opened, reopened, synchronize] }
+  push: { branches: [main, feature/**, hotfix/**] }
   workflow_dispatch: {}
 permissions: { contents: read }
 defaults: { run: { shell: bash } }
@@ -13,7 +13,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
+        with: { python-version: "3.12" }
       - run: python -m pip install -U pip && python -m pip install -e .[dev]
       - run: python scripts/contract_validate.py generated_repos/agent-build-007-2-1-1
   intake-mapper-guard:
@@ -22,7 +22,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
+        with: { python-version: "3.12" }
       - run: python -m pip install -U pip && python -m pip install -e .[dev]
       - run: mkdir -p tmp_art/guard
       - run: cp -R generated_repos/agent-build-007-2-1-1/. tmp_art/guard/
@@ -33,7 +33,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
+        with: { python-version: "3.12" }
       - run: python -m pip install -U pip && python -m pip install -e .[dev]
       - run: python scripts/placeholder_sweep.py --root generated_repos --project agent-build-007-2-1-1
   repo-audit:
@@ -42,7 +42,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
+        with: { python-version: "3.12" }
       - run: python -m pip install -U pip && python -m pip install -e .[dev]
       - run: python scripts/repo_audit.py --root generated_repos/agent-build-007-2-1-1 --format json --fail-on high
   governance-crosscheck:
@@ -54,7 +54,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
+        with: { python-version: "3.12" }
       - run: python -m pip install -U pip && python -m pip install -e .[dev]
       - run: python scripts/check_governance_crosspack.py --strict --root "$BUILD_ROOT"
   registry-consistency:
@@ -63,7 +63,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
+        with: { python-version: "3.12" }
       - run: python -m pip install -U pip && python -m pip install -e .[dev]
       - run: python scripts/check_registry_consistency.py
   unit-python:
@@ -72,7 +72,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
+        with: { python-version: "3.12" }
       - run: python -m pip install -U pip && python -m pip install -e .[dev]
       - run: pytest -q
   unit-js:
@@ -80,7 +80,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: '20' }
+        with: { node-version: "20" }
       - run: npm ci
       - run: npm test --silent
   ui-schema-smoke:
@@ -89,9 +89,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
-        with: { node-version: '20' }
+        with: { node-version: "20" }
       - uses: actions/setup-python@v5
-        with: { python-version: '3.12' }
+        with: { python-version: "3.12" }
       - run: npm ci
       - run: python -m pip install -U pip && python -m pip install -e .[dev]
       - run: python scripts/ui_schema_smoke.py
+  pre-commit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: "3.12" }
+      - run: python -m pip install -U pip && python -m pip install pre-commit
+      - run: pre-commit run -a

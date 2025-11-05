@@ -1,4 +1,5 @@
 import json
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -8,7 +9,7 @@ def write_json(path: Path, payload: object) -> None:
     path.write_text(json.dumps(payload), encoding="utf-8")
 
 
-def test_release_gate_report(tmp_path):
+def test_release_gate_report(tmp_path, monkeypatch):
     build_root = tmp_path / "build"
     build_root.mkdir()
     lifecycle_payload = {
@@ -53,7 +54,10 @@ def test_release_gate_report(tmp_path):
         },
         "approvals": {
             "matrix": [
-                {"artifact": "02_Global-Instructions_v2.json", "required": ["CAIO", "CPA"]}
+                {
+                    "artifact": "02_Global-Instructions_v2.json",
+                    "required": ["CAIO", "CPA"],
+                }
             ]
         },
     }
@@ -61,10 +65,20 @@ def test_release_gate_report(tmp_path):
 
     out_dir = tmp_path / "reports_out"
     repo_root = Path(__file__).resolve().parents[1]
+    src_path = str(repo_root / "src")
+    existing_pythonpath = os.environ.get("PYTHONPATH")
+    combined_pythonpath = (
+        f"{src_path}{os.pathsep}{existing_pythonpath}"
+        if existing_pythonpath
+        else src_path
+    )
+    monkeypatch.setenv("PYTHONPATH", combined_pythonpath)
+
     result = subprocess.run(
         [
             sys.executable,
-            "scripts/release_gate_report.py",
+            "-m",
+            "scripts.release_gate_report",
             "--root",
             str(build_root),
             "--out",
