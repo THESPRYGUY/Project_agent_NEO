@@ -14,6 +14,7 @@ from urllib.parse import parse_qs
 import io
 import zipfile
 import tempfile
+import re
 
 from wsgiref.simple_server import make_server
 
@@ -645,6 +646,7 @@ class IntakeApplication:
         self.routing_defaults_path = (
             self.data_root / "routing" / "function_role_map.json"
         )
+        self.domain_map_path = self.data_root / "domain_map.json"
         self.base_dir = self._resolve_base_dir(base_dir)
         self.profile_path = self.base_dir / "agent_profile.json"
         self.spec_dir = (
@@ -710,6 +712,7 @@ class IntakeApplication:
             self.ui_dir / "domain_bundle.css"
         )
         self._domain_bundle_js = self._safe_read_text(self.ui_dir / "domain_bundle.js")
+        self.domain_map = self._load_domain_map()
         self._domain_selector_assets = self._load_domain_selector_assets()
         self._function_select_html = self._safe_read_text(
             self.ui_dir / "function_select.html"
@@ -1432,6 +1435,11 @@ class IntakeApplication:
         priors = self._safe_read_json(
             self.persona_dir / "priors_by_domain_role.json", {}
         )
+        role_only_priors = self._safe_read_json(
+            self.persona_dir / "priors_role_only.json", {}
+        )
+        if not isinstance(role_only_priors, Mapping):
+            role_only_priors = {}
         traits_lexicon = self._safe_read_json(
             self.persona_dir / "traits_lexicon.json", {}
         )
@@ -1441,6 +1449,7 @@ class IntakeApplication:
         return {
             "mbti_types": mbti,
             "priors_by_domain_role": priors,
+            "priors_role_only": role_only_priors,
             "traits_lexicon": traits_lexicon,
             "traits_overlays": traits_overlays,
         }
@@ -1540,6 +1549,42 @@ class IntakeApplication:
             "catalog": function_catalog,
         }
 
+    def _load_domain_map(self) -> dict[str, str]:
+        raw = self._safe_read_json(self.domain_map_path, {})
+        if not isinstance(raw, Mapping):
+            return {}
+        domain_map: dict[str, str] = {}
+        for key, value in raw.items():
+            try:
+                fn_key = self._normalise_function_key(str(key))
+                domain_value = str(value).strip()
+                if fn_key and domain_value:
+                    domain_map[fn_key] = domain_value
+            except Exception:
+                continue
+        return domain_map
+
+    @staticmethod
+    def _normalise_function_key(value: str | None) -> str:
+        if not value:
+            return ""
+        upper = str(value).upper()
+        cleaned = re.sub(r"[&+]", " AND ", upper)
+        cleaned = re.sub(r"[^A-Z0-9]+", "_", cleaned)
+        cleaned = re.sub(r"_+", "_", cleaned).strip("_")
+        return cleaned
+
+    def _infer_domain(
+        self, function_key: str | None, function_value: str | None
+    ) -> str | None:
+        key_candidate = self._normalise_function_key(function_key)
+        if key_candidate and key_candidate in (self.domain_map or {}):
+            return self.domain_map[key_candidate]
+        value_candidate = self._normalise_function_key(function_value)
+        if value_candidate and value_candidate in (self.domain_map or {}):
+            return self.domain_map[value_candidate]
+        return None
+
     def _load_domain_selector_assets(self) -> dict[str, Any]:
         curated_path = self.data_root / "catalog" / "domains_curated.json"
         curated_raw = self._safe_read_json(curated_path, CURATED_DOMAIN_FALLBACK)
@@ -1556,6 +1601,11 @@ class IntakeApplication:
             curated["Sector Domains"] = list(
                 CURATED_DOMAIN_FALLBACK.get("Sector Domains", [])
             )
+        bootstrap_js = (
+            "window.__DOMAIN_AUTODERIVE__ = "
+            + json.dumps(self.domain_map or {}, ensure_ascii=False)
+            + ";"
+        )
         return {
             "html": self._domain_selector_html,
             "css": self._domain_selector_css,
@@ -1563,6 +1613,7 @@ class IntakeApplication:
             "js": self._domain_selector_js,
             "bundle_js": self._domain_bundle_js,
             "curated": curated,
+            "bootstrap_js": bootstrap_js,
         }
 
     # Rendering helpers -------------------------------------------------
@@ -1983,6 +2034,7 @@ window.addEventListener('DOMContentLoaded', function () {
             "\n".join(
                 part
                 for part in (
+                    self._domain_selector_assets.get("bootstrap_js"),
                     self._domain_selector_assets.get("js"),
                     self._domain_selector_assets.get("bundle_js"),
                 )
@@ -2312,8 +2364,75 @@ window.addEventListener('DOMContentLoaded', function () {
         Returns the enriched state mapping that was saved.
         """
         agent = dict(state.get("agent") or {})
-        code = agent.get("code")
+        business_function = agent.get("business_function") or state.get(
+            "business_function"
+        )
+        business_function_key = agent.get("business_function_key") or state.get(
+            "business_function_key"
+        )
+        if business_function_key:
+            business_function_key = self._normalise_function_key(
+                str(business_function_key)
+            )
+        if business_function_key:
+            agent["business_function_key"] = business_function_key
+        elif business_function:
+            normalised_key = self._normalise_function_key(str(business_function))
+            if normalised_key:
+                business_function_key = normalised_key
+                agent["business_function_key"] = normalised_key
+
+        raw_domain = str(agent.get("domain") or "").strip()
+        domain_source = str(agent.get("domain_source") or "").strip().lower()
+        derived_domain: str | None = None
+        if raw_domain:
+            agent["domain"] = raw_domain
+            domain_source = "override"
+        else:
+            derived_domain = self._infer_domain(
+                business_function_key, business_function
+            )
+            if derived_domain:
+                agent["domain"] = derived_domain
+                domain_source = "derived"
+        if not domain_source:
+            domain_source = "none"
+        agent["domain_source"] = domain_source
+
+        generic_baseline = "Domain not provided; using generic persona baseline."
+        rationale: list[str] = []
+        raw_rationale = agent.get("rationale") or []
+        if isinstance(raw_rationale, list):
+            for entry in raw_rationale:
+                try:
+                    text = str(entry).strip()
+                except Exception:
+                    continue
+                if text and text != generic_baseline:
+                    rationale.append(text)
+        elif raw_rationale:
+            try:
+                text = str(raw_rationale).strip()
+            except Exception:
+                text = ""
+            if text and text != generic_baseline:
+                rationale.append(text)
+
         role_key = agent.get("role_code") or agent.get("role")
+        has_context = bool(role_key or business_function or business_function_key)
+        if domain_source == "derived" and agent.get("domain"):
+            inferred_line = (
+                f"Domain inferred from Business Function: {agent['domain']}."
+            )
+            if inferred_line not in rationale:
+                rationale.append(inferred_line)
+        elif domain_source != "override" and has_context:
+            fallback_line = "Role prior used (no domain)."
+            if fallback_line not in rationale:
+                rationale.append(fallback_line)
+        agent["rationale"] = rationale
+
+        code = agent.get("code")
         agent_id = agent.get("agent_id")
         enriched = self._enrich_persona_metadata(
             code, role_key=role_key, agent_id=agent_id

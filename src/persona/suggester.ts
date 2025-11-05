@@ -1,4 +1,4 @@
-import typesData from "./mbti_types.json";
+ï»¿import typesData from "./mbti_types.json";
 import priorsData from "./priors_by_domain_role.json";
 import {
   compatibilityScore,
@@ -7,6 +7,8 @@ import {
   PriorsMap,
   roleFitScore,
   RoleFitResult,
+  DomainSource,
+  DOMAIN_MAP,
 } from "./math";
 
 export interface PersonaDefinition {
@@ -26,6 +28,8 @@ export interface PersonaPreferences {
 export interface SuggestPersonaInput {
   domain?: string | null;
   role?: string | null;
+  businessFunction?: string | null;
+  businessFunctionKey?: string | null;
   operatorType?: string | null;
   preferences?: PersonaPreferences | null;
 }
@@ -41,6 +45,8 @@ export interface PersonaSuggestion {
   roleFitNarrative: string[];
   preferenceNotes: string[];
   alternates: Array<{ code: string; blendedScore: number }>;
+  domain: string | null;
+  domainSource: DomainSource;
 }
 
 const TYPES: PersonaDefinition[] = typesData as PersonaDefinition[];
@@ -101,16 +107,15 @@ function preferenceBias(code: string, preferences?: PersonaPreferences | null): 
   return { bonus, notes };
 }
 
-function candidateScore(
-  definition: PersonaDefinition,
-  input: SuggestPersonaInput,
-): CandidateScore {
+function candidateScore(definition: PersonaDefinition, input: SuggestPersonaInput): CandidateScore {
   const compatibilityResult = compatibilityScore(input.operatorType ?? "", definition.code);
-  const roleFit = roleFitScore(
-    input.domain ?? null,
-    input.role ?? null,
-    definition.code,
-  );
+  const roleFit = roleFitScore({
+    domain: input.domain ?? null,
+    role: input.role ?? null,
+    agentCode: definition.code,
+    businessFunction: input.businessFunction ?? null,
+    businessFunctionKey: input.businessFunctionKey ?? null,
+  });
   const { bonus, notes } = preferenceBias(definition.code, input.preferences);
 
   const weight = input.operatorType ? 0.62 : 0.5;
@@ -131,7 +136,8 @@ function candidateScore(
 }
 
 export function suggestPersona(input: SuggestPersonaInput): PersonaSuggestion {
-  const candidates = deriveCandidates(input.domain, input.role);
+  const domainHint = resolveDomainHint(input);
+  const candidates = deriveCandidates(domainHint, input.role);
   const scored = candidates.map((definition) => candidateScore(definition, input));
   scored.sort((a, b) => b.blended - a.blended);
   const best = scored[0];
@@ -148,7 +154,7 @@ export function suggestPersona(input: SuggestPersonaInput): PersonaSuggestion {
 
   return {
     code: best.definition.code,
-    label: `${best.definition.code} — ${best.definition.nickname}`,
+    label: `${best.definition.code} - ${best.definition.nickname}`,
     rationale,
     compatibilityScore: best.compatibility,
     roleFitScore: best.roleFit.score,
@@ -157,6 +163,8 @@ export function suggestPersona(input: SuggestPersonaInput): PersonaSuggestion {
     roleFitNarrative: best.roleFit.factors,
     preferenceNotes: best.preferenceNotes,
     alternates,
+    domain: best.roleFit.domain,
+    domainSource: best.roleFit.domainSource,
   };
 }
 
@@ -178,4 +186,33 @@ function deriveCandidates(domain?: string | null, role?: string | null): Persona
 
 function collectCodes(codes: string[] | undefined): string[] {
   return (codes ?? []).map((code) => normaliseType(code)).filter((code) => code.length === 4);
+}
+
+function resolveDomainHint(input: SuggestPersonaInput): string | null {
+  const override = sanitiseDomainLabel(input.domain);
+  if (override) {
+    return override;
+  }
+  const key =
+    normaliseFunctionKey(input.businessFunctionKey) ||
+    normaliseFunctionKey(input.businessFunction);
+  if (key && DOMAIN_MAP[key]) {
+    return DOMAIN_MAP[key];
+  }
+  return null;
+}
+
+function normaliseFunctionKey(value?: string | null): string {
+  return (value ?? "")
+    .replace(/&/g, " AND ")
+    .replace(/\+/g, " AND ")
+    .replace(/[^A-Z0-9]+/gi, "_")
+    .replace(/_{2,}/g, "_")
+    .replace(/^_|_$/g, "")
+    .toUpperCase();
+}
+
+function sanitiseDomainLabel(value?: string | null): string | null {
+  const trimmed = (value ?? "").trim();
+  return trimmed ? trimmed : null;
 }

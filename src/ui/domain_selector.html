@@ -1,3 +1,11 @@
-<!-- Placeholder domain selector to silence missing-asset warnings. -->
-<div data-domain-selector style="display:none"></div>
-
+﻿<div data-domain-selector class="domain-selector">
+  <div class="domain-selector__banner" data-domain-banner hidden>
+    <button type="button" class="domain-selector__banner-button" data-domain-banner-button>
+      Domain inferred: <span data-domain-name></span> (click to override)
+    </button>
+  </div>
+  <label class="domain-selector__field">
+    <span class="domain-selector__label">Domain Override</span>
+    <input type="text" name="domain" data-domain-input placeholder="Enter domain override (optional)">
+  </label>
+</div>

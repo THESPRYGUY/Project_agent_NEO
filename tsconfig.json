@@ -13,7 +13,8 @@
   },
   "include": [
     "src/**/*",
-    "tests/js/**/*"
+    "tests/js/**/*",
+    "data/**/*.json"
   ],
   "version": "0.0.0"
 }

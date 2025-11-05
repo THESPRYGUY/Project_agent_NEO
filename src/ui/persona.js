@@ -18,6 +18,10 @@
   const traitsMeta = root.querySelector('[data-traits-meta]');
   const copyTraitsButton = root.querySelector('[data-copy-traits]');
 
+  const domainMapRaw = window.__DOMAIN_AUTODERIVE__ || {};
+  const DOMAIN_AUTODERIVE = normaliseDomainMapJS(domainMapRaw);
+  let ROLE_ONLY_PRIORS = {};
+
 const tooltipRoot = document.querySelector('[data-mbti-tooltips="enabled"]');
 let tooltipElement = null;
 let tooltipData = new Map();
@@ -257,6 +261,7 @@ function initialiseTooltips(types) {
     fetchJson(configUrl)
       .then((data) => {
         config = data;
+        ROLE_ONLY_PRIORS = normaliseRolePriorsJS(data.priors_role_only || {});
         traitsLexicon = data.traits_lexicon || {};
         traitsOverlays = {};
         if (data.traits_overlays && typeof data.traits_overlays === 'object') {
@@ -341,6 +346,28 @@ function initialiseTooltips(types) {
   function currentRoleCode() {
     const input = document.querySelector('[data-hidden-role-code]');
     return input ? input.value : '';
+  }
+
+  function currentBusinessFunction() {
+    const input = document.querySelector('[name="business_function"]');
+    return input ? input.value : '';
+  }
+
+  function currentBusinessFunctionKey() {
+    const explicit = document.querySelector('[name="business_function_key"]');
+    if (explicit && explicit.value) {
+      return explicit.value;
+    }
+    return normaliseFunctionKeyJS(currentBusinessFunction());
+  }
+
+  function currentDomainOverride() {
+    const input = document.querySelector('[name="domain"]');
+    if (!input) {
+      return null;
+    }
+    const value = String(input.value || '').trim();
+    return value ? value : null;
   }
 
   function currentAgentId() {
@@ -551,7 +578,7 @@ function initialiseTooltips(types) {
     }
     const preferences = collectPreferences();
     const suggestion = suggestAgentPersona({
-      domain: getSelectValue('domain'),
+      domain: currentDomainOverride(),
       role: currentRoleCode() || getSelectValue('role'),
       operatorType: currentState.operator.code,
       preferences,
@@ -641,17 +668,23 @@ function initialiseTooltips(types) {
         compatibility: currentState.suggestion.compatibilityScore,
         role_fit: currentState.suggestion.roleFitScore,
         blended: currentState.suggestion.blendedScore,
+        domain: currentState.suggestion.domain || null,
+        domain_source: currentState.suggestion.domainSource || 'none',
       },
       alternates: currentState.suggestion.alternates,
     };
     const roleCode = currentRoleCode();
     const functionInput = document.querySelector('[name="business_function"]');
+    const businessFunctionKey = currentBusinessFunctionKey();
     const agentId = currentAgentId();
     if (roleCode) {
       payload.agent.role_code = roleCode;
     }
     if (functionInput && functionInput.value) {
       payload.agent.business_function = functionInput.value;
+    }
+    if (businessFunctionKey) {
+      payload.agent.business_function_key = businessFunctionKey;
     }
     if (agentId) {
       payload.agent.agent_id = agentId;
@@ -686,7 +719,10 @@ function initialiseTooltips(types) {
           alternates: saved?.alternates || currentState.suggestion.alternates,
           traits: savedTraits,
           updatedAt: saved?.updated_at ? saved.updated_at * 1000 : Date.now(),
+          domain: saved?.agent?.domain ?? currentState.suggestion.domain ?? null,
+          domainSource: saved?.agent?.domain_source ?? currentState.suggestion.domainSource ?? 'none',
         };
+        currentState.suggestion = suggestion;
         renderSuggestion(suggestion);
         showSummary(`Saved agent persona ${saved.agent?.code ?? ''}. Reload to confirm persistence.`);
       })
@@ -716,6 +752,12 @@ function initialiseTooltips(types) {
       const savedTraits = (currentState.persona_details && currentState.persona_details.suggested_traits)
         || (currentState.agent.mbti && currentState.agent.mbti.suggested_traits)
         || [];
+      const domainInput = document.querySelector('[name="domain"]');
+      if (domainInput && currentState.agent.domain) {
+        domainInput.value = currentState.agent.domain;
+        domainInput.dispatchEvent(new Event('input', { bubbles: true }));
+        domainInput.dispatchEvent(new Event('change', { bubbles: true }));
+      }
       const suggestion = {
         code: currentState.agent.code,
         rationale: currentState.agent.rationale || [],
@@ -725,7 +767,10 @@ function initialiseTooltips(types) {
         alternates: currentState.alternates || [],
         traits: savedTraits,
         updatedAt: currentState.updated_at ? currentState.updated_at * 1000 : Date.now(),
+        domain: currentState.agent.domain || null,
+        domainSource: currentState.agent.domain_source || (currentState.agent.domain ? 'override' : 'none'),
       };
+      currentState.suggestion = suggestion;
       renderSuggestion(suggestion);
       acceptButton.disabled = false;
       updatePersonaInput(currentState.agent.code || '');
@@ -769,36 +814,90 @@ function initialiseTooltips(types) {
     return { score: Math.round(score), matches, mismatches };
   }
 
-  function roleFitScoreJS(domain, role, agent, priors) {
-    const ag = normaliseType(agent);
+  function roleFitScoreJS(options) {
+    const ag = normaliseType(options.agent);
     if (ag.length !== 4) {
-      return { score: 0, factors: [] };
+      return { score: 0, factors: [], domain: null, domainSource: 'none' };
     }
+
+    const priors = options.priors || {};
+    const rolePriors = options.rolePriors || ROLE_ONLY_PRIORS;
+    const domainMap = options.domainMap || DOMAIN_AUTODERIVE;
     const factors = [];
     let score = 55;
-    if (domain && priors[domain]) {
-      const domainMap = priors[domain];
-      const roleCodes = collectCodes(domainMap[role || '']);
-      const defaultCodes = collectCodes(domainMap._default);
-      const domainCodes = new Set([...(roleCodes || []), ...(defaultCodes || [])]);
-      if (role && roleCodes.includes(ag)) {
+
+    const { resolvedDomain, source } = resolveDomainJS({
+      override: options.domain,
+      businessFunction: options.businessFunction,
+      businessFunctionKey: options.businessFunctionKey,
+      domainMap,
+    });
+
+    const domainLookup = resolvedDomain && priors[resolvedDomain] ? priors[resolvedDomain] : {};
+    const domainBaseline = resolvedDomain ? flattenPriorsJS(domainLookup) : [];
+    const roleKey = normaliseRoleKeyJS(options.role);
+    const roleCodes = normaliseListJS(roleKey ? rolePriors[roleKey] : undefined);
+    const defaultRoleCodes = normaliseListJS(rolePriors._DEFAULT || rolePriors._default);
+    const hasFunctionContext =
+      Boolean(normaliseFunctionKeyJS(options.businessFunctionKey)) ||
+      Boolean(normaliseFunctionKeyJS(options.businessFunction));
+    const hasRoleContext = Boolean(roleKey);
+
+    if (source === 'derived' && resolvedDomain) {
+      factors.push(`Domain inferred from Business Function: ${resolvedDomain}.`);
+    }
+
+    if (resolvedDomain) {
+      const domainRoleCodes = normaliseListJS(domainLookup[options.role || '']);
+      const domainDefaultCodes = normaliseListJS(domainLookup._default);
+      if (options.role && domainRoleCodes.includes(ag)) {
         score = 95;
-        factors.push(`Strong prior: ${ag} excels for ${role} in ${domain}.`);
-      } else if (defaultCodes.includes(ag)) {
+        factors.push(`Strong prior: ${ag} excels for ${options.role} in ${resolvedDomain}.`);
+      } else if (domainDefaultCodes.includes(ag)) {
         score = 82;
-        factors.push(`Domain match: ${ag} is a reliable fit within ${domain}.`);
-      } else if (domainCodes.size > 0) {
+        factors.push(`Domain match: ${ag} is a reliable fit within ${resolvedDomain}.`);
+      } else if (domainBaseline.length > 0) {
         score = 68;
-        factors.push(`Adjacent fit: ${ag} aligns with neighbouring personas for ${domain}.`);
+        factors.push(`Adjacent fit: ${ag} aligns with neighbouring personas for ${resolvedDomain}.`);
+      } else if (roleCodes.length > 0 || defaultRoleCodes.length > 0) {
+        score = 70;
+        appendRoleFallbackJS(factors, ag, options.role, true);
       } else {
         score = 60;
-        factors.push(`No explicit prior for ${domain}; using balanced baseline.`);
+        factors.push(`No explicit prior for ${resolvedDomain}; using balanced baseline.`);
       }
+      return {
+        score: Math.round(clamp(score, 0, 100)),
+        factors,
+        domain: resolvedDomain,
+        domainSource: source,
+      };
+    }
+
+    if (roleCodes.includes(ag)) {
+      score = 90;
+      appendRoleFallbackJS(factors, ag, options.role, false, 'strong');
+    } else if (defaultRoleCodes.includes(ag)) {
+      score = 78;
+      appendRoleFallbackJS(factors, ag, options.role);
+    } else if (roleCodes.length > 0 || defaultRoleCodes.length > 0) {
+      score = 68;
+      appendRoleFallbackJS(factors, ag, options.role);
     } else {
       score = 60;
-      factors.push('Domain not provided; using generic persona baseline.');
+      if (hasFunctionContext || hasRoleContext) {
+        factors.push('Role prior unavailable; using balanced baseline.');
+      } else {
+        factors.push('Domain not provided; using generic persona baseline.');
+      }
     }
-    return { score: Math.round(clamp(score, 0, 100)), factors };
+
+    return {
+      score: Math.round(clamp(score, 0, 100)),
+      factors,
+      domain: null,
+      domainSource: 'none',
+    };
   }
 
   function blendedScoreJS(compatibility, roleFit, preferenceWeight) {
@@ -848,10 +947,27 @@ function initialiseTooltips(types) {
   function suggestAgentPersona(input, cfg) {
     const priors = cfg.priors_by_domain_role;
     const types = cfg.mbti_types;
-    const candidates = deriveCandidatesJS(input.domain, input.role, priors, types);
+    const businessFunction = currentBusinessFunction();
+    const businessFunctionKey = currentBusinessFunctionKey();
+    const domainResolution = resolveDomainJS({
+      override: input.domain,
+      businessFunction,
+      businessFunctionKey,
+      domainMap: DOMAIN_AUTODERIVE,
+    });
+    const candidates = deriveCandidatesJS(domainResolution.resolvedDomain, input.role, priors, types);
     const scores = candidates.map((entry) => {
       const compatibility = compatibilityScoreJS(input.operatorType, entry.code);
-      const roleFit = roleFitScoreJS(input.domain, input.role, entry.code, priors);
+      const roleFit = roleFitScoreJS({
+        domain: input.domain,
+        role: input.role,
+        agent: entry.code,
+        businessFunction,
+        businessFunctionKey,
+        priors,
+        rolePriors: ROLE_ONLY_PRIORS,
+        domainMap: DOMAIN_AUTODERIVE,
+      });
       const preference = preferenceBiasJS(entry.code, input.preferences);
       const composite = blendedScoreJS(
         compatibility.score + preference.bonus,
@@ -897,6 +1013,8 @@ function initialiseTooltips(types) {
       alternates,
       traits,
       updatedAt: Date.now(),
+      domain: best.roleFit.domain,
+      domainSource: best.roleFit.domainSource,
     };
   }
 
@@ -914,9 +1032,103 @@ function initialiseTooltips(types) {
   }
 
   function collectCodes(codes) {
-    return (codes || [])
+    return normaliseListJS(codes);
+  }
+
+  function normaliseListJS(values) {
+    return (values || [])
       .map((code) => normaliseType(code))
       .filter((code) => code.length === 4);
+  }
+
+  function resolveDomainJS(params) {
+    const override = sanitiseDomainLabel(params.override);
+    if (override) {
+      return { resolvedDomain: override, source: 'override' };
+    }
+    const key =
+      normaliseFunctionKeyJS(params.businessFunctionKey) ||
+      normaliseFunctionKeyJS(params.businessFunction);
+    if (key && params.domainMap && params.domainMap[key]) {
+      return { resolvedDomain: params.domainMap[key], source: 'derived' };
+    }
+    return { resolvedDomain: null, source: 'none' };
+  }
+
+  function sanitiseDomainLabel(value) {
+    const trimmed = String(value || '').trim();
+    return trimmed ? trimmed : null;
+  }
+
+  function normaliseFunctionKeyJS(value) {
+    return String(value || '')
+      .replace(/&/g, ' AND ')
+      .replace(/\+/g, ' AND ')
+      .replace(/[^A-Z0-9]+/gi, '_')
+      .replace(/_{2,}/g, '_')
+      .replace(/^_|_$/g, '')
+      .toUpperCase();
+  }
+
+  function normaliseRoleKeyJS(role) {
+    return String(role || '').toUpperCase().trim();
+  }
+
+  function appendRoleFallbackJS(factors, agent, role, fallbackOnly, emphasis) {
+    const base = 'Role prior used (no domain).';
+    if (!factors.includes(base)) {
+      factors.push(base);
+    }
+    if (fallbackOnly) {
+      return;
+    }
+    const suffix = role ? ` for ${role}` : '';
+    if (emphasis === 'strong') {
+      factors.push(`Strong match${suffix}: ${agent}.`);
+    } else {
+      factors.push(`Aligned with expected profile${suffix}: ${agent}.`);
+    }
+  }
+
+  function flattenPriorsJS(priors) {
+    if (!priors || typeof priors !== 'object') {
+      return [];
+    }
+    const results = [];
+    Object.values(priors).forEach((codes) => {
+      results.push(...normaliseListJS(codes));
+    });
+    return results;
+  }
+
+  function normaliseRolePriorsJS(raw) {
+    if (!raw || typeof raw !== 'object') {
+      return {};
+    }
+    const out = {};
+    Object.entries(raw).forEach(([key, value]) => {
+      const normalisedKey = key === '_default' ? '_DEFAULT' : normaliseRoleKeyJS(key);
+      if (!normalisedKey) {
+        return;
+      }
+      out[normalisedKey] = Array.isArray(value) ? value.map((item) => String(item)) : [];
+    });
+    return out;
+  }
+
+  function normaliseDomainMapJS(raw) {
+    if (!raw || typeof raw !== 'object') {
+      return {};
+    }
+    const out = {};
+    Object.entries(raw).forEach(([key, value]) => {
+      const normalisedKey = normaliseFunctionKeyJS(key);
+      if (!normalisedKey || !value) {
+        return;
+      }
+      out[normalisedKey] = String(value);
+    });
+    return out;
   }
 
   function clamp(value, lower, upper) {
