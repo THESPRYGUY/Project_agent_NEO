@@ -1,0 +1,29 @@
+{
+  "sprint": "AB007",
+  "tags": [
+    "v2.1.1",
+    "v2.1.2",
+    "v2.1.3",
+    "v2.1.4",
+    "v2.1.5"
+  ],
+  "required_checks": [
+    "schema-validate",
+    "intake-mapper-guard",
+    "placeholder-sweep",
+    "repo-audit",
+    "unit-python",
+    "unit-js",
+    "ui-schema-smoke",
+    "registry-consistency",
+    "governance-crosscheck"
+  ],
+  "kpi_cron": {
+    "enabled": true
+  },
+  "solo_maintainer": {
+    "approvals": 0,
+    "admins_enforced": true,
+    "conversations_required": true
+  }
+}
