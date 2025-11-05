@@ -1,0 +1,31 @@
+{
+  "intake_id": "sample-minimal",
+  "version": "1.0",
+  "persona": {
+    "name": "Sample Agent",
+    "tone": "crisp",
+    "persona_code": "ENTJ"
+  },
+  "context": {
+    "sector": "Turkey Production",
+    "naics": "112330"
+  },
+  "governance_eval": {
+    "gates": {
+      "PRI_min": 0.95,
+      "HAL_max": 0.02,
+      "AUD_min": 0.90
+    }
+  },
+  "memory": {
+    "scopes": [
+      "episodic:intake/*"
+    ]
+  },
+  "capabilities_tools": {
+    "tool_suggestions": [
+      "search",
+      "spreadsheet"
+    ]
+  }
+}

@@ -407,6 +407,26 @@ CI filter note (v2.1.2): Added `feat/**` and `hotfix/**` to workflow push filter
 - Nightly artifact: Actions → **KPI Report (cron)** → latest run (reports/kpi\_report.\*).
 - On-demand: Run `python scripts/gen_kpi_report.py --root generated_repos/agent-build-007-2-1-1 --out reports/`.
 
+### Quickstart: Intake → Mapper → CI → KPI
+
+1. Clone repo & install deps (`pip install -e .[dev]`, `npm ci`).
+2. Start intake UI (`python -m neo_agent.intake_app`) and craft payload.
+3. Save payload and run `tools/apply_intake.py` to map packs.
+4. Inspect generated repo under `_generated/` (or your build root).
+5. Execute `pytest -q` and `npm test` locally for parity + UI coverage.
+6. Push branch; required CI (schema, mapper, repo audit, unit, UI) runs.
+7. KPI cron + smoke workflows drop artifacts in Actions for review.
+
+```mermaid
+graph TD
+  Intake[Intake UI] --> Mapper[Mapper / tools.apply_intake]
+  Mapper --> Packs[Generated Packs]
+  Packs --> CI[CI Required Checks]
+  CI --> KPI[KPI Report Workflows]
+```
+
+> If Mermaid is unavailable, follow the flow: Intake UI → Mapper → Generated Packs → CI → KPI Workflows.
+
 ### Tag conventions & release steps
 
 - Tags follow `vX.Y.Z[-ab###-PR#-slug]`.
