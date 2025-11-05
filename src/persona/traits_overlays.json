@@ -1,0 +1,22 @@
+{
+  "EXEC:GM": [
+    "decisive_orchestrator",
+    "stakeholder_alignment",
+    "strategic_executor"
+  ],
+  "FIN:CONTROLLER": [
+    "precision_advocate",
+    "process_anchor",
+    "governance_sentinel"
+  ],
+  "CS:CSM": [
+    "customer_empath",
+    "service_champion",
+    "stakeholder_alignment"
+  ],
+  "MKT:CMO": [
+    "narrative_builder",
+    "energy_connector",
+    "innovation_scout"
+  ]
+}

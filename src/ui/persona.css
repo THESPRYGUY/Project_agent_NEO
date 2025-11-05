@@ -152,6 +152,62 @@
   padding-left: 1.1rem;
 }
 
+.persona-traits {
+  margin-top: 1rem;
+  border-top: 1px solid #dce2f2;
+  padding-top: 0.75rem;
+}
+
+.persona-traits__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.persona-traits__header h4 {
+  margin: 0;
+  font-size: 0.95rem;
+  color: #1f3c88;
+}
+
+.persona-traits__copy {
+  border: 1px solid #1f3c88;
+  background: #ffffff;
+  color: #1f3c88;
+  padding: 0.35rem 0.75rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.persona-traits__copy:hover,
+.persona-traits__copy:focus-visible {
+  background: #eef2fb;
+}
+
+.persona-traits__chips {
+  margin-top: 0.6rem;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+.persona-traits__chip {
+  background: #1f3c88;
+  color: #ffffff;
+  padding: 0.35rem 0.65rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  line-height: 1.2;
+}
+
+.persona-traits__meta {
+  margin-top: 0.5rem;
+  font-size: 0.75rem;
+  color: #5a6b8c;
+}
+
 .persona-alternates {
   margin-top: 1.25rem;
   padding: 0.75rem 1rem;

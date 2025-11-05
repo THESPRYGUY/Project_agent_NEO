@@ -3,6 +3,12 @@
     "code": "INTJ",
     "name": "Architect",
     "nickname": "Strategic Visionary",
+    "suggested_traits": [
+      "strategic_executor",
+      "systems_thinker",
+      "foresight_planner",
+      "analytical_anchor"
+    ],
     "strengths": [
       "Systems thinking",
       "Long-range planning"
@@ -13,6 +19,11 @@
     "code": "INTP",
     "name": "Analyst",
     "nickname": "Idea Synthesizer",
+    "suggested_traits": [
+      "insight_synthesizer",
+      "curiosity_researcher",
+      "innovation_scout"
+    ],
     "strengths": [
       "Problem abstraction",
       "Model building"
@@ -23,6 +34,12 @@
     "code": "ENTJ",
     "name": "Commander",
     "nickname": "Decisive Leader",
+    "suggested_traits": [
+      "decisive_orchestrator",
+      "strategic_executor",
+      "stakeholder_alignment",
+      "momentum_driver"
+    ],
     "strengths": [
       "Decisiveness",
       "Organisation"
@@ -33,6 +50,11 @@
     "code": "ENTP",
     "name": "Trailblazer",
     "nickname": "Challenge Architect",
+    "suggested_traits": [
+      "innovation_scout",
+      "energy_connector",
+      "rapid_resolver"
+    ],
     "strengths": [
       "Brainstorming",
       "Quick synthesis"
@@ -43,6 +65,11 @@
     "code": "INFJ",
     "name": "Guide",
     "nickname": "Insightful Advocate",
+    "suggested_traits": [
+      "values_champion",
+      "change_navigator",
+      "resilience_coach"
+    ],
     "strengths": [
       "Pattern recognition",
       "Empathy"
@@ -53,6 +80,11 @@
     "code": "INFP",
     "name": "Storyteller",
     "nickname": "Meaning Maker",
+    "suggested_traits": [
+      "narrative_builder",
+      "values_champion",
+      "customer_empath"
+    ],
     "strengths": [
       "Narrative building",
       "Values alignment"
@@ -63,6 +95,11 @@
     "code": "ENFJ",
     "name": "Activator",
     "nickname": "Alignment Driver",
+    "suggested_traits": [
+      "team_mobilizer",
+      "stakeholder_alignment",
+      "resilience_coach"
+    ],
     "strengths": [
       "Team harmony",
       "Change enablement"
@@ -73,6 +110,11 @@
     "code": "ENFP",
     "name": "Spark",
     "nickname": "Possibility Explorer",
+    "suggested_traits": [
+      "energy_connector",
+      "innovation_scout",
+      "narrative_builder"
+    ],
     "strengths": [
       "Scenario ideation",
       "Motivation"
@@ -83,6 +125,11 @@
     "code": "ISTJ",
     "name": "Custodian",
     "nickname": "Operational Anchor",
+    "suggested_traits": [
+      "process_anchor",
+      "governance_sentinel",
+      "precision_advocate"
+    ],
     "strengths": [
       "Governance",
       "Precision"
@@ -93,6 +140,11 @@
     "code": "ISFJ",
     "name": "Steward",
     "nickname": "People Guardian",
+    "suggested_traits": [
+      "service_champion",
+      "people_steward",
+      "customer_empath"
+    ],
     "strengths": [
       "Service mindset",
       "Listening"
@@ -103,6 +155,12 @@
     "code": "ESTJ",
     "name": "Director",
     "nickname": "Execution Captain",
+    "suggested_traits": [
+      "strategic_executor",
+      "process_anchor",
+      "governance_sentinel",
+      "precision_advocate"
+    ],
     "strengths": [
       "Accountability",
       "Process control"
@@ -113,6 +171,11 @@
     "code": "ESFJ",
     "name": "Coordinator",
     "nickname": "Team Harmoniser",
+    "suggested_traits": [
+      "stakeholder_alignment",
+      "service_champion",
+      "team_mobilizer"
+    ],
     "strengths": [
       "Stakeholder care",
       "Operational follow-through"
@@ -123,6 +186,11 @@
     "code": "ISTP",
     "name": "Troubleshooter",
     "nickname": "Adaptive Engineer",
+    "suggested_traits": [
+      "diagnostic_solver",
+      "rapid_resolver",
+      "adaptive_negotiator"
+    ],
     "strengths": [
       "Diagnostics",
       "Hands-on experimentation"
@@ -133,6 +201,11 @@
     "code": "ISFP",
     "name": "Craftsperson",
     "nickname": "Experience Designer",
+    "suggested_traits": [
+      "experience_crafter",
+      "calm_mediator",
+      "customer_empath"
+    ],
     "strengths": [
       "Human-centred design",
       "Calm iteration"
@@ -143,6 +216,11 @@
     "code": "ESTP",
     "name": "Responder",
     "nickname": "Momentum Pilot",
+    "suggested_traits": [
+      "momentum_driver",
+      "adaptive_negotiator",
+      "rapid_resolver"
+    ],
     "strengths": [
       "Rapid triage",
       "Negotiation"
@@ -153,6 +231,11 @@
     "code": "ESFP",
     "name": "Host",
     "nickname": "Experience Catalyst",
+    "suggested_traits": [
+      "engagement_host",
+      "energy_connector",
+      "experience_crafter"
+    ],
     "strengths": [
       "Engagement",
       "Improvisation"

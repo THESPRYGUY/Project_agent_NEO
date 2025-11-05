@@ -13,13 +13,39 @@
   const suggestionDetails = root.querySelector('[data-suggestion-details]');
   const alternatesContainer = root.querySelector('[data-alternates]');
   const personaInput = document.querySelector('[data-persona-input]');
+  const traitsContainer = root.querySelector('[data-persona-traits]');
+  const traitsChips = root.querySelector('[data-traits-chips]');
+  const traitsMeta = root.querySelector('[data-traits-meta]');
+  const copyTraitsButton = root.querySelector('[data-copy-traits]');
 
 const tooltipRoot = document.querySelector('[data-mbti-tooltips="enabled"]');
 let tooltipElement = null;
 let tooltipData = new Map();
 let tooltipActiveButton = null;
+let traitsLexicon = {};
+let traitsOverlays = {};
+let lastRenderedTraits = [];
 
 const TOOLTIP_ID = 'mbti-tooltip';
+const AXIS_TRAIT_POOL = {
+  EI: {
+    E: ['energy_connector', 'engagement_host'],
+    I: ['analytical_anchor', 'calm_mediator'],
+  },
+  SN: {
+    S: ['process_anchor', 'precision_advocate'],
+    N: ['innovation_scout', 'foresight_planner'],
+  },
+  TF: {
+    T: ['strategic_executor', 'diagnostic_solver'],
+    F: ['values_champion', 'people_steward'],
+  },
+  JP: {
+    J: ['decisive_orchestrator', 'quality_guardian'],
+    P: ['experience_crafter', 'curiosity_researcher'],
+  },
+};
+const FALLBACK_TRAITS = ['strategic_executor', 'values_champion', 'innovation_scout', 'process_anchor', 'team_mobilizer'];
 
 function ensureTooltipElement() {
   if (!tooltipRoot) {
@@ -152,6 +178,12 @@ function initialiseTooltips(types) {
 
   initialiseTabs();
   fetchConfiguration();
+  if (copyTraitsButton) {
+    copyTraitsButton.addEventListener('click', (event) => {
+      event.preventDefault();
+      copyTraitsToClipboard();
+    });
+  }
 
   function updatePersonaInput(value) {
     if (personaInput) {
@@ -225,6 +257,15 @@ function initialiseTooltips(types) {
     fetchJson(configUrl)
       .then((data) => {
         config = data;
+        traitsLexicon = data.traits_lexicon || {};
+        traitsOverlays = {};
+        if (data.traits_overlays && typeof data.traits_overlays === 'object') {
+          Object.entries(data.traits_overlays).forEach(([key, value]) => {
+            if (Array.isArray(value)) {
+              traitsOverlays[String(key).toUpperCase()] = value.map((item) => String(item).trim()).filter(Boolean);
+            }
+          });
+        }
         renderOperatorButtons(data.mbti_types);
         return fetchJson(stateUrl);
       })
@@ -256,6 +297,191 @@ function initialiseTooltips(types) {
   function withScrollPreserved(fn) {
     const x = window.scrollX, y = window.scrollY;
     try { fn(); } finally { requestAnimationFrame(() => window.scrollTo(x, y)); }
+  }
+
+  function hashSeed(input) {
+    let hash = 0;
+    const text = String(input || 'persona-traits');
+    for (let i = 0; i < text.length; i += 1) {
+      hash = (hash * 1664525 + text.charCodeAt(i)) >>> 0;
+    }
+    return hash >>> 0;
+  }
+
+  function shuffleWithSeed(array, seed) {
+    const result = array.slice();
+    let state = hashSeed(seed);
+    for (let i = result.length - 1; i > 0; i -= 1) {
+      state = (state * 1664525 + 1013904223) >>> 0;
+      const j = state % (i + 1);
+      const tmp = result[i];
+      result[i] = result[j];
+      result[j] = tmp;
+    }
+    return result;
+  }
+
+  function deriveAxes(code) {
+    const upper = String(code || '').toUpperCase();
+    const labels = ['EI', 'SN', 'TF', 'JP'];
+    return labels.reduce((acc, label, idx) => {
+      acc[label] = upper[idx] || '';
+      return acc;
+    }, {});
+  }
+
+  function normaliseTraitKey(key) {
+    const tidy = String(key || '').trim();
+    if (!tidy) {
+      return null;
+    }
+    return Object.prototype.hasOwnProperty.call(traitsLexicon, tidy) ? tidy : null;
+  }
+
+  function currentRoleCode() {
+    const input = document.querySelector('[data-hidden-role-code]');
+    return input ? input.value : '';
+  }
+
+  function currentAgentId() {
+    const input = document.querySelector('[name="identity.agent_id"]');
+    return input ? input.value : '';
+  }
+
+  function composeTraitsForUI(options) {
+    const roleKey = options.roleKey ? options.roleKey.toUpperCase() : '';
+    const baseTraits = Array.isArray(options.mbtiTraits) ? options.mbtiTraits : [];
+    const axes = options.axes || deriveAxes(options.code);
+    const priority = [];
+    const seen = new Set();
+
+    function addPriority(candidate) {
+      const key = normaliseTraitKey(candidate);
+      if (key && !seen.has(key)) {
+        priority.push(key);
+        seen.add(key);
+      }
+    }
+
+    if (roleKey && Array.isArray(traitsOverlays[roleKey])) {
+      traitsOverlays[roleKey].forEach(addPriority);
+    }
+
+    baseTraits.forEach(addPriority);
+
+    if (priority.length > 0) {
+      return priority.slice(0, 5);
+    }
+
+    const fallbackCandidates = [];
+    Object.entries(axes || {}).forEach(([axis, letter]) => {
+      const pool = AXIS_TRAIT_POOL[axis];
+      const mapped = pool ? pool[String(letter).toUpperCase()] : null;
+      if (Array.isArray(mapped)) {
+        mapped.forEach((candidate) => {
+          const key = normaliseTraitKey(candidate);
+          if (key && !fallbackCandidates.includes(key)) {
+            fallbackCandidates.push(key);
+          }
+        });
+      }
+    });
+
+    if (!fallbackCandidates.length) {
+      FALLBACK_TRAITS.forEach((candidate) => {
+        const key = normaliseTraitKey(candidate);
+        if (key && !fallbackCandidates.includes(key)) {
+          fallbackCandidates.push(key);
+        }
+      });
+    }
+
+    if (!fallbackCandidates.length) {
+      Object.keys(traitsLexicon || {}).forEach((key) => {
+        const tidy = normaliseTraitKey(key);
+        if (tidy && !fallbackCandidates.includes(tidy)) {
+          fallbackCandidates.push(tidy);
+        }
+      });
+    }
+
+    if (!fallbackCandidates.length) {
+      return [];
+    }
+
+    const seed = options.agentId || options.code || 'persona-traits';
+    const ordered = shuffleWithSeed(fallbackCandidates, seed);
+    if (ordered.length < 3) {
+      const base = fallbackCandidates.length > 0 ? fallbackCandidates : ordered;
+      let idx = 0;
+      while (ordered.length < 3 && base.length > 0) {
+        const key = base[idx % base.length];
+        ordered.push(key);
+        idx += 1;
+      }
+    }
+    return ordered.slice(0, 5);
+  }
+
+  function renderTraits(traits, updatedAt) {
+    if (!traitsContainer || !traitsChips || !traitsMeta) {
+      return;
+    }
+    if (!traits || traits.length === 0) {
+      traitsChips.innerHTML = '';
+      traitsMeta.textContent = '';
+      traitsContainer.hidden = true;
+      lastRenderedTraits = [];
+      return;
+    }
+    lastRenderedTraits = traits.slice();
+    const chipsHtml = traits
+      .map((key) => {
+        const label = traitsLexicon[key] || key;
+        return `<span class="persona-traits__chip" data-trait-key="${key}">${label}</span>`;
+      })
+      .join('');
+    traitsChips.innerHTML = chipsHtml;
+    if (updatedAt) {
+      const epoch = typeof updatedAt === 'number' ? updatedAt : Date.now();
+      const ms = epoch > 10 ** 12 ? epoch : epoch * 1000;
+      traitsMeta.textContent = `Last refreshed ${new Date(ms).toLocaleString()}`;
+    } else {
+      traitsMeta.textContent = '';
+    }
+    traitsContainer.hidden = false;
+  }
+
+  function copyTraitsToClipboard() {
+    if (!lastRenderedTraits.length) {
+      showSummary('No traits to copy yet.');
+      return;
+    }
+    const text = lastRenderedTraits.map((key) => traitsLexicon[key] || key).join(', ');
+    const fallback = () => {
+      try {
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        textarea.setAttribute('readonly', '');
+        textarea.style.position = 'absolute';
+        textarea.style.left = '-9999px';
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        showSummary('Traits copied to clipboard.');
+      } catch (err) {
+        console.error(err);
+        showSummary('Unable to copy traits on this browser.');
+      }
+    };
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(text)
+        .then(() => showSummary('Traits copied to clipboard.'))
+        .catch(() => fallback());
+    } else {
+      fallback();
+    }
   }
 
   function renderOperatorButtons(types) {
@@ -326,7 +552,7 @@ function initialiseTooltips(types) {
     const preferences = collectPreferences();
     const suggestion = suggestAgentPersona({
       domain: getSelectValue('domain'),
-      role: getSelectValue('role'),
+      role: currentRoleCode() || getSelectValue('role'),
       operatorType: currentState.operator.code,
       preferences,
     }, config);
@@ -359,6 +585,7 @@ function initialiseTooltips(types) {
       suggestionScore.textContent = '';
       suggestionDetails.innerHTML = '';
       alternatesContainer.setAttribute('hidden', '');
+      renderTraits([], null);
       return;
     }
 
@@ -380,6 +607,24 @@ function initialiseTooltips(types) {
       alternatesList.innerHTML = '';
       alternatesContainer.setAttribute('hidden', '');
     }
+    const entry = config && Array.isArray(config.mbti_types)
+      ? config.mbti_types.find((item) => item.code === suggestion.code)
+      : null;
+    const baseTraits = entry && Array.isArray(entry.suggested_traits) ? entry.suggested_traits : [];
+    const traitKeys = Array.isArray(suggestion.traits) && suggestion.traits.length > 0
+      ? suggestion.traits
+      : composeTraitsForUI({
+        code: suggestion.code,
+        mbtiTraits: baseTraits,
+        roleKey: currentRoleCode(),
+        axes: deriveAxes(suggestion.code),
+        agentId: currentAgentId(),
+      });
+    renderTraits(traitKeys, suggestion.updatedAt || currentState.updated_at || Date.now());
+    if (currentState.suggestion) {
+      currentState.suggestion.traits = traitKeys;
+      currentState.suggestion.updatedAt = suggestion.updatedAt || Date.now();
+    }
   }
 
   function persistPersonaSelection() {
@@ -399,6 +644,18 @@ function initialiseTooltips(types) {
       },
       alternates: currentState.suggestion.alternates,
     };
+    const roleCode = currentRoleCode();
+    const functionInput = document.querySelector('[name="business_function"]');
+    const agentId = currentAgentId();
+    if (roleCode) {
+      payload.agent.role_code = roleCode;
+    }
+    if (functionInput && functionInput.value) {
+      payload.agent.business_function = functionInput.value;
+    }
+    if (agentId) {
+      payload.agent.agent_id = agentId;
+    }
 
     fetch(stateUrl, {
       method: 'POST',
@@ -417,6 +674,20 @@ function initialiseTooltips(types) {
       .then((saved) => {
         currentState = Object.assign({}, currentState, saved);
         updatePersonaInput(saved?.agent?.code ?? '');
+        const savedTraits = (saved?.persona_details?.suggested_traits)
+          || (saved?.agent?.mbti?.suggested_traits)
+          || [];
+        const suggestion = {
+          code: saved?.agent?.code ?? currentState.suggestion.code,
+          rationale: saved?.agent?.rationale || currentState.suggestion.rationale,
+          compatibilityScore: saved?.agent?.compatibility ?? currentState.suggestion.compatibilityScore,
+          roleFitScore: saved?.agent?.role_fit ?? currentState.suggestion.roleFitScore,
+          blendedScore: saved?.agent?.blended ?? currentState.suggestion.blendedScore,
+          alternates: saved?.alternates || currentState.suggestion.alternates,
+          traits: savedTraits,
+          updatedAt: saved?.updated_at ? saved.updated_at * 1000 : Date.now(),
+        };
+        renderSuggestion(suggestion);
         showSummary(`Saved agent persona ${saved.agent?.code ?? ''}. Reload to confirm persistence.`);
       })
       .catch((error) => {
@@ -442,6 +713,9 @@ function initialiseTooltips(types) {
     }
 
     if (currentState.agent) {
+      const savedTraits = (currentState.persona_details && currentState.persona_details.suggested_traits)
+        || (currentState.agent.mbti && currentState.agent.mbti.suggested_traits)
+        || [];
       const suggestion = {
         code: currentState.agent.code,
         rationale: currentState.agent.rationale || [],
@@ -449,6 +723,8 @@ function initialiseTooltips(types) {
         roleFitScore: currentState.agent.role_fit || 0,
         blendedScore: currentState.agent.blended || 0,
         alternates: currentState.alternates || [],
+        traits: savedTraits,
+        updatedAt: currentState.updated_at ? currentState.updated_at * 1000 : Date.now(),
       };
       renderSuggestion(suggestion);
       acceptButton.disabled = false;
@@ -602,6 +878,15 @@ function initialiseTooltips(types) {
       ...best.preference.notes,
       ...best.roleFit.factors,
     ];
+    const roleCode = currentRoleCode();
+    const agentId = currentAgentId();
+    const traits = composeTraitsForUI({
+      code: best.entry.code,
+      mbtiTraits: best.entry.suggested_traits || [],
+      roleKey: roleCode,
+      axes: deriveAxes(best.entry.code),
+      agentId,
+    });
 
     return {
       code: best.entry.code,
@@ -610,6 +895,8 @@ function initialiseTooltips(types) {
       blendedScore: best.composite,
       rationale,
       alternates,
+      traits,
+      updatedAt: Date.now(),
     };
   }
 
@@ -636,4 +923,3 @@ function initialiseTooltips(types) {
     return Math.max(lower, Math.min(upper, value));
   }
 })();
-

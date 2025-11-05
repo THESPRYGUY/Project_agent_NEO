@@ -32,6 +32,7 @@ from .registry_loader import load_tool_registry
 from neo_build.adapters.legacy_to_v3 import transform as legacy_transform
 from neo_build.validation.schema_guard import check_mutual_exclusion
 from mapper import apply_intake, IntakeValidationError
+from persona.traits_utils import compose_traits
 
 try:  # pragma: no cover - telemetry is optional in some environments
     from .telemetry import (
@@ -665,6 +666,28 @@ class IntakeApplication:
         self.mbti_lookup = self._index_mbti_types(
             self.persona_config.get("mbti_types", [])
         )
+        lexicon = self.persona_config.get("traits_lexicon", {})
+        self.traits_lexicon = (
+            {str(k): str(v) for k, v in lexicon.items()}
+            if isinstance(lexicon, Mapping)
+            else {}
+        )
+        overlays = self.persona_config.get("traits_overlays", {})
+        if isinstance(overlays, Mapping):
+            normalised_overlays: Dict[str, List[str]] = {}
+            for key, values in overlays.items():
+                if not isinstance(values, Iterable) or isinstance(values, (str, bytes)):
+                    continue
+                traits: List[str] = []
+                for val in values:
+                    trait_key = str(val).strip()
+                    if trait_key and trait_key in self.traits_lexicon:
+                        traits.append(trait_key)
+                if traits:
+                    normalised_overlays[str(key).upper()] = traits
+            self.traits_overlays = normalised_overlays
+        else:
+            self.traits_overlays = {}
         # Legacy shim hit counter for /generated_specs redirects
         self._legacy_redirect_hits = 0
         # NAICS caches (filled on-demand)
@@ -1370,7 +1393,13 @@ class IntakeApplication:
                 lookup[code] = entry
         return lookup
 
-    def _enrich_persona_metadata(self, code: str | None) -> Dict[str, Any] | None:
+    def _enrich_persona_metadata(
+        self,
+        code: str | None,
+        *,
+        role_key: Optional[str] = None,
+        agent_id: Optional[str] = None,
+    ) -> Dict[str, Any] | None:
         if not code:
             return None
         entry = (
@@ -1382,12 +1411,20 @@ class IntakeApplication:
             return None
         axes = _mbti_axes(entry.get("code", code))
         description = entry.get("summary") or entry.get("description") or ""
+        traits = compose_traits(
+            lexicon=getattr(self, "traits_lexicon", {}),
+            overlays=getattr(self, "traits_overlays", {}),
+            mbti_traits=entry.get("suggested_traits"),
+            role_key=role_key,
+            axes=axes,
+            agent_id=agent_id,
+        )
         return {
             "mbti_code": str(entry.get("code", code)).upper(),
             "name": entry.get("nickname") or entry.get("name") or "",
             "description": description,
             "axes": axes,
-            "suggested_traits": [],
+            "suggested_traits": traits,
         }
 
     def _load_persona_config(self) -> dict[str, Any]:
@@ -1395,9 +1432,17 @@ class IntakeApplication:
         priors = self._safe_read_json(
             self.persona_dir / "priors_by_domain_role.json", {}
         )
+        traits_lexicon = self._safe_read_json(
+            self.persona_dir / "traits_lexicon.json", {}
+        )
+        traits_overlays = self._safe_read_json(
+            self.persona_dir / "traits_overlays.json", {}
+        )
         return {
             "mbti_types": mbti,
             "priors_by_domain_role": priors,
+            "traits_lexicon": traits_lexicon,
+            "traits_overlays": traits_overlays,
         }
 
     def _load_function_role_data(self) -> dict[str, Any]:
@@ -2268,7 +2313,11 @@ window.addEventListener('DOMContentLoaded', function () {
         """
         agent = dict(state.get("agent") or {})
         code = agent.get("code")
-        enriched = self._enrich_persona_metadata(code)
+        role_key = agent.get("role_code") or agent.get("role")
+        agent_id = agent.get("agent_id")
+        enriched = self._enrich_persona_metadata(
+            code, role_key=role_key, agent_id=agent_id
+        )
         if enriched:
             agent.setdefault("mbti", enriched)
         payload = {
@@ -2339,6 +2388,7 @@ window.addEventListener('DOMContentLoaded', function () {
         role_code_value = _get("role_code")
         role_title_value = _get("role_title")
         role_seniority_value = _get("role_seniority")
+        agent_id_input = _get("identity.agent_id")
 
         # NAICS payload from hidden inputs
         naics_code = _get("naics_code")
@@ -2361,7 +2411,11 @@ window.addEventListener('DOMContentLoaded', function () {
                 "name": _get("agent_name"),
                 "version": _get("agent_version", "1.0.0"),
                 "persona": persona_code,
-                "mbti": self._enrich_persona_metadata(persona_code)
+                "mbti": self._enrich_persona_metadata(
+                    persona_code,
+                    role_key=role_code_value or role_title_value,
+                    agent_id=agent_id_input,
+                )
                 or (
                     {"mbti_code": persona_code, "axes": _mbti_axes(persona_code)}
                     if persona_code
@@ -2373,7 +2427,7 @@ window.addEventListener('DOMContentLoaded', function () {
             },
             # Persist identity so Agent ID survives form re-render
             "identity": {
-                "agent_id": _get("identity.agent_id"),
+                "agent_id": agent_id_input,
                 "display_name": _get("identity.display_name"),
                 "owners": [s for s in _get("identity.owners").split(",") if s.strip()],
                 "no_impersonation": bool(_get("identity.no_impersonation") or "true"),
@@ -2427,7 +2481,9 @@ window.addEventListener('DOMContentLoaded', function () {
             from . import telemetry as _telemetry  # type: ignore
 
             meta = profile["agent"].get("mbti") or self._enrich_persona_metadata(
-                persona_code
+                persona_code,
+                role_key=role_code_value or role_title_value,
+                agent_id=agent_id_input,
             )
             if not meta and persona_code:
                 meta = {"mbti_code": persona_code, "axes": _mbti_axes(persona_code)}

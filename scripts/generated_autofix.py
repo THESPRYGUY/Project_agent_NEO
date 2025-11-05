@@ -23,6 +23,13 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, Iterable, List, Mapping, Optional, Tuple
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+SRC_PATH = REPO_ROOT / "src"
+if str(SRC_PATH) not in sys.path:
+    sys.path.insert(0, str(SRC_PATH))
+
+from persona.traits_utils import compose_traits  # type: ignore
+
 
 WINDOWS_TARGET_ROOT = r"C:\\Users\\spryg\\OneDrive\\Documents\\GitHub\\Project_agent_NEO\\generated_repos"
 
@@ -84,6 +91,15 @@ def _generate_agent_id(naics_code: str | None, function_code: str | None, role_c
     return f"AGT-{n}-{func}:{role}-{suffix}"[:64]
 
 
+def _mbti_axes(code: str | None) -> Dict[str, str]:
+    code = (code or "").upper()
+    labels = ("EI", "SN", "TF", "JP")
+    axes: Dict[str, str] = {}
+    for idx, label in enumerate(labels):
+        axes[label] = code[idx] if len(code) > idx else ""
+    return axes
+
+
 @dataclass
 class ProjectResult:
     project: str
@@ -98,7 +114,15 @@ class ProjectResult:
             self.changes = []
 
 
-def _autofix_project(root: Path, project_dir: Path, *, write: bool, catalog_mbti: Optional[List[Mapping[str, Any]]]) -> ProjectResult:
+def _autofix_project(
+    root: Path,
+    project_dir: Path,
+    *,
+    write: bool,
+    catalog_mbti: Optional[List[Mapping[str, Any]]],
+    traits_lexicon: Mapping[str, Any],
+    traits_overlays: Mapping[str, Iterable[str]],
+) -> ProjectResult:
     pr = ProjectResult(project=project_dir.name)
     ts = _utc_ts()
     last_build = _read_json(Path.cwd() / "_generated" / "_last_build.json")
@@ -285,26 +309,39 @@ def _autofix_project(root: Path, project_dir: Path, *, write: bool, catalog_mbti
             code = _safe_str(mbti.get("mbti_code") or ap.get("persona") or agent.get("persona"))
             traits = mbti.get("suggested_traits") if isinstance(mbti.get("suggested_traits"), list) else []
             if code and (not traits or len(traits) < 3):
-                source = "derived"
-                # Try catalog first
+                source = "traits_engine"
+                catalog_traits: List[str] = []
                 if catalog_mbti:
                     match = next((e for e in catalog_mbti if (e.get("code") or "").upper() == code.upper()), None)
                     if isinstance(match, dict):
                         cand = match.get("suggested_traits")
-                        if isinstance(cand, list) and len(cand) >= 3:
-                            traits = cand[:5]
-                            source = "catalog"
-                        else:
-                            strengths = match.get("strengths")
-                            if isinstance(strengths, list) and strengths:
-                                traits = [str(s) for s in strengths][:5]
-                                source = "derived"
-                # Ensure at least 3
-                base_defaults = ["Decisive", "Structured", "Collaborative"]
+                        if isinstance(cand, list):
+                            catalog_traits = [str(item).strip() for item in cand if str(item).strip()]
+                role_code = ""
+                role_block = ap.get("role") if isinstance(ap.get("role"), dict) else {}
+                if isinstance(role_block, dict):
+                    role_code = _safe_str(role_block.get("code"))
+                if not role_code:
+                    agent_role = agent.get("role") if isinstance(agent.get("role"), dict) else {}
+                    if isinstance(agent_role, dict):
+                        role_code = _safe_str(agent_role.get("code") or agent_role.get("role_code"))
+                identity_block = ap.get("identity") if isinstance(ap.get("identity"), dict) else {}
+                agent_id = _safe_str((identity_block or {}).get("agent_id") or last_agent_id)
+                traits = compose_traits(
+                    lexicon=traits_lexicon,
+                    overlays=traits_overlays,
+                    mbti_traits=catalog_traits,
+                    role_key=role_code or None,
+                    axes=_mbti_axes(code),
+                    agent_id=agent_id or None,
+                )
                 if not traits:
-                    traits = base_defaults
-                while len(traits) < 3:
-                    traits.append(base_defaults[len(traits) % len(base_defaults)])
+                    source = "fallback"
+                    base_defaults = ["strategic_executor", "team_mobilizer", "process_anchor"]
+                    traits = base_defaults[:]
+                    while len(traits) < 3:
+                        traits.append(base_defaults[len(traits) % len(base_defaults)])
+                traits = traits[:5]
                 mbti["suggested_traits"] = traits
                 agent["mbti"] = mbti
                 ap["agent"] = agent
@@ -325,9 +362,36 @@ def run(root: str, write: bool) -> List[ProjectResult]:
     # Load catalog mbti types for P2
     catalog_path = Path("src") / "persona" / "mbti_types.json"
     catalog_mbti = _read_json(catalog_path)
+    lexicon_path = Path("src") / "persona" / "traits_lexicon.json"
+    overlays_path = Path("src") / "persona" / "traits_overlays.json"
+    traits_lexicon = _read_json(lexicon_path) or {}
+    if not isinstance(traits_lexicon, Mapping):
+        traits_lexicon = {}
+    overlays_raw = _read_json(overlays_path) or {}
+    traits_overlays: Dict[str, List[str]] = {}
+    if isinstance(overlays_raw, Mapping):
+        for key, values in overlays_raw.items():
+            if not isinstance(values, Iterable) or isinstance(values, (str, bytes)):
+                continue
+            cleaned: List[str] = []
+            for item in values:
+                name = str(item).strip()
+                if name:
+                    cleaned.append(name)
+            if cleaned:
+                traits_overlays[str(key).upper()] = cleaned
     results: List[ProjectResult] = []
     for p in sorted([d for d in root_path.iterdir() if d.is_dir()]):
-        results.append(_autofix_project(root_path, p, write=write, catalog_mbti=catalog_mbti))
+        results.append(
+            _autofix_project(
+                root_path,
+                p,
+                write=write,
+                catalog_mbti=catalog_mbti,
+                traits_lexicon=traits_lexicon,
+                traits_overlays=traits_overlays,
+            )
+        )
     return results
 
 
