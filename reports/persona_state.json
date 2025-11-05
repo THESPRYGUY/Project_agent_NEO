@@ -1,0 +1,14 @@
+{
+  "agent": {
+    "domain": "Technology",
+    "domain_source": "derived",
+    "mbti": {
+      "suggested_traits": [
+        "decisive_orchestrator",
+        "stakeholder_alignment",
+        "strategic_executor",
+        "momentum_driver"
+      ]
+    }
+  }
+}
