@@ -384,14 +384,29 @@ Diagnostics example (unknowns are dropped):
 
 - Release checklist: see RELEASE_CHECKLIST.md
 - Hotfix template: see HOTFIX_TEMPLATE.md
-\n### CI Status (main)
-\n+[![CI (Unit + Integ/Smoke)](https://github.com/THESPRYGUY/Project_agent_NEO/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/THESPRYGUY/Project_agent_NEO/actions/workflows/ci.yml)
-\n+CI filter note (v2.1.2): Added `feat/**` and `hotfix/**` to workflow push filters; `pull_request` remains on `main` (types: opened, synchronize, reopened). Job names unchanged for Branch Protection.
-\n### How KPI report is generated
-\n1. Run `python scripts/gen_kpi_report.py --root generated_repos/agent-build-007-2-1-1 --out reports/`.
-\n2. The script reads packs 02, 11, 14, and 15 to gather KPI targets and gates.
-\n3. PRI, HAL, and AUD fall back to target thresholds when live CI data is missing.
-\n4. Outputs land in `reports/kpi_report.json` plus `reports/kpi_report.md`.
-\n5. Telemetry emits `kpi_report_generated` for observability ingestion.
-\n6. Use `--ci` to print a terse summary in workflow logs.
-\n7. Workflow `kpi-report-smoke` publishes the artifact for review.
+
+### CI Status (main)
+
+[![CI (Unit + Integ/Smoke)](https://github.com/THESPRYGUY/Project_agent_NEO/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/THESPRYGUY/Project_agent_NEO/actions/workflows/ci.yml)
+
+CI filter note (v2.1.2): Added `feat/**` and `hotfix/**` to workflow push filters; `pull_request` remains on `main` (types: opened, synchronize, reopened). Job names unchanged for Branch Protection.
+
+### How KPI report is generated
+
+1. Run `python scripts/gen_kpi_report.py --root generated_repos/agent-build-007-2-1-1 --out reports/`.
+2. The script reads packs 02, 11, 14, and 15 to gather KPI targets and gates.
+3. PRI, HAL, and AUD fall back to target thresholds when live CI data is missing.
+4. Outputs land in `reports/kpi_report.json` plus `reports/kpi_report.md`.
+5. Telemetry emits `kpi_report_generated` for observability ingestion.
+6. Use `--ci` to print a terse summary in workflow logs.
+7. Workflow `kpi-report-smoke` publishes the artifact for review.
+
+### Tag conventions & release steps
+
+- Tags follow `vX.Y.Z[-ab###-PR#-slug]`.
+- Check CI is green and repo_audit reports HIGH/CRIT=0 before tagging.
+- Run `python scripts/release_gate_report.py --root generated_repos/agent-build-007-2-1-1 --out reports/`.
+- Create annotated tag referencing merged PR scope.
+- Push the tag to origin and confirm on GitHub.
+- Update release notes or changelog entries.
+- Verify KPI and release gate artifacts prior to announce.
