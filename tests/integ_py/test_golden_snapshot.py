@@ -50,4 +50,3 @@ def test_golden_snapshot_build(tmp_path: Path, monkeypatch: pytest.MonkeyPatch):
     assert obj.get("contract_ok") is True, "contract_ok false"
     assert obj.get("parity_ok") is True, "parity_ok false"
     assert obj.get("packs_complete") is True, "packs_complete false"
-

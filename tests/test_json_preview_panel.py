@@ -61,4 +61,4 @@ def test_preview_panel_shows_after_post(tmp_path) -> None:
     html = body.decode("utf-8", "ignore")
     # Preview block present with pretty-printed JSON
     assert "Generated Agent Profile" in html
-    assert "\"agent\"" in html
+    assert '"agent"' in html

@@ -5,7 +5,12 @@ from pathlib import Path
 
 import pytest
 
-from neo_agent.configuration import AgentConfiguration, ConfigurationError, SkillConfiguration, merge_metadata
+from neo_agent.configuration import (
+    AgentConfiguration,
+    ConfigurationError,
+    SkillConfiguration,
+    merge_metadata,
+)
 
 
 def test_agent_configuration_round_trip(tmp_path: Path) -> None:

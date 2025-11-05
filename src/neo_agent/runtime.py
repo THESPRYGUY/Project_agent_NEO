@@ -39,20 +39,28 @@ class AgentRuntime:
         self._load_configured_skills(self.configuration.skills)
         self.planner = Planner(self.configuration, self.knowledge)
         self.pipeline = Pipeline.from_callables((self._execute_plan_step,))
-        log_event(LOGGER, "runtime_initialized", {"skills": [s.name for s in self.skills.all()]})
+        log_event(
+            LOGGER,
+            "runtime_initialized",
+            {"skills": [s.name for s in self.skills.all()]},
+        )
 
     def _load_configured_skills(self, skills: Iterable[SkillConfiguration]) -> None:
         for skill_config in skills:
             try:
                 module_name, function_name = skill_config.entrypoint.split(":")
             except ValueError as exc:
-                raise AgentError("Skill entrypoint must be in 'module:function' format") from exc
+                raise AgentError(
+                    "Skill entrypoint must be in 'module:function' format"
+                ) from exc
 
             try:
                 module = import_module(module_name)
                 function = getattr(module, function_name)
             except (ModuleNotFoundError, AttributeError) as exc:
-                raise AgentError(f"Unable to resolve skill entrypoint {skill_config.entrypoint}") from exc
+                raise AgentError(
+                    f"Unable to resolve skill entrypoint {skill_config.entrypoint}"
+                ) from exc
 
             skill = Skill(
                 name=skill_config.name,

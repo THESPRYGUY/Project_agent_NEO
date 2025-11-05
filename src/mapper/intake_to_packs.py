@@ -22,7 +22,9 @@ PACK_FILES: Dict[str, str] = {
     "12": "12_Tool+Data-Registry_v2.json",
 }
 
-PLACEHOLDER_PATTERN = re.compile(r"(?:\bTBD\b|\bTODO\b|Operator to confirm|SET_ME)", re.IGNORECASE)
+PLACEHOLDER_PATTERN = re.compile(
+    r"(?:\bTBD\b|\bTODO\b|Operator to confirm|SET_ME)", re.IGNORECASE
+)
 
 
 @dataclass(frozen=True)
@@ -51,7 +53,9 @@ def load_contract() -> Dict[str, Any]:
     try:
         schema = json.loads(CONTRACT_PATH.read_text(encoding="utf-8"))
     except FileNotFoundError as exc:
-        raise FileNotFoundError(f"Intake contract not found at {CONTRACT_PATH}") from exc
+        raise FileNotFoundError(
+            f"Intake contract not found at {CONTRACT_PATH}"
+        ) from exc
     return schema
 
 
@@ -63,6 +67,7 @@ def _validator() -> Draft202012Validator:
 def validate_intake(payload: Dict[str, Any]) -> None:
     """Validate payload against the intake contract."""
     validator = _validator()
+
     def _sort_key(error: ValidationError) -> tuple:
         path = tuple(str(part) for part in error.absolute_path)
         return path + (error.message,)
@@ -73,7 +78,9 @@ def validate_intake(payload: Dict[str, Any]) -> None:
         for error in errors:
             location = "/".join(str(p) for p in error.absolute_path) or "<root>"
             messages.append(f"{location}: {error.message}")
-        raise IntakeValidationError("Intake contract validation failed:\n" + "\n".join(messages))
+        raise IntakeValidationError(
+            "Intake contract validation failed:\n" + "\n".join(messages)
+        )
 
 
 def apply_intake(
@@ -140,7 +147,9 @@ def apply_intake(
             if isinstance(cursor, MutableMapping):
                 cursor = cursor.setdefault(key, {})
             else:
-                raise TypeError(f"Expected mapping while navigating path {'.'.join(path)}")
+                raise TypeError(
+                    f"Expected mapping while navigating path {'.'.join(path)}"
+                )
         last = path[-1]
         if isinstance(cursor, MutableMapping):
             cursor[last] = copy.deepcopy(value)
@@ -274,6 +283,7 @@ def apply_intake(
 
     # Pack 12: connectors and data sources
     pack12 = load_pack(PACK_FILES["12"])
+
     def _match_existing_connector(name: str) -> Dict[str, Any]:
         slug = _slugify(name)
         for existing in pack12.get("connectors") or []:
@@ -284,7 +294,9 @@ def apply_intake(
         return {"id": slug, "name": name}
 
     connectors = []
-    for connector in sorted(intake_payload["connectors"], key=lambda item: item["name"]):
+    for connector in sorted(
+        intake_payload["connectors"], key=lambda item: item["name"]
+    ):
         base = _match_existing_connector(connector["name"])
         base["name"] = connector["name"]
         base["enabled"] = connector["enabled"]

@@ -10,7 +10,13 @@ import pytest
 from neo_agent.intake_app import create_app
 
 
-def _invoke(app, method: str, path: str = "/", body: bytes = b"", headers: dict[str, str] | None = None):
+def _invoke(
+    app,
+    method: str,
+    path: str = "/",
+    body: bytes = b"",
+    headers: dict[str, str] | None = None,
+):
     headers = headers or {}
     environ = {
         "REQUEST_METHOD": method,

@@ -1,3 +1,4 @@
+exclude: "^(reports/|_generated/|node_modules/|.venv/|build/)"
 repos:
   - repo: local
     hooks:

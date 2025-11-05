@@ -1,7 +1,11 @@
 import json
 from pathlib import Path
 
-from scripts.check_governance_crosspack import PACK_FILENAMES, check_repo, main as run_main
+from scripts.check_governance_crosspack import (
+    PACK_FILENAMES,
+    check_repo,
+    main as run_main,
+)
 
 
 def _write_pack(tmpdir: Path, name: str, payload: dict) -> None:
@@ -25,11 +29,17 @@ def _baseline_payloads() -> tuple[dict, dict, dict]:
         "classification_default": classification,
         "pii_flags": pii_flags,
         "policy": {"classification_default": classification, "no_impersonation": True},
-        "privacy_alignment": {"guardrails_file": PACK_FILENAMES["05"], "pii_flags": pii_flags},
+        "privacy_alignment": {
+            "guardrails_file": PACK_FILENAMES["05"],
+            "pii_flags": pii_flags,
+        },
     }
     pack05 = {
         "meta": {"name": PACK_FILENAMES["05"]},
-        "data_classification": {"default": classification, "labels": [classification, "internal"]},
+        "data_classification": {
+            "default": classification,
+            "labels": [classification, "internal"],
+        },
         "no_impersonation": True,
         "pii_flags": pii_flags,
         "privacy_policies": {"pii_flags": pii_flags},

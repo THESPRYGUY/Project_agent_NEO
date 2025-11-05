@@ -28,8 +28,10 @@ def _call(app, method: str, path: str, body: dict | None = None):
         "CONTENT_LENGTH": str(len(raw)),
     }
     status_headers = []
+
     def start_response(status, headers):
         status_headers.append((status, headers))
+
     resp = b"".join(app.wsgi_app(env, start_response))
     status = status_headers[0][0]
     return status, dict(status_headers[0][1]), resp

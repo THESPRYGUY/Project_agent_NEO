@@ -31,9 +31,11 @@ def test_is_safe_subpath_blocks_symlink_escape(tmp_path: Path):
     link = root / "escape"
     try:
         os.symlink(str(target), str(link), target_is_directory=True)
-    except (OSError, NotImplementedError):  # pragma: no cover - platforms without symlink perms
+    except (
+        OSError,
+        NotImplementedError,
+    ):  # pragma: no cover - platforms without symlink perms
         pytest.skip("symlink not supported on this platform")
 
     # Candidate resolves outside root, should be rejected
     assert IntakeApplication._is_safe_subpath(root, link) is False
-

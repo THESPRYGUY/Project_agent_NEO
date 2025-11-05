@@ -49,4 +49,3 @@ def test_function_roles_api_scoped(tmp_path) -> None:
         httpd.shutdown()
         thread.join(timeout=5)
         httpd.server_close()
-

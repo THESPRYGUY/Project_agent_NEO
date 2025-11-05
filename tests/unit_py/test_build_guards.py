@@ -23,8 +23,10 @@ def _call(app, method: str, path: str):
         "CONTENT_LENGTH": str(len(raw)),
     }
     status_headers = []
+
     def start_response(status, headers):
         status_headers.append((status, headers))
+
     data = b"".join(app.wsgi_app(env, start_response))
     status, headers = status_headers[0]
     return status, dict(headers), data
@@ -43,10 +45,10 @@ def test_build_missing_inputs_400(tmp_path: Path):
     _ensure_import()
     os.environ["NEO_REPO_OUTDIR"] = str((tmp_path / "out").resolve())
     from neo_agent.intake_app import create_app
+
     app = create_app(base_dir=tmp_path)
     st, headers, raw = _call(app, "POST", "/build")
     assert st == "400 Bad Request"
     payload = json.loads(raw.decode("utf-8"))
     assert payload.get("status") == "error"
     assert "agent_profile.json not found" in " ".join(payload.get("issues", []))
-

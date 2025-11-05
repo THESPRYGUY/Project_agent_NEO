@@ -117,7 +117,9 @@ def pack_root(tmp_path: Path) -> Path:
     return pack_dir
 
 
-def test_apply_intake_dry_run_reports_changes(pack_root: Path, intake_payload: dict) -> None:
+def test_apply_intake_dry_run_reports_changes(
+    pack_root: Path, intake_payload: dict
+) -> None:
     result = apply_intake(intake_payload, pack_root, dry_run=True)
     expected_files = {
         "03_Operating-Rules_v2.json",
@@ -134,20 +136,30 @@ def test_apply_intake_dry_run_reports_changes(pack_root: Path, intake_payload: d
     assert reported == expected_files
 
 
-def test_apply_intake_writes_expected_updates(pack_root: Path, intake_payload: dict) -> None:
+def test_apply_intake_writes_expected_updates(
+    pack_root: Path, intake_payload: dict
+) -> None:
     apply_intake(intake_payload, pack_root, dry_run=False)
 
-    pack03 = json.loads((pack_root / "03_Operating-Rules_v2.json").read_text(encoding="utf-8"))
+    pack03 = json.loads(
+        (pack_root / "03_Operating-Rules_v2.json").read_text(encoding="utf-8")
+    )
     assert pack03["rbac"]["roles"] == ["CAIO", "CPA", "TeamLead"]
 
-    pack04 = json.loads((pack_root / "04_Governance+Risk-Register_v2.json").read_text(encoding="utf-8"))
+    pack04 = json.loads(
+        (pack_root / "04_Governance+Risk-Register_v2.json").read_text(encoding="utf-8")
+    )
     assert pack04["risk_register_tags"] == ["safety", "compliance"]
 
-    pack05 = json.loads((pack_root / "05_Safety+Privacy_Guardrails_v2.json").read_text(encoding="utf-8"))
+    pack05 = json.loads(
+        (pack_root / "05_Safety+Privacy_Guardrails_v2.json").read_text(encoding="utf-8")
+    )
     assert pack05["pii_flags"] == ["basic_contact", "customer_record"]
     assert pack05["data_classification"]["default"] == "confidential"
 
-    pack08 = json.loads((pack_root / "08_Memory-Schema_v2.json").read_text(encoding="utf-8"))
+    pack08 = json.loads(
+        (pack_root / "08_Memory-Schema_v2.json").read_text(encoding="utf-8")
+    )
     assert pack08["memory_scopes"] == ["episodic:projects/*", "semantic:domain/*"]
     assert pack08["retention"]["episodic"]["retention_days"] == 180
     assert pack08["retention"]["semantic"]["retention_days"] == 365
@@ -155,11 +167,18 @@ def test_apply_intake_writes_expected_updates(pack_root: Path, intake_payload: d
     assert pack08["permissions"]["notes"] == "Existing notes"
     assert pack08["writeback_rules"] == intake_payload["memory"]["writeback_rules"]
 
-    pack11 = json.loads((pack_root / "11_Workflow-Pack_v2.json").read_text(encoding="utf-8"))
+    pack11 = json.loads(
+        (pack_root / "11_Workflow-Pack_v2.json").read_text(encoding="utf-8")
+    )
     assert pack11["human_gate_actions"] == ["legal_advice", "regulatory_interpretation"]
 
-    pack12 = json.loads((pack_root / "12_Tool+Data-Registry_v2.json").read_text(encoding="utf-8"))
-    assert {connector["name"] for connector in pack12["connectors"]} == {"sharepoint", "vector-store"}
+    pack12 = json.loads(
+        (pack_root / "12_Tool+Data-Registry_v2.json").read_text(encoding="utf-8")
+    )
+    assert {connector["name"] for connector in pack12["connectors"]} == {
+        "sharepoint",
+        "vector-store",
+    }
     sharepoint = next(c for c in pack12["connectors"] if c["name"] == "sharepoint")
     assert sharepoint["id"] == "sharepoint"
     assert sharepoint["secret_ref"] == "vault://connectors/sharepoint"

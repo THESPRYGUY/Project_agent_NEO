@@ -11,7 +11,14 @@ from pathlib import Path
 from typing import Any, Mapping
 
 
-def _wsgi_call(app, method: str, path: str, *, query: str = "", body: Mapping[str, Any] | None = None):
+def _wsgi_call(
+    app,
+    method: str,
+    path: str,
+    *,
+    query: str = "",
+    body: Mapping[str, Any] | None = None,
+):
     raw = json.dumps(body or {}).encode("utf-8")
     env = {
         "REQUEST_METHOD": method,
@@ -27,8 +34,10 @@ def _wsgi_call(app, method: str, path: str, *, query: str = "", body: Mapping[st
         "neo.req_id": f"req-{threading.get_ident()}-{time.time_ns()}",
     }
     status_headers = []
+
     def start_response(status, headers):
         status_headers.append((status, headers))
+
     data = b"".join(app.wsgi_app(env, start_response))
     status, headers = status_headers[0]
     return status, dict(headers), data
@@ -36,7 +45,9 @@ def _wsgi_call(app, method: str, path: str, *, query: str = "", body: Mapping[st
 
 def _save_minimal_profile(app):
     # Use the bundled sample profile to satisfy validation
-    prof = json.loads((Path.cwd() / "fixtures" / "sample_profile.json").read_text(encoding="utf-8"))
+    prof = json.loads(
+        (Path.cwd() / "fixtures" / "sample_profile.json").read_text(encoding="utf-8")
+    )
     st, _, _ = _wsgi_call(app, "POST", "/save", body=prof)
     assert st == "200 OK"
 
@@ -99,7 +110,9 @@ def test_build_lock_concurrency(tmp_path: Path, monkeypatch):
     h_default = sha256(zip1).hexdigest()
 
     outdir_now = _read_json(out_root / "_last_build.json").get("outdir")
-    stz2, _, zip2 = _wsgi_call(app, "GET", "/download/zip", query=f"outdir={outdir_now}")
+    stz2, _, zip2 = _wsgi_call(
+        app, "GET", "/download/zip", query=f"outdir={outdir_now}"
+    )
     assert stz2 == "200 OK"
     h_outdir = sha256(zip2).hexdigest()
     assert h_default == h_outdir
@@ -117,6 +130,7 @@ def test_error_taxonomy_render(tmp_path: Path, monkeypatch):
     # Monkeypatch write_repo_files to raise
     def boom(*a, **k):
         raise RuntimeError("render-fail")
+
     monkeypatch.setattr(intake_mod, "write_repo_files", boom)
 
     st, _, body = _wsgi_call(app, "POST", "/build", body={})
@@ -140,20 +154,25 @@ def test_error_taxonomy_fs(tmp_path: Path, monkeypatch):
     # Force rename to fail by intercepting low-level os.replace used by pathlib
     import os as _os
     import shutil as _shutil
+
     orig_replace = _os.replace
+
     def bad_replace(src, dst, *a, **k):
         if ".tmp" in str(src):
             raise OSError("fs-rename-fail")
         return orig_replace(src, dst, *a, **k)
+
     monkeypatch.setattr(_os, "replace", bad_replace, raising=True)
     monkeypatch.setattr(_os, "rename", bad_replace, raising=True)
 
     # Also force shutil.move fallback to fail so E_FS propagates
     orig_move = _shutil.move
+
     def bad_move(src, dst, *a, **k):
         if ".tmp" in str(src):
             raise OSError("fs-move-fail")
         return orig_move(src, dst, *a, **k)
+
     monkeypatch.setattr(_shutil, "move", bad_move, raising=True)
 
     st, _, body = _wsgi_call(app, "POST", "/build", body={})
@@ -175,7 +194,10 @@ def test_error_taxonomy_zip(tmp_path: Path, monkeypatch):
     # Monkeypatch canonical zip hasher to raise
     def bad_zip(*a, **k):
         raise RuntimeError("zip-hash-fail")
-    monkeypatch.setattr(intake_mod.IntakeApplication, "_canonical_zip_hash", staticmethod(bad_zip))
+
+    monkeypatch.setattr(
+        intake_mod.IntakeApplication, "_canonical_zip_hash", staticmethod(bad_zip)
+    )
 
     st, _, body = _wsgi_call(app, "POST", "/build", body={})
     assert st == "500 Internal Server Error"
@@ -187,6 +209,7 @@ def test_error_taxonomy_zip(tmp_path: Path, monkeypatch):
 def test_large_zip_streaming(tmp_path: Path, monkeypatch):
     # Build a repo with > 20MB of synthetic content and ensure stable sha256
     from neo_agent.intake_app import create_app
+
     app = create_app(base_dir=tmp_path)
     monkeypatch.setenv("NEO_REPO_OUTDIR", str(tmp_path / "_generated"))
 
@@ -194,13 +217,13 @@ def test_large_zip_streaming(tmp_path: Path, monkeypatch):
     _save_minimal_profile(app)
     st, _, body = _wsgi_call(app, "POST", "/build", body={})
     assert st == "200 OK"
-    outdir = Path(json.loads(body.decode("utf-8"))["outdir"]) 
+    outdir = Path(json.loads(body.decode("utf-8"))["outdir"])
 
     # Inflate large files inside outdir deterministically
     big = outdir / "big" / "data.bin"
     big.parent.mkdir(parents=True, exist_ok=True)
     # Write 21MB of bytes (repeatable pattern)
-    chunk = (b"ABCD" * 1024)  # 4KB
+    chunk = b"ABCD" * 1024  # 4KB
     with open(big, "wb") as f:
         for _ in range((21 * 1024 * 1024) // len(chunk)):
             f.write(chunk)
@@ -224,9 +247,10 @@ def test_unicode_long_paths_and_determinism(tmp_path: Path, monkeypatch):
 
     # Determinism at utility level (derived id)
     from neo_agent.services.identity_utils import generate_agent_id
+
     a1 = generate_agent_id("541110", "marketing", "AIA-P", "Agent X")
     a2 = generate_agent_id("541110", "marketing", "AIA-P", "Agent X")
-    b  = generate_agent_id("541110", "marketing", "NEW-R",  "Agent X")
+    b = generate_agent_id("541110", "marketing", "NEW-R", "Agent X")
     assert a1 == a2 and a1 != b
 
     # Build once for unicode/long path checks
@@ -267,11 +291,14 @@ def test_sigterm_cleanup(tmp_path: Path, monkeypatch):
     _save_minimal_profile(app)
     st, _, body = _wsgi_call(app, "POST", "/build", body={})
     assert st == "200 OK"
-    last_before = json.loads((out_root / "_last_build.json").read_text(encoding="utf-8"))
+    last_before = json.loads(
+        (out_root / "_last_build.json").read_text(encoding="utf-8")
+    )
 
     # Now simulate interrupt during rendering
     def interrupt(*a, **k):
         raise RuntimeError("sigterm-sim")
+
     monkeypatch.setattr(intake_mod, "write_repo_files", interrupt)
 
     st2, _, body2 = _wsgi_call(app, "POST", "/build", body={})

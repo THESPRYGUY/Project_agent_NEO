@@ -41,6 +41,7 @@ def test_datastore_put_get_roundtrip():
 def test_datastore_missing_key_raises():
     _ensure_import()
     from neo_agent.datastores import InMemoryStore, BaseStore
+
     s = InMemoryStore()
     # delete missing is no-op; ensure methods don't throw
     s.delete("nope")

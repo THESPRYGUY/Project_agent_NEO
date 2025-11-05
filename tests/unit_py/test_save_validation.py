@@ -22,8 +22,10 @@ def _call_raw(app, method: str, path: str, raw: bytes):
         "CONTENT_LENGTH": str(len(raw)),
     }
     status_headers = []
+
     def start_response(status, headers):
         status_headers.append((status, headers))
+
     data = b"".join(app.wsgi_app(env, start_response))
     status, headers = status_headers[0]
     return status, dict(headers), data
@@ -41,6 +43,7 @@ def _ensure_import():
 def test_save_missing_body_400(tmp_path: Path):
     _ensure_import()
     from neo_agent.intake_app import create_app
+
     app = create_app(base_dir=tmp_path)
     # Empty body -> treated as {} and triggers schema errors
     st, hdrs, raw = _call_raw(app, "POST", "/save", b"")
@@ -52,6 +55,7 @@ def test_save_missing_body_400(tmp_path: Path):
 def test_save_invalid_json_400(tmp_path: Path):
     _ensure_import()
     from neo_agent.intake_app import create_app
+
     app = create_app(base_dir=tmp_path)
     st, _, raw = _call_raw(app, "POST", "/save", b"{not-json}")
     assert st.startswith("400")
@@ -63,6 +67,7 @@ def test_save_invalid_json_400(tmp_path: Path):
 def test_save_schema_conflict_400(tmp_path: Path):
     _ensure_import()
     from neo_agent.intake_app import create_app
+
     app = create_app(base_dir=tmp_path)
     payload = {
         "intake_version": "v3.0",
@@ -70,11 +75,12 @@ def test_save_schema_conflict_400(tmp_path: Path):
         "identity": {"agent_id": "X", "display_name": "X", "owners": ["CAIO"]},
         "context": {"naics": {"code": "541110"}},
         "role": {"function_code": "fn", "role_code": "rc"},
-        "governance_eval": {"gates": {"PRI_min": 0.95, "hallucination_max": 0.02, "audit_min": 0.9}},
+        "governance_eval": {
+            "gates": {"PRI_min": 0.95, "hallucination_max": 0.02, "audit_min": 0.9}
+        },
     }
     st, _, raw = _call_raw(app, "POST", "/save", json.dumps(payload).encode("utf-8"))
     assert st.startswith("400")
     body = json.loads(raw.decode("utf-8"))
     assert body.get("status") == "invalid"
     assert any("Legacy field not allowed in v3" in e for e in body.get("errors", []))
-

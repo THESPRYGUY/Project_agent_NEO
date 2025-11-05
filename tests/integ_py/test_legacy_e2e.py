@@ -12,6 +12,7 @@ pytestmark = pytest.mark.integ
 
 def _ensure_import() -> None:
     import sys
+
     root = Path.cwd()
     if str(root) not in sys.path:
         sys.path.insert(0, str(root))
@@ -34,8 +35,10 @@ def _call(app, method: str, path: str, body: dict | None = None):
         "CONTENT_LENGTH": str(len(raw)),
     }
     status_headers = []
+
     def start_response(status, headers):
         status_headers.append((status, headers))
+
     data = b"".join(app.wsgi_app(env, start_response))
     status, headers = status_headers[0]
     return status, dict(headers), data
@@ -50,7 +53,11 @@ def test_legacy_only_payload_builds_ok(tmp_path: Path, monkeypatch):
 
     # Start with a legacy-only payload (plus identity)
     legacy_only = {
-        "identity": {"agent_id": "AGT-LEG-001", "display_name": "Legacy Agent", "owners": ["CAIO"]},
+        "identity": {
+            "agent_id": "AGT-LEG-001",
+            "display_name": "Legacy Agent",
+            "owners": ["CAIO"],
+        },
         "legacy": {
             "role": "AIA-P",
             "kpi": {"PRI_min": 0.95, "HAL_max": 0.02, "AUD_min": 0.9},
@@ -93,6 +100,7 @@ def test_legacy_only_payload_builds_ok(tmp_path: Path, monkeypatch):
 def test_mixed_legacy_v3_rejected(tmp_path: Path):
     _ensure_import()
     from neo_agent.intake_app import create_app
+
     app = create_app(base_dir=tmp_path)
 
     payload = {
@@ -100,7 +108,9 @@ def test_mixed_legacy_v3_rejected(tmp_path: Path):
         "identity": {"agent_id": "X", "display_name": "X", "owners": ["CAIO"]},
         "context": {"naics": {"code": "541110"}},
         "role": {"function_code": "fn", "role_code": "rc"},
-        "governance_eval": {"gates": {"PRI_min": 0.95, "hallucination_max": 0.02, "audit_min": 0.9}},
+        "governance_eval": {
+            "gates": {"PRI_min": 0.95, "hallucination_max": 0.02, "audit_min": 0.9}
+        },
         "legacy": {"role": "OLD"},
     }
     st, _, raw = _call(app, "POST", "/save", payload)
@@ -114,12 +124,16 @@ def test_adapter_does_not_mutate_input():
     from neo_build.adapters.legacy_to_v3 import transform
 
     legacy_payload = {
-        "identity": {"agent_id": "AG-1", "display_name": "Agent One", "owners": ["CAIO"]},
+        "identity": {
+            "agent_id": "AG-1",
+            "display_name": "Agent One",
+            "owners": ["CAIO"],
+        },
         "legacy": {"role": "AIA-P", "kpi": {"PRI_min": 0.95}},
     }
     # Keep a copy for comparison
     import copy
+
     original = copy.deepcopy(legacy_payload)
     _v3, _diag = transform(legacy_payload)
     assert legacy_payload == original, "transform mutated legacy input"
-

@@ -21,8 +21,10 @@ def _call(app, method: str, path: str, body: dict | None = None):
         "CONTENT_LENGTH": str(len(raw)),
     }
     status_headers = []
+
     def start_response(status, headers):
         status_headers.append((status, headers))
+
     resp = b"".join(app.wsgi_app(env, start_response))
     status = status_headers[0][0]
     return status, dict(status_headers[0][1]), resp
@@ -31,10 +33,20 @@ def _call(app, method: str, path: str, body: dict | None = None):
 def _profile():
     return {
         "intake_version": "v3.0",
-        "identity": {"agent_id": "AGENT-TST-001", "display_name": "Test Agent", "owners": ["CAIO","CPA"]},
+        "identity": {
+            "agent_id": "AGENT-TST-001",
+            "display_name": "Test Agent",
+            "owners": ["CAIO", "CPA"],
+        },
         "context": {"naics": {"code": "541110"}, "region": ["CA"]},
-        "role": {"function_code": "legal_compliance", "role_code": "AIA-P", "role_title": "Lead"},
-        "governance_eval": {"gates": {"PRI_min": 0.95, "hallucination_max": 0.02, "audit_min": 0.9}}
+        "role": {
+            "function_code": "legal_compliance",
+            "role_code": "AIA-P",
+            "role_title": "Lead",
+        },
+        "governance_eval": {
+            "gates": {"PRI_min": 0.95, "hallucination_max": 0.02, "audit_min": 0.9}
+        },
     }
 
 
@@ -64,4 +76,3 @@ def test_build_route(tmp_path: Path, monkeypatch):
     # Parity flags
     assert out["parity"]["02_vs_14"] is True
     assert out["parity"]["11_vs_02"] is True
-

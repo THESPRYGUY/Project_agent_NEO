@@ -16,7 +16,10 @@ def test_enrich_does_not_overwrite_existing_values() -> None:
     payload = {
         "constraints": {"governance_file": "CUSTOM_GOV.json"},
         "agentic_policies": {"routing": {"workflow_pack": "CUSTOM_WORKFLOW.json"}},
-        "observability": {"telemetry_spec": "CUSTOM_OBS.json", "kpi_targets": {"PRI_min": 0.95, "HAL_max": 0.02, "AUD_min": 0.9}},
+        "observability": {
+            "telemetry_spec": "CUSTOM_OBS.json",
+            "kpi_targets": {"PRI_min": 0.95, "HAL_max": 0.02, "AUD_min": 0.9},
+        },
     }
     out = enrich_single(profile, fname, payload)
     # Existing values remain
@@ -26,4 +29,3 @@ def test_enrich_does_not_overwrite_existing_values() -> None:
     # Missing values are filled (e.g., prompt_pack, eval_framework_file)
     assert "prompt_pack" in out["agentic_policies"]["routing"]
     assert "eval_framework_file" in out["constraints"]
-

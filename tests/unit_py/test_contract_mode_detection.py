@@ -30,4 +30,3 @@ def test_mode_local_default_is_full(monkeypatch: pytest.MonkeyPatch) -> None:
     monkeypatch.delenv("CI", raising=False)
     monkeypatch.delenv("GITHUB_ACTIONS", raising=False)
     assert get_contract_mode() == "full"
-

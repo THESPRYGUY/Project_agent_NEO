@@ -6,7 +6,9 @@ import zipfile
 from pathlib import Path
 
 
-def _wsgi_call(app, method: str, path: str, *, query: str = "", body: dict | None = None):
+def _wsgi_call(
+    app, method: str, path: str, *, query: str = "", body: dict | None = None
+):
     raw = json.dumps(body or {}).encode("utf-8")
     env = {
         "REQUEST_METHOD": method,
@@ -20,8 +22,10 @@ def _wsgi_call(app, method: str, path: str, *, query: str = "", body: dict | Non
         "CONTENT_LENGTH": str(len(raw)),
     }
     status_headers: list[tuple[str, list[tuple[str, str]]]] = []
+
     def start_response(status, headers):
         status_headers.append((status, headers))
+
     it = app.wsgi_app(env, start_response)
     data = b"".join(it)
     status, headers = status_headers[0]
@@ -40,12 +44,15 @@ def _ensure_import_path():
 def _app(tmp_path: Path):
     _ensure_import_path()
     from neo_agent.intake_app import create_app
+
     return create_app(base_dir=tmp_path)
 
 
 def _build_small_repo(app, out_root: Path) -> Path:
     # Use /save + /build pipeline to produce a small repo
-    fixture = json.loads((Path.cwd() / "fixtures" / "sample_profile.json").read_text(encoding="utf-8"))
+    fixture = json.loads(
+        (Path.cwd() / "fixtures" / "sample_profile.json").read_text(encoding="utf-8")
+    )
     st, _, _ = _wsgi_call(app, "POST", "/save", body=fixture)
     assert st == "200 OK"
     st, _, body = _wsgi_call(app, "POST", "/build", body={})
@@ -64,7 +71,7 @@ def test_zip_ok_small_repo_streamed(tmp_path: Path):
     hdr = {k.lower(): v for k, v in headers.items()}
     assert hdr.get("content-type") == "application/zip"
     assert hdr.get("content-disposition", "").startswith("attachment;")
-    with zipfile.ZipFile(io.BytesIO(data), 'r') as zf:
+    with zipfile.ZipFile(io.BytesIO(data), "r") as zf:
         names = set(zf.namelist())
     assert len(names) >= 1
 
@@ -96,4 +103,3 @@ def test_zip_404_folder_not_found(tmp_path: Path):
     assert st == "404 Not Found"
     payload = json.loads(body.decode("utf-8"))
     assert payload.get("status") == "not_found"
-

@@ -73,7 +73,11 @@ def test_persona_state_roundtrip(tmp_path: Path) -> None:
     assert state["operator"] is None
 
     payload = {
-        "operator": {"code": "INTJ", "name": "Architect", "nickname": "Strategic Visionary"},
+        "operator": {
+            "code": "INTJ",
+            "name": "Architect",
+            "nickname": "Strategic Visionary",
+        },
         "agent": {
             "code": "ENFJ",
             "rationale": ["Compatibility with operator: 75%"],

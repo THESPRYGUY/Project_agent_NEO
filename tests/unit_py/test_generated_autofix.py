@@ -26,19 +26,42 @@ def test_generated_autofix_p0_p1_p2(tmp_path: Path) -> None:
     proj.mkdir(parents=True)
 
     # Minimal files with blanks
-    write(proj / "06_Role-Recipes_Index_v2.json", {
-        "archetype": "FIN:CONTROLLER",
-        "mapping": {"primary_role_code": "FIN:CONTROLLER"},
-        "role_recipe_ref": "",
-        "roles_index": [{"code": "FIN:CONTROLLER", "title": "Corporate Controller", "objectives": []}],
-        "version": 2,
-    })
+    write(
+        proj / "06_Role-Recipes_Index_v2.json",
+        {
+            "archetype": "FIN:CONTROLLER",
+            "mapping": {"primary_role_code": "FIN:CONTROLLER"},
+            "role_recipe_ref": "",
+            "roles_index": [
+                {
+                    "code": "FIN:CONTROLLER",
+                    "title": "Corporate Controller",
+                    "objectives": [],
+                }
+            ],
+            "version": 2,
+        },
+    )
     write(proj / "07_Subagent_Role-Recipes_v2.json", {"recipes": []})
-    write(proj / "09_Agent-Manifests_Catalog_v2.json", {"agents": [{"agent_id": "", "display_name": "Demo Agent"}]})
-    write(proj / "11_Workflow-Pack_v2.json", {"defaults": {"persona": "ENTP", "tone": ""}})
-    write(proj / "19_Overlay-Pack_SME-Domain_v1.json", {"industry": "", "naics": {"title": "Wholesale Trade"}, "region": []})
-    write(proj / "04_Governance+Risk-Register_v2.json", {"owners": [], "risk_register": [{"mitigation": "TBD"}]})
-    write(proj / "agent_profile.json", {"agent": {"mbti": {"mbti_code": "ESTJ", "suggested_traits": []}}})
+    write(
+        proj / "09_Agent-Manifests_Catalog_v2.json",
+        {"agents": [{"agent_id": "", "display_name": "Demo Agent"}]},
+    )
+    write(
+        proj / "11_Workflow-Pack_v2.json", {"defaults": {"persona": "ENTP", "tone": ""}}
+    )
+    write(
+        proj / "19_Overlay-Pack_SME-Domain_v1.json",
+        {"industry": "", "naics": {"title": "Wholesale Trade"}, "region": []},
+    )
+    write(
+        proj / "04_Governance+Risk-Register_v2.json",
+        {"owners": [], "risk_register": [{"mitigation": "TBD"}]},
+    )
+    write(
+        proj / "agent_profile.json",
+        {"agent": {"mbti": {"mbti_code": "ESTJ", "suggested_traits": []}}},
+    )
 
     from scripts.generated_autofix import run
 
@@ -54,7 +77,10 @@ def test_generated_autofix_p0_p1_p2(tmp_path: Path) -> None:
     d11 = read(proj / "11_Workflow-Pack_v2.json")
     assert d11["defaults"]["tone"]
     d19 = read(proj / "19_Overlay-Pack_SME-Domain_v1.json")
-    assert d19.get("industry") or not (proj / "19_Overlay-Pack_SME-Domain_v1.json").exists()
+    assert (
+        d19.get("industry")
+        or not (proj / "19_Overlay-Pack_SME-Domain_v1.json").exists()
+    )
     d04 = read(proj / "04_Governance+Risk-Register_v2.json")
     assert d04["owners"] or d04["risk_register"][0]["mitigation"] != "TBD"
     ap = read(proj / "agent_profile.json")
@@ -64,4 +90,3 @@ def test_generated_autofix_p0_p1_p2(tmp_path: Path) -> None:
     results2 = run(root, write=True)
     # No additional P0 fixes should be necessary
     assert sum(r.p0_fixed for r in results2) == 0
-

@@ -9,7 +9,9 @@ from typing import Callable, DefaultDict, Dict, Iterable, List, Protocol
 class EventListener(Protocol):
     """Callable signature for event listeners."""
 
-    def __call__(self, event: str, payload: Dict[str, object]) -> None:  # pragma: no cover - Protocol
+    def __call__(
+        self, event: str, payload: Dict[str, object]
+    ) -> None:  # pragma: no cover - Protocol
         ...
 
 
