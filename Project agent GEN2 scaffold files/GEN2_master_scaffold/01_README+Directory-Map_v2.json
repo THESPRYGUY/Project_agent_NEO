@@ -152,7 +152,7 @@
           "naming",
           "update_policy"
         ],
-        "token_budget": "\u22642000"
+        "token_budget": "≤2000"
       },
       {
         "slot": 2,
@@ -163,7 +163,7 @@
           "safety",
           "time_prefs"
         ],
-        "token_budget": "\u22642000"
+        "token_budget": "≤2000"
       },
       {
         "slot": 3,
@@ -173,7 +173,7 @@
           "escalation",
           "gates"
         ],
-        "token_budget": "\u22642000"
+        "token_budget": "≤2000"
       },
       {
         "slot": 4,
@@ -183,7 +183,7 @@
           "thresholds",
           "exceptions"
         ],
-        "token_budget": "\u22643000"
+        "token_budget": "≤3000"
       },
       {
         "slot": 5,
@@ -193,7 +193,7 @@
           "redlines",
           "jurisdictional_rules"
         ],
-        "token_budget": "\u22642000"
+        "token_budget": "≤2000"
       },
       {
         "slot": 6,
@@ -203,7 +203,7 @@
           "kpis",
           "handoffs"
         ],
-        "token_budget": "\u22642000"
+        "token_budget": "≤2000"
       },
       {
         "slot": 7,
@@ -213,7 +213,7 @@
           "eval_hooks",
           "handoffs"
         ],
-        "token_budget": "\u22643000"
+        "token_budget": "≤3000"
       },
       {
         "slot": 8,
@@ -224,7 +224,7 @@
           "footprint_refs",
           "retention"
         ],
-        "token_budget": "\u22642500"
+        "token_budget": "≤2500"
       },
       {
         "slot": 9,
@@ -236,7 +236,7 @@
           "budgets",
           "owner"
         ],
-        "token_budget": "\u22642000"
+        "token_budget": "≤2000"
       },
       {
         "slot": 10,
@@ -246,7 +246,7 @@
           "reasoning_patterns",
           "output_contracts"
         ],
-        "token_budget": "\u22643000"
+        "token_budget": "≤3000"
       },
       {
         "slot": 11,
@@ -256,7 +256,7 @@
           "gates",
           "rollback"
         ],
-        "token_budget": "\u22643000"
+        "token_budget": "≤3000"
       },
       {
         "slot": 12,
@@ -267,7 +267,7 @@
           "source_registry",
           "contracts"
         ],
-        "token_budget": "\u22642500"
+        "token_budget": "≤2500"
       },
       {
         "slot": 13,
@@ -278,7 +278,7 @@
           "retrieval",
           "caching"
         ],
-        "token_budget": "\u22642000"
+        "token_budget": "≤2000"
       },
       {
         "slot": 14,
@@ -288,7 +288,7 @@
           "benchmarks",
           "reasoning_kpis"
         ],
-        "token_budget": "\u22642500"
+        "token_budget": "≤2500"
       },
       {
         "slot": 15,
@@ -298,7 +298,7 @@
           "dashboards",
           "alerts"
         ],
-        "token_budget": "\u22642000"
+        "token_budget": "≤2000"
       },
       {
         "slot": 16,
@@ -308,7 +308,7 @@
           "error_taxonomy",
           "lessons_learned"
         ],
-        "token_budget": "\u22641500"
+        "token_budget": "≤1500"
       },
       {
         "slot": 17,
@@ -318,7 +318,7 @@
           "approvals",
           "rollback"
         ],
-        "token_budget": "\u22642000"
+        "token_budget": "≤2000"
       },
       {
         "slot": 18,
@@ -328,7 +328,7 @@
           "data_pack",
           "kpi_views"
         ],
-        "token_budget": "\u22642500"
+        "token_budget": "≤2500"
       },
       {
         "slot": 19,
@@ -339,7 +339,7 @@
           "prompts",
           "eval_cases"
         ],
-        "token_budget": "\u22642000"
+        "token_budget": "≤2000"
       },
       {
         "slot": 20,
@@ -350,9 +350,28 @@
           "stakeholders",
           "escalations"
         ],
-        "token_budget": "\u22642000"
+        "token_budget": "≤2000"
       }
-    ]
+    ],
+    "slot_19_overlay_pack": {
+      "keys": [
+        "canonical_industry",
+        "industry",
+        "industry_source",
+        "naics",
+        "datasets",
+        "definition_of_done",
+        "eval_cases",
+        "policies",
+        "prompts",
+        "refs"
+      ],
+      "notes": [
+        "canonical_industry: derived from NAICS (2-digit title by default)",
+        "industry: optional display override; if absent, UIs/writers use canonical_industry",
+        "industry_source: 'naics_lineage' or 'manual'"
+      ]
+    }
   },
   "dependency_map": {
     "edges": [
@@ -497,7 +516,7 @@
         11
       ]
     ],
-    "notes": "Ordering heuristic: 1 \u2192 (4 & 5) \u2192 2 \u2192 3 \u2192 (6\u20139) \u2192 (10\u201313) \u2192 (14\u201316) \u2192 (17\u201318) \u2192 (19\u201320)"
+    "notes": "Ordering heuristic: 1 → (4 & 5) → 2 → 3 → (6–9) → (10–13) → (14–16) → (17–18) → (19–20)"
   },
   "naming": {
     "files": "NN_Snake-Case_vMAJOR.MINOR.patch.json (e.g., 10_Prompt-Pack_v2.json)",
@@ -505,7 +524,7 @@
   },
   "update_policy": {
     "versioning": "Semantic: MAJOR for breaking policy/workflow changes; MINOR for compatible improvements; PATCH for fixes/docs",
-    "release": "Require gates to pass (PRI\u22650.95, HAL\u22640.02, AUD\u22650.90) before tagging; record to 17_Lifecycle-Pack_v2.change_log",
+    "release": "Require gates to pass (PRI≥0.95, HAL≤0.02, AUD≥0.90) before tagging; record to 17_Lifecycle-Pack_v2.change_log",
     "token_budget": "Hard ceilings per slot; move verbose content to data packs/references"
   }
 }

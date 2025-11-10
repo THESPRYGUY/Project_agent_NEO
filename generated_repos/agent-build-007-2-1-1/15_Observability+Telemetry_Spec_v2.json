@@ -8,7 +8,9 @@
       "AUD",
       "INC",
       "exceptions_open",
-      "time_to_close_incidents"
+      "time_to_close_incidents",
+      "industry_autofix_count",
+      "industry_autofix_pct"
     ],
     "exec_overview": [
       "ADR",
@@ -17,7 +19,9 @@
       "HAL",
       "INC",
       "LAT_p95",
-      "PRI"
+      "PRI",
+      "industry_autofix_count",
+      "industry_autofix_pct"
     ],
     "reasoning_quality": [
       "CONA",
@@ -62,7 +66,24 @@
     "intake_loaded",
     "naics_confirmed",
     "profile_generated",
-    "repo_generated"
+    "repo_generated",
+    "industry_autofix",
+    {
+      "name": "industry_autofix",
+      "description": "NAICS autofill emitted when slot-19 canonical_industry+industry_source are auto-populated for an overlay pack.",
+      "severity": "info",
+      "metrics": [
+        "industry_autofix_count",
+        "industry_autofix_pct"
+      ],
+      "fields": [
+        "overlay_pack_id",
+        "persona_id",
+        "naics_codes",
+        "autofill_method",
+        "autofill_outcome"
+      ]
+    }
   ],
   "log_schema": {
     "rag_event": [

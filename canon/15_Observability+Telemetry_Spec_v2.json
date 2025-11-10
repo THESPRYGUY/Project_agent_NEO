@@ -12,7 +12,7 @@
     "dashboards",
     "alerts"
   ],
-  "token_budget": "\u22642000",
+  "token_budget": "≤2000",
   "refs": {
     "global_instructions": "02_Global-Instructions_v2.json",
     "governance": "04_Governance+Risk-Register_v2.json",
@@ -80,7 +80,9 @@
       "AUD",
       "LAT_p95",
       "CST",
-      "INC"
+      "INC",
+      "industry_autofix_count",
+      "industry_autofix_pct"
     ],
     "reliability_sre": [
       "pipeline_success_rate",
@@ -100,7 +102,9 @@
       "AUD",
       "INC",
       "exceptions_open",
-      "time_to_close_incidents"
+      "time_to_close_incidents",
+      "industry_autofix_count",
+      "industry_autofix_pct"
     ]
   },
   "alerts": {
@@ -123,5 +127,23 @@
       "csv",
       "parquet_optional"
     ]
-  }
+  },
+  "events": [
+    {
+      "name": "industry_autofix",
+      "description": "NAICS autofill emitted when slot-19 canonical_industry+industry_source are auto-populated for an overlay pack.",
+      "severity": "info",
+      "metrics": [
+        "industry_autofix_count",
+        "industry_autofix_pct"
+      ],
+      "fields": [
+        "overlay_pack_id",
+        "persona_id",
+        "naics_codes",
+        "autofill_method",
+        "autofill_outcome"
+      ]
+    }
+  ]
 }

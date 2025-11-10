@@ -48,5 +48,26 @@
   "token_budget": {
     "max_output_tokens": 1000
   },
-  "version": 2
+  "version": 2,
+  "contracts": {
+    "slot_19_overlay_pack": {
+      "keys": [
+        "canonical_industry",
+        "industry",
+        "industry_source",
+        "naics",
+        "datasets",
+        "definition_of_done",
+        "eval_cases",
+        "policies",
+        "prompts",
+        "refs"
+      ],
+      "notes": [
+        "canonical_industry: derived from NAICS (2-digit title by default)",
+        "industry: optional display override; if absent, UIs/writers use canonical_industry",
+        "industry_source: 'naics_lineage' or 'manual'"
+      ]
+    }
+  }
 }

@@ -118,6 +118,16 @@ def compile_profile(profile: Mapping[str, Any]) -> Dict[str, Any]:
     attributes = _coerce_map(profile.get("attributes"))
     preferences = _coerce_map(profile.get("preferences"))
     sliders = _coerce_map(preferences.get("sliders"))
+    domain_value = str(agent.get("domain") or "").strip()
+    domain_source_value = str(agent.get("domain_source") or "").strip()
+    role_value = str(agent.get("role") or "").strip()
+    persona_meta = dict(persona) if persona else None
+    if persona_meta is not None:
+        if domain_value:
+            persona_meta["domain"] = domain_value
+        if domain_source_value:
+            persona_meta["domainSource"] = domain_source_value
+        persona = persona_meta
 
     compiled: Dict[str, Any] = {
         "version": version or "1.0.0",
@@ -132,6 +142,9 @@ def compile_profile(profile: Mapping[str, Any]) -> Dict[str, Any]:
             "name": name,
             "version": version,
             "persona": persona or agent.get("persona") or "",
+            "domain": domain_value,
+            "domain_source": domain_source_value,
+            "role": role_value,
         },
         "business": {
             "function": business_function,
@@ -139,6 +152,8 @@ def compile_profile(profile: Mapping[str, Any]) -> Dict[str, Any]:
                 "code": role.get("code", ""),
                 "title": role.get("title", ""),
                 "seniority": role.get("seniority", ""),
+                "domain": domain_value,
+                "domain_source": domain_source_value,
             },
         },
         "classification": {"naics": naics},

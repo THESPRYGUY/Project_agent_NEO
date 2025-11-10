@@ -1,4 +1,5 @@
 {
+  "canonical_industry": "Professional, Scientific, and Technical Services",
   "datasets": [
     "kb_main"
   ],
@@ -7,6 +8,7 @@
     "default_domain_eval"
   ],
   "industry": "Software",
+  "industry_source": "manual",
   "meta": {
     "agent_id": "golden-agent",
     "authors": [

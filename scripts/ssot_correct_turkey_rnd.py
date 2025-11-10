@@ -81,7 +81,7 @@ def correct_ssot(ssot: dict) -> dict:
     ssot["agent"]["display_name"] = disp
 
     # Scope text (place in top-level 'scope' and under role.description if present)
-    scope_text = "Turkey production R&D: food safety, processing, welfare & performance."
+    scope_text = "Grid interconnection R&D: construction safety, intertie compliance & resilience."
     ssot["scope"] = scope_text
     if isinstance(ssot.get("role"), dict):
         if not ssot["role"].get("description") or any_forbidden(str(ssot["role"].get("description", ""))):
@@ -215,4 +215,3 @@ def main() -> int:
 
 if __name__ == "__main__":
     raise SystemExit(main())
-

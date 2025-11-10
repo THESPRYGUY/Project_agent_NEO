@@ -3,7 +3,10 @@
     "HAL_breach",
     "PRI_drop"
   ],
-  "dashboards": [],
+  "dashboards": [
+    "industry_autofix_count",
+    "industry_autofix_pct"
+  ],
   "decision_event_field_types": {
     "band_used": "string",
     "confidence": "number",
@@ -32,7 +35,8 @@
     "intake_loaded",
     "naics_confirmed",
     "profile_generated",
-    "repo_generated"
+    "repo_generated",
+    "industry_autofix"
   ],
   "meta": {
     "agent_id": "golden-agent",

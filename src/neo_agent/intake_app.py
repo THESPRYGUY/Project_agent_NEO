@@ -2370,6 +2370,16 @@ window.addEventListener('DOMContentLoaded', function () {
         business_function_key = agent.get("business_function_key") or state.get(
             "business_function_key"
         )
+        try:
+            LOGGER.info(
+                "persona_state received agent keys=%s domain=%s domain_source=%s business_function=%s",
+                sorted(agent.keys()),
+                agent.get("domain"),
+                agent.get("domain_source"),
+                business_function,
+            )
+        except Exception:
+            pass
         if business_function_key:
             business_function_key = self._normalise_function_key(
                 str(business_function_key)
@@ -2398,6 +2408,15 @@ window.addEventListener('DOMContentLoaded', function () {
         if not domain_source:
             domain_source = "none"
         agent["domain_source"] = domain_source
+        try:
+            LOGGER.info(
+                "persona_state enriched domain=%s domain_source=%s business_function_key=%s",
+                agent.get("domain"),
+                domain_source,
+                business_function_key,
+            )
+        except Exception:
+            pass
 
         generic_baseline = "Domain not provided; using generic persona baseline."
         rationale: list[str] = []
@@ -2508,6 +2527,37 @@ window.addEventListener('DOMContentLoaded', function () {
         role_title_value = _get("role_title")
         role_seniority_value = _get("role_seniority")
         agent_id_input = _get("identity.agent_id")
+        persona_agent_state = persona_block.get("agent")
+        if not isinstance(persona_agent_state, Mapping):
+            persona_agent_state = {}
+        if not business_function_value:
+            business_function_value = str(
+                persona_agent_state.get("business_function", "")
+            ).strip()
+        if not role_code_value:
+            role_code_value = str(persona_agent_state.get("role_code", "")).strip()
+        if not role_title_value:
+            role_title_value = str(
+                persona_agent_state.get("role_title")
+                or persona_agent_state.get("role")
+                or role_code_value
+            ).strip()
+        if not role_seniority_value:
+            role_seniority_value = str(
+                persona_agent_state.get("role_seniority", "")
+            ).strip()
+        domain_value = _get("domain")
+        if not domain_value:
+            domain_value = str(persona_agent_state.get("domain", "")).strip()
+        domain_source_value = str(persona_agent_state.get("domain_source", "")).strip()
+        role_value = _get("role")
+        if not role_value:
+            role_value = str(
+                persona_agent_state.get("role")
+                or persona_agent_state.get("role_title")
+                or role_title_value
+                or role_code_value
+            ).strip()
 
         # NAICS payload from hidden inputs
         naics_code = _get("naics_code")
@@ -2540,8 +2590,9 @@ window.addEventListener('DOMContentLoaded', function () {
                     if persona_code
                     else None
                 ),
-                "domain": _get("domain"),
-                "role": _get("role"),
+                "domain": domain_value,
+                "domain_source": domain_source_value or None,
+                "role": role_value,
                 "business_function": business_function_value,
             },
             # Persist identity so Agent ID survives form re-render
@@ -2558,6 +2609,8 @@ window.addEventListener('DOMContentLoaded', function () {
                 "title": role_title_value or role_code_value,
                 "seniority": role_seniority_value,
                 "function": business_function_value,
+                "domain": domain_value,
+                "domain_source": domain_source_value or None,
             },
             # Persist NAICS
             "naics": {
