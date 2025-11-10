@@ -62,7 +62,7 @@ jobs:
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
       - name: Basic repo smoke (structure + schema presence)
         run: |
-          test -f 01_README+Directory-Map_v2.json
+          test -f "Project agent GEN2 scaffold files/GEN2_master_scaffold/01_README+Directory-Map_v2.json"
           test -f packs/19_Overlay-Pack_SME-Domain_v1.schema.json
 
   lint-type:
