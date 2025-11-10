@@ -22,7 +22,7 @@
       "additionalProperties": false,
       "properties": {
         "code": {"type": "string"},
-        "level": {"type": ["integer", "string"]},
+        "level": {"type": ["integer", "string", "null"]},
         "title": {"type": "string"},
         "lineage": {
           "type": "array",
@@ -30,7 +30,7 @@
             "type": "object",
             "properties": {
               "code": {"type": "string"},
-              "level": {"type": ["integer", "string"]},
+              "level": {"type": ["integer", "string", "null"]},
               "title": {"type": "string"}
             },
             "required": ["code", "title"],
@@ -39,6 +39,32 @@
         }
       },
       "required": ["code", "title"]
+    },
+    "standards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "name": {"type": "string"},
+          "publisher": {"type": "string"},
+          "scope": {"type": "string"},
+          "url": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "terminology": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "term": {"type": "string"},
+          "definition": {"type": "string"},
+          "source": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
     },
     "datasets": {
       "type": "array",
@@ -95,7 +121,12 @@
           "type": "array",
           "items": {"type": "string"}
         },
-        "sector": {"type": "string"}
+        "sector": {"type": "string"},
+        "kpi_framework": {"type": "string"},
+        "prompt_pack": {"type": "string"},
+        "rag_config": {"type": "string"},
+        "tool_data_registry": {"type": "string"},
+        "workflow_pack": {"type": "string"}
       },
       "additionalProperties": false
     },
