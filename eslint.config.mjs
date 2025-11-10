@@ -6,7 +6,13 @@ export default [
     files: ["src/ui/**/*.js"],
     languageOptions: {
       sourceType: "module",
-      ecmaVersion: 2021
+      ecmaVersion: 2021,
+      globals: {
+        window: "readonly",
+        document: "readonly",
+        fetch: "readonly",
+        console: "readonly"
+      }
     },
     rules: {
       "no-unused-vars": [
