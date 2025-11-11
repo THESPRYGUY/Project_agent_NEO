@@ -1,5 +1,10 @@
 {
-  "@context":{"neo":"https://glitch.inc/neo#","prov":"http://www.w3.org/ns/prov#"},
+  "@context":{
+    "neo":"https://glitch.inc/neo#",
+    "prov":"http://www.w3.org/ns/prov#",
+    "rdf":"http://www.w3.org/1999/02/22-rdf-syntax-ns#",
+    "rdfs":"http://www.w3.org/2000/01/rdf-schema#"
+  },
   "@graph":[{"@id":"neo:Task","@type":"rdfs:Class"},
             {"@id":"neo:usesTool","@type":"rdf:Property","domain":"neo:Task","range":"neo:Tool"}],
   "version":"0.1","provenance":{"prov:wasAttributedTo":"DEV","prov:generatedAtTime":"TBD"}
