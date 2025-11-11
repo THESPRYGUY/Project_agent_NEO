@@ -9,6 +9,7 @@ on:
 jobs:
 
   golden-snapshot:
+    name: golden snapshot
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -32,5 +33,4 @@ jobs:
       - name: No golden/snapshot tests found (skip)
         if: steps.collect.outputs.count == '0'
         run: echo "No golden/snapshot tests found; skipping."
-
 

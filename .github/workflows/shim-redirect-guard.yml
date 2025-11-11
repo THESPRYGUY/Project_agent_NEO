@@ -1,0 +1,28 @@
+name: Shim Redirect Guard
+
+on:
+  pull_request:
+    branches: [main]
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch: {}
+
+jobs:
+  shim-redirect-guard:
+    name: Shim Redirect Guard
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Check shim redirect hits
+        run: |
+          set -euo pipefail
+          LOG="logs/shim_redirect_hits.json"
+          if [ -f "$LOG" ]; then
+            HITS=$(jq -r '.shim_hits // 0' "$LOG")
+          else
+            HITS=0
+          fi
+          echo "Shim redirect hits recorded: $HITS"
+          if [ "${HITS}" -gt 0 ]; then
+            echo "Shim redirect hits must be zero."
+            exit 1
+          fi
