@@ -26,5 +26,49 @@
     "19_Overlay-Pack_SME-Domain_v1.json",
     "20_Overlay-Pack_Enterprise_v1.json"
   ],
-  "slug": "atlas-1-0-0"
+  "slug": "atlas-1-0-0",
+  "owners": [
+    {
+      "role": "CAIO",
+      "email": "caio@glitch.inc",
+      "REQUIRED_replace": true
+    },
+    {
+      "role": "CPA",
+      "email": "cpa@glitch.inc",
+      "REQUIRED_replace": true
+    },
+    {
+      "role": "TeamLead",
+      "email": "teamlead@glitch.inc",
+      "REQUIRED_replace": true
+    }
+  ],
+  "capabilities": [
+    "plan",
+    "build",
+    "evaluate",
+    "research"
+  ],
+  "lifecycle": {
+    "states": [
+      "dev",
+      "staging",
+      "prod"
+    ],
+    "promotion_rules": "gated",
+    "notes": "HITL for legal/reg/fin"
+  },
+  "hitl_triggers": {
+    "required_for": [
+      "legal",
+      "regulatory",
+      "financial",
+      "prod_cutover"
+    ],
+    "approvers": [
+      "CAIO",
+      "TeamLead"
+    ]
+  }
 }

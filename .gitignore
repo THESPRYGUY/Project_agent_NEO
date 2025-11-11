@@ -59,3 +59,4 @@ before_after_diff.zip
 *.bak
 rebase_safety.diff
 agent_profile.json
+artifacts/ci/
