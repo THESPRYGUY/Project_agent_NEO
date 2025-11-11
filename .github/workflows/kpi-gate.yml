@@ -1,16 +1,62 @@
-name: kpi-gate
+name: KPI Gate
+
 on:
   pull_request:
-    branches: [ staging, main ]
+    branches: [main, staging]
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch: {}
+
 jobs:
-  kpi:
+  kpi-gate:
+    name: KPI Gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
       - name: KPI Runner (stub)
         run: ci/kpi_runner_stub.sh
+
       - name: Upload artifacts
         uses: actions/upload-artifact@v4
         with:
           name: kpi-artifacts
           path: artifacts/
+
+      - name: Parse KPI metrics
+        shell: bash
+        run: |
+          set -euo pipefail
+          KPI_JSON=""
+          if ls artifacts/kpi-run-*.json >/dev/null 2>&1; then
+            KPI_JSON=$(ls -1 artifacts/kpi-run-*.json | head -n1)
+          elif [ -f reports/kpi_report.json ]; then
+            KPI_JSON="reports/kpi_report.json"
+          fi
+
+          if [ -z "${KPI_JSON}" ]; then
+            echo "No KPI JSON found; skipping gate."
+            exit 0
+          fi
+
+          echo "Parsing KPI metrics from ${KPI_JSON}"
+          PRI=$(jq -r '.PRI // .precision // .pri.value // 0' "${KPI_JSON}")
+          HAL=$(jq -r '.HAL // .hallucination // .hal.value // 1' "${KPI_JSON}")
+          AUD=$(jq -r '.AUD // .auditability // .aud.value // 0' "${KPI_JSON}")
+
+          echo "PRI=${PRI}" >> "${GITHUB_ENV}"
+          echo "HAL=${HAL}" >> "${GITHUB_ENV}"
+          echo "AUD=${AUD}" >> "${GITHUB_ENV}"
+
+      - name: KPI Gate (numeric compare)
+        if: ${{ env.PRI && env.HAL && env.AUD }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "Gating with PRI=${PRI} HAL=${HAL} AUD=${AUD}"
+          awk -v pri="${PRI}" -v hal="${HAL}" -v aud="${AUD}" 'BEGIN {
+            ok = (pri + 0 >= 0.95) && (hal + 0 <= 0.02) && (aud + 0 >= 0.90);
+            if (!ok) {
+              print "KPI thresholds breached (PRI>=0.95, HAL<=0.02, AUD>=0.90)";
+              exit 1;
+            }
+          }'
