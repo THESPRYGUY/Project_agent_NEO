@@ -16,3 +16,4 @@
 14) Lifecycle & Release Plan (phases, approvals, rollback, changelog)  
 15) Commercialization & SLAs (offers, SLOs, tiers)  
 16) SSOT Maps (slotâ†’deliverable, RACI, backlog with DoR/DoD)
+2025-11-11T15:05:28Z — SSOT header touch
