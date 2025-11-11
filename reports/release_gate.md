@@ -60,3 +60,8 @@ Commit: 7f9ceb6b1c2a098d7b7aa5075d3ef391fe867b85
 - 10_Prompt-Pack_v2.json (major): CAIO, CPA
 - 11_Workflow-Pack_v2.json (major): CAIO, COO/PMO
 - Release Certification: CAIO, Evaluator
+
+### Pre-Tag Checklist
+- [ ] contract-validate (STRICT_RELEASE=1) passes
+- [ ] No `REQUIRED_replace` owners remain
+
