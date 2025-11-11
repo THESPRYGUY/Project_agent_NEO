@@ -58,7 +58,7 @@ jobs:
       - name: Smoke test container
         run: |
           IMAGE_REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
-          docker run -d --rm -p 5000:5000 --name neo-smoke \
+          docker run -d -p 5000:5000 --name neo-smoke \
             -e LOG_LEVEL=INFO \
             -e NEO_REPO_OUTDIR=/tmp/out \
             ghcr.io/${IMAGE_REPO}:${{ steps.meta.outputs.tag }}
