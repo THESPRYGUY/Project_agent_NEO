@@ -2,6 +2,7 @@ name: unit-python
 on: [pull_request]
 jobs:
   unit-python:
+    name: unit-python
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
@@ -12,4 +13,3 @@ jobs:
       - run: |
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           if [ -d tests ]; then python -m pytest || echo "No tests or failures ignored (stub)"; else echo "No Python tests; stub pass"; fi
-
