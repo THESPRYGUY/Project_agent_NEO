@@ -1,4 +1,4 @@
-﻿import json, sys, glob
+import json, sys, glob
 
 REQUIRED_FIELDS = ["owners", "capabilities", "lifecycle", "hitl_triggers"]
 FAILS = []

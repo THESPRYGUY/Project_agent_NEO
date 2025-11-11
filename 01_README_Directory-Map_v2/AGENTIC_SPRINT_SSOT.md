@@ -1,4 +1,4 @@
-﻿# Agentic Upgrade to NEO — Sprint SSOT
+# Agentic Upgrade to NEO — Sprint SSOT
 <!-- Sections 1–16 scaffolded per CIO brief; fill during sprint execution. -->
 1) Executive Summary  
 2) PRD/MRD (personas, JTBD, capabilities, non-goals, constraints; acceptance criteria tied to KPI gates)  

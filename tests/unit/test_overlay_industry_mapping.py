@@ -1,4 +1,4 @@
-﻿from neo_build.naics import title_for_naics
+from neo_build.naics import title_for_naics
 
 
 def test_known_naics_titles():

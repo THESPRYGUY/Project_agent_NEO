@@ -1,4 +1,4 @@
-﻿{
+{
   "phases":["Preflight","Configuration","Governance Sign-off","Evaluation","Rollout","Post-Go-Live"],
   "approvals":{"legal/reg/fin":["CAIO","TeamLead"],"prod_cutover":["CAIO"]},
   "rollback":{"trigger":"gate_fail|incident","steps":["revert","invalidate_cache","post_mortem"]},

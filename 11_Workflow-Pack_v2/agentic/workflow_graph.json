@@ -1,4 +1,4 @@
-﻿{
+{
   "nodes": [
     {"id": "plan", "type": "role", "role": "Planner"},
     {"id": "build", "type": "role", "role": "Builder"},

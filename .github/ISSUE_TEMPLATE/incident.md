@@ -1,4 +1,4 @@
-﻿---
+---
 name: Incident (gate fail)
 about: Track KPI gate failures (HAL_breach, PRI_drop, AUD_low)
 labels: incident

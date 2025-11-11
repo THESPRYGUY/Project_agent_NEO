@@ -1,4 +1,4 @@
-﻿name: kpi-gate
+name: kpi-gate
 on:
   pull_request:
     branches: [ staging, main ]

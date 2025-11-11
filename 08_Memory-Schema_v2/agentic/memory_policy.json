@@ -1,4 +1,4 @@
-﻿{
+{
   "tiers":{"working":{"ttl_hours":6,"budget_tokens":6000},
            "episodic":{"ttl_days":14,"summarize_on_close":true},
            "semantic":{"versioned":true,"index":"glitch_source_registry_v1"},

@@ -1,4 +1,4 @@
-﻿{
+{
   "suites":["functional","governance","reasoning_quality","latency_cost","red_team"],
   "kpis":{"PRI":0.95,"HAL":0.02,"AUD":0.90,"LAT_p95_ms":2500,"CST":"track"},
   "reasoning":{"CONA":"coverage","CORD":"order","RTI":"trace","RFG":"facts"},

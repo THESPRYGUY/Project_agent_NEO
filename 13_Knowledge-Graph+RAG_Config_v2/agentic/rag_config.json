@@ -1,4 +1,4 @@
-﻿{
+{
   "indices":["glitch_source_registry_v1","report_templates_v1","evaluation_sets_v1"],
   "chunking":{"method":"semantic","approx_tokens":800},
   "embedding_model":"text-embedding-3-large",

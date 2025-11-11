@@ -1,4 +1,4 @@
-﻿## Summary
+## Summary
 One-line: <what changed and why>.
 
 ## Packs touched (IDs)

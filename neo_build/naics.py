@@ -1,4 +1,4 @@
-﻿from typing import Optional
+from typing import Optional
 
 # Minimal curated map; extend via fixture or data file as needed.
 NAICS_TITLE = {
