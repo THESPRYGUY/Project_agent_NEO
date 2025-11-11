@@ -4,7 +4,7 @@ ARG GIT_SHA=UNKNOWN
 ENV GIT_SHA=${GIT_SHA}
 ENV PYTHONDONTWRITEBYTECODE=1 \
     PYTHONUNBUFFERED=1 \
-    PYTHONPATH=/app/src \
+    PYTHONPATH=/app/src:/app \
     HOST=0.0.0.0 \
     PORT=5000
 
@@ -20,6 +20,7 @@ RUN groupadd -g 10001 appgroup \
 # Copy only what we need to install and run
 COPY pyproject.toml README.md ./
 COPY src ./src
+COPY neo_build ./neo_build
 COPY wsgi.py ./
 
 RUN pip install --no-cache-dir --upgrade pip \
