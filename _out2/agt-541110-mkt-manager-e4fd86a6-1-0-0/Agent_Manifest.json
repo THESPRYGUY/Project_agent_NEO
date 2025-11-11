@@ -30,18 +30,15 @@
   "owners": [
     {
       "role": "CAIO",
-      "email": "caio@glitch.inc",
-      "REQUIRED_replace": true
+      "email": "caio@glitch.inc"
     },
     {
       "role": "CPA",
-      "email": "cpa@glitch.inc",
-      "REQUIRED_replace": true
+      "email": "cpa@glitch.inc"
     },
     {
       "role": "TeamLead",
-      "email": "teamlead@glitch.inc",
-      "REQUIRED_replace": true
+      "email": "teamlead@glitch.inc"
     }
   ],
   "capabilities": [
