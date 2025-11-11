@@ -17,6 +17,7 @@ from .contracts import (
     CANONICAL_PACK_FILENAMES,
     KPI_TARGETS,
 )
+from .ssot import canonical_industry_from_naics
 from .utils import json_write
 from .scaffolder import get_contract_mode, enrich_packs
 from .validators import (
@@ -555,10 +556,22 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
     json_write(out_dir / "18_Reporting-Pack_v2.json", rp)
 
     # 19 SME-Domain Overlay
+    canonical_industry = str(_get(sector_profile, "canonical_industry", "")).strip()
+    if not canonical_industry:
+        canonical_industry = canonical_industry_from_naics(naics)
+    display_industry = str(_get(sector_profile, "industry", "")).strip()
+    industry_source = str(_get(sector_profile, "industry_source", "")).strip()
+    if not display_industry:
+        display_industry = canonical_industry
+        industry_source = industry_source or "naics_lineage"
+    else:
+        industry_source = industry_source or "manual"
     od = {
         "version": 1,
         "sector": _get(sector_profile, "sector", ""),
-        "industry": _get(sector_profile, "industry", ""),
+        "canonical_industry": canonical_industry,
+        "industry": display_industry,
+        "industry_source": industry_source,
         "region": list(_get(sector_profile, "region", []) or []),
         "regulators": list(_get(sector_profile, "regulatory", []) or []),
         "naics": naics,
@@ -604,8 +617,8 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
                 ],
             }
         )
+    od = write_sme_overlay(od, out_dir / "19_Overlay-Pack_SME-Domain_v1.json")
     packs["19_Overlay-Pack_SME-Domain_v1.json"] = od
-    json_write(out_dir / "19_Overlay-Pack_SME-Domain_v1.json", od)
 
     # 20 Enterprise Overlay
     eo = {
@@ -667,6 +680,25 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
                 json_write(out_dir / fname, payload)
 
     return packs
+
+
+def write_sme_overlay(payload: Mapping[str, Any], out_path: Path | str) -> Dict[str, Any]:
+    """Persist the SME overlay ensuring canonical/industry/source fields are populated."""
+    enriched: Dict[str, Any] = dict(payload or {})
+    naics = enriched.get("naics", {}) or {}
+    canonical = str(enriched.get("canonical_industry") or "").strip()
+    if not canonical:
+        canonical = canonical_industry_from_naics(naics)
+        enriched["canonical_industry"] = canonical
+    display = str(enriched.get("industry") or "").strip()
+    if display:
+        enriched["industry"] = display
+        enriched["industry_source"] = enriched.get("industry_source") or "manual"
+    else:
+        enriched["industry"] = canonical
+        enriched["industry_source"] = "naics_lineage"
+    json_write(Path(out_path), enriched)
+    return enriched
 
 
 def write_repo_files(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]:

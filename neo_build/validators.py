@@ -76,7 +76,23 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
     out["checks"]["kpi_sync"] = (k11 == desired) and (k14 == desired) and (k17 == desired)
     # Observability
     obs = packs.get("15_Observability+Telemetry_Spec_v2.json") or {}
-    ev = set(obs.get("events", []))
+    raw_events = obs.get("events", [])
+    ev: Set[str] = set()
+    if isinstance(raw_events, list):
+        for item in raw_events:
+            if isinstance(item, dict):
+                name = str(item.get("name") or "").strip()
+                if name:
+                    ev.add(name)
+            elif isinstance(item, str):
+                ev.add(item)
+    elif isinstance(raw_events, str):
+        ev.add(raw_events)
+    else:
+        try:
+            ev.update(set(raw_events))
+        except Exception:
+            pass
     al = set(obs.get("alerts", []))
     out["checks"]["observability"] = set(REQUIRED_EVENTS).issubset(ev) and set(REQUIRED_ALERTS).issubset(al)
     # Owners present

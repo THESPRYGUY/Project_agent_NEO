@@ -1,0 +1,160 @@
+{
+  "$schema": "http://json-schema.org/draft-07/schema#",
+  "title": "Slot 19 Overlay Pack (SME Domain)",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "canonical_industry": {
+      "type": "string",
+      "description": "Authoritative industry label derived from NAICS lineage (default: 2-digit NAICS title, e.g., 'Construction'). Required."
+    },
+    "industry_source": {
+      "type": "string",
+      "enum": ["naics_lineage", "manual"],
+      "description": "Provenance of the display industry label. 'naics_lineage' when using canonical, 'manual' when explicitly overridden."
+    },
+    "industry": {
+      "type": "string",
+      "description": "Human/display label. If blank or missing, renderers must fall back to canonical_industry."
+    },
+    "naics": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "code": {"type": "string"},
+        "level": {"type": ["integer", "string", "null"]},
+        "title": {"type": "string"},
+        "lineage": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "code": {"type": "string"},
+              "level": {"type": ["integer", "string", "null"]},
+              "title": {"type": "string"}
+            },
+            "required": ["code", "title"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["code", "title"]
+    },
+    "standards": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {"type": "string"},
+          "name": {"type": "string"},
+          "publisher": {"type": "string"},
+          "scope": {"type": "string"},
+          "url": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "terminology": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "term": {"type": "string"},
+          "definition": {"type": "string"},
+          "source": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "datasets": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "definition_of_done": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "eval_cases": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "meta": {
+      "type": "object",
+      "properties": {
+        "agent_id": {"type": "string"},
+        "authors": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "created_at": {"type": "string"},
+        "name": {"type": "string"},
+        "owner": {"type": "string"},
+        "version": {"type": "string"}
+      },
+      "required": ["name", "version"],
+      "additionalProperties": false
+    },
+    "objective": {"type": "string"},
+    "policies": {
+      "type": "object",
+      "properties": {
+        "advisory_scope": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "risk_tier": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "prompts": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "refs": {
+      "type": "object",
+      "properties": {
+        "region": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "regulators": {
+          "type": "array",
+          "items": {"type": "string"}
+        },
+        "sector": {"type": "string"},
+        "kpi_framework": {"type": "string"},
+        "prompt_pack": {"type": "string"},
+        "rag_config": {"type": "string"},
+        "tool_data_registry": {"type": "string"},
+        "workflow_pack": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "region": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "regulators": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "schema_keys": {
+      "type": "array",
+      "items": {"type": "string"}
+    },
+    "sector": {"type": "string"},
+    "token_budget": {
+      "type": "object",
+      "properties": {
+        "max_output_tokens": {"type": "integer"}
+      },
+      "additionalProperties": false
+    },
+    "version": {"type": ["integer", "string"]}
+  },
+  "required": [
+    "canonical_industry",
+    "industry_source",
+    "naics"
+  ]
+}

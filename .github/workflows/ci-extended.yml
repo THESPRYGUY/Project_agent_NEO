@@ -1,0 +1,35 @@
+name: CI Extended
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+
+  golden-snapshot:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with: { python-version: '3.11' }
+      - name: Install deps
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install pytest
+      - name: Discover golden/snapshot tests
+        id: collect
+        run: |
+          set -e
+          COUNT=$(pytest -q -k "golden or snapshot" --collect-only | grep -Eo '::' | wc -l | tr -d ' ')
+          echo "count=$COUNT" >> $GITHUB_OUTPUT
+      - name: Run golden/snapshot tests
+        if: steps.collect.outputs.count != '0'
+        run: |
+          pytest -q -k "golden or snapshot" --maxfail=1
+      - name: No golden/snapshot tests found (skip)
+        if: steps.collect.outputs.count == '0'
+        run: echo "No golden/snapshot tests found; skipping."
+

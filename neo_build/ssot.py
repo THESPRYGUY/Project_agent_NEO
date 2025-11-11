@@ -10,6 +10,11 @@ from typing import Any, Dict, Iterable, Mapping, MutableMapping
 from .contracts import CANONICAL_PACK_FILENAMES, PACK_ID_TO_FILENAME, KPI_TARGETS
 from .schemas import required_keys_map
 
+try:  # pragma: no cover - telemetry optional in builder contexts
+    from src.neo_agent.telemetry import emit_event as _telemetry_emit_event
+except Exception:  # pragma: no cover - best-effort hook
+    _telemetry_emit_event = None
+
 
 _REPO_ROOT = Path(__file__).resolve().parents[1]
 _SCAFFOLD_ROOT = _REPO_ROOT / "Project agent GEN2 scaffold files" / "GEN2_master_scaffold"
@@ -25,6 +30,35 @@ _GLOBAL_STRING_REPLACEMENTS: Dict[str, str] = {
     "SET_ME": "secret_manager:shared/tool_access",
     "tbd@example.com": "stakeholders@enterprise.example",
 }
+
+
+def canonical_industry_from_naics(naics: Mapping[str, Any] | None) -> str:
+    """Derive the canonical industry label from NAICS lineage (2-digit title preferred)."""
+    if not isinstance(naics, Mapping):
+        naics = {}
+    lineage = naics.get("lineage") or []
+    canonical: str | None = None
+    for node in lineage:
+        if not isinstance(node, Mapping):
+            continue
+        level = str(node.get("level", "")).lstrip("0")
+        if level == "2":
+            title = str(node.get("title") or "").strip()
+            if title:
+                canonical = title
+                break
+    if not canonical:
+        canonical = str(naics.get("title") or "").strip()
+    return canonical or "Unknown"
+
+
+def _emit_industry_autofix_event(payload: Mapping[str, Any]) -> None:
+    if not _telemetry_emit_event:
+        return
+    try:
+        _telemetry_emit_event("industry_autofix", dict(payload))
+    except Exception:
+        pass
 
 
 @lru_cache(maxsize=64)
@@ -83,6 +117,18 @@ def merge_with_ssot(profile: Mapping[str, Any], filename: str, payload: Mapping[
     out["schema_keys"] = _compute_schema_keys(filename, out)
 
     return out
+
+
+def assemble_ssot(
+    payload: Mapping[str, Any],
+    *,
+    profile: Mapping[str, Any] | None = None,
+    filename: str | None = None,
+) -> Dict[str, Any]:
+    """Utility helper for tests/migrations to apply SSOT post-processing rules."""
+    profile = profile or {}
+    filename = filename or PACK_ID_TO_FILENAME[19]
+    return _post_process(profile, filename, dict(payload or {}))
 
 
 def _merge_meta(
@@ -518,8 +564,6 @@ def _post_process(profile: Mapping[str, Any], filename: str, payload: Dict[str, 
         ]
 
     elif filename == PACK_ID_TO_FILENAME[19]:
-        if not payload.get("industry"):
-            payload["industry"] = "Turkey production R&D"
         if not payload.get("sector"):
             payload["sector"] = _profile_scope(profile)
         naics = dict(payload.get("naics") or {})
@@ -537,6 +581,22 @@ def _post_process(profile: Mapping[str, Any], filename: str, payload: Dict[str, 
                 {"code": "11233", "level": 5, "title": "Turkey Production"},
             ]
         payload["naics"] = naics
+        canonical_industry = canonical_industry_from_naics(naics)
+        payload["canonical_industry"] = canonical_industry
+        display_industry = str(payload.get("industry") or "").strip()
+        if display_industry:
+            payload["industry"] = display_industry
+            payload["industry_source"] = "manual"
+        else:
+            payload["industry"] = canonical_industry
+            payload["industry_source"] = "naics_lineage"
+            _emit_industry_autofix_event(
+                {
+                    "canonical_industry": canonical_industry,
+                    "naics_code": naics.get("code"),
+                    "source": "ssot",
+                }
+            )
 
     elif filename == PACK_ID_TO_FILENAME[20]:
         payload["stakeholders"] = [

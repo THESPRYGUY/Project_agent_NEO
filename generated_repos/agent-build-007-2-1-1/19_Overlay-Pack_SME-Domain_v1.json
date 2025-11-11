@@ -1,4 +1,5 @@
 {
+  "canonical_industry": "Agriculture, Forestry, Fishing and Hunting",
   "datasets": [
     "default_index"
   ],
@@ -11,7 +12,8 @@
   "eval_cases": [
     "default_domain_eval"
   ],
-  "industry": "Turkey production R&D",
+  "industry": "Agriculture, Forestry, Fishing and Hunting",
+  "industry_source": "naics_lineage",
   "meta": {
     "agent_id": "AGT-112330-TURKEY-RND-0001",
     "authors": [
@@ -88,7 +90,7 @@
     "token_budget",
     "version"
   ],
-  "sector": "Turkey production R&D: food safety, processing, welfare & performance.",
+  "sector": "Construction (NAICS 23) ? Utilities Construction (237130)",
   "standards": [
     {
       "id": "STD-001",

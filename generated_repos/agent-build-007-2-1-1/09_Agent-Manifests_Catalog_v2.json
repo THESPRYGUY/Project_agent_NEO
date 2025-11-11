@@ -98,7 +98,7 @@
       "ISO_IEC_42001",
       "PIPEDA"
     ],
-    "sector": "Turkey production R&D: food safety, processing, welfare & performance."
+    "sector": "Construction (NAICS 23) ? Utilities Construction (237130)"
   },
   "token_budget": {
     "max_output_tokens": 1000

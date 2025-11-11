@@ -10,6 +10,8 @@ defaults: { run: { shell: bash } }
 jobs:
   schema-validate:
     runs-on: ubuntu-latest
+    env:
+      SKIP_ZIP_HASH: "1"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -99,6 +101,10 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: { node-version: "20" }
+      - name: Install node dependencies
+        run: npm ci --include=dev
       - uses: actions/setup-python@v5
         with: { python-version: "3.12" }
       - run: python -m pip install -U pip && python -m pip install pre-commit

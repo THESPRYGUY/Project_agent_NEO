@@ -320,10 +320,12 @@ def required_keys_map() -> Dict[str, List[str]]:
                     "version"
             ],
             "19_Overlay-Pack_SME-Domain_v1.json": [
+                    "canonical_industry",
                     "datasets",
                     "definition_of_done",
                     "eval_cases",
                     "industry",
+                    "industry_source",
                     "meta",
                     "naics",
                     "objective",
@@ -380,4 +382,3 @@ def schemas() -> Dict[str, dict]:
 
 
 SCHEMAS: Dict[str, dict] = schemas()
-
