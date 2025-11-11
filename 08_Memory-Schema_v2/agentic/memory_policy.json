@@ -1,0 +1,8 @@
+﻿{
+  "tiers":{"working":{"ttl_hours":6,"budget_tokens":6000},
+           "episodic":{"ttl_days":14,"summarize_on_close":true},
+           "semantic":{"versioned":true,"index":"glitch_source_registry_v1"},
+           "procedural":{"write":false,"read":true}},
+  "footprints":{"schema_version":"1.0","fields":["assumptions","steps","validation","decisions","errors","lessons"]},
+  "privacy":{"mask_pii":true,"store_secrets":false}
+}

@@ -1,0 +1,8 @@
+﻿{
+  "indices":["glitch_source_registry_v1","report_templates_v1","evaluation_sets_v1"],
+  "chunking":{"method":"semantic","approx_tokens":800},
+  "embedding_model":"text-embedding-3-large",
+  "reranker":{"name":"cross-encoder","top_k":5},
+  "retriever":{"top_k":8,"cache":true,"safety_filters":["pii","policy"]},
+  "response_budgets":{"tokens_max":1200}
+}

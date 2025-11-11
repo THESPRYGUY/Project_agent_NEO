@@ -1,0 +1,5 @@
+﻿{
+  "mod.plan": {"in":{"goal":"string","constraints":"array"},"out":{"workplan":"markdown","risks":"array"},"retrievers":["default_retriever"]},
+  "mod.build": {"in":{"workplan":"markdown"},"out":{"artifact":"diff|files","telemetry":"events"},"tools":["git","fs","retriever"]},
+  "mod.evaluate": {"in":{"artifact":"diff|files"},"out":{"kpi_report":"json","decision":"promote|rollback"},"gates":["PRI","HAL","AUD"]}
+}
