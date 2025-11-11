@@ -52,14 +52,16 @@ jobs:
 
       - name: Build Docker image
         run: |
-          docker build --build-arg GIT_SHA=${{ steps.meta.outputs.sha }} -t ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.tag }} .
+          IMAGE_REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          docker build --build-arg GIT_SHA=${{ steps.meta.outputs.sha }} -t ghcr.io/${IMAGE_REPO}:${{ steps.meta.outputs.tag }} .
 
       - name: Smoke test container
         run: |
+          IMAGE_REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
           docker run -d --rm -p 5000:5000 --name neo-smoke \
             -e LOG_LEVEL=INFO \
             -e NEO_REPO_OUTDIR=/tmp/out \
-            ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.tag }}
+            ghcr.io/${IMAGE_REPO}:${{ steps.meta.outputs.tag }}
           echo "Waiting for health..."
           for i in {1..20}; do \
             STATUS=$(curl -fsS -o /dev/null -w "%{http_code}" http://localhost:5000/health || true); \
