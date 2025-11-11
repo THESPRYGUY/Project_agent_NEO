@@ -1,0 +1,6 @@
+{
+  "map":[
+    {"deliverable":"SSOT Doc","slot":1,"R":"DEV","A":"CAIO","C":["CPA","TeamLead"],"I":["CDO/SRE"]},
+    {"deliverable":"Workflow Graph","slot":11,"R":"DEV","A":"TeamLead","C":["CPA"],"I":["CAIO"]}
+  ]
+}

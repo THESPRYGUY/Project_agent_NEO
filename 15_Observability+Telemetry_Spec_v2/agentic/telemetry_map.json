@@ -1,0 +1,6 @@
+{
+  "events":["task","tool_call","rag","reasoning","gate_evaluation","refusal","incident"],
+  "dashboards":{"exec":"DASH_EXEC_001","reasoning":"DASH_REASON_001","sre":"DASH_SRE_001"},
+  "alerts":{"HAL_breach":"label:gate-fail+post:#neo-ci","PRI_drop":"label:gate-fail+post:#neo-ci"},
+  "privacy":{"content_logging":false,"mask_pii":true}
+}

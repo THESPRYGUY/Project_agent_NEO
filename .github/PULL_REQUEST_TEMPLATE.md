@@ -1,22 +1,23 @@
-﻿## Summary
+## Summary
+One-line: <what changed and why>.
 
-Explain the change and its scope. Link to docs where applicable.
+## Packs touched (IDs)
+<e.g., 11,14,15,17>
 
-## Checklist
-- [ ] Single feature set; scoped PR
-- [ ] Parity unchanged (strict parity ON); golden snapshot unaffected
-- [ ] Required CI jobs green (unit-python, unit-js, golden snapshot, docker-build-smoke, smoke)
-- [ ] If applicable, SCA artifacts uploaded (warn-only): `sca-pip-audit.json`, `sca-npm-audit.json`
-- [ ] Single-line smoke summary present (exactly one line) â€” either  
-      `âœ… SMOKE OK | files=20 | parity=ALL_TRUE | integrity_errors=0`  
-      or the failure variant; CI artifact links included
+## KPI Artifacts
+- Evaluator Report: artifacts/evaluator-report-<sha>.md
+- KPI JSON: artifacts/kpi-run-<sha>.json
+- Dashboards: attach screenshots (DASH_EXEC_001, DASH_REASON_001, DASH_SRE_001, DASH_COMP_001)
 
-## Notes
-- Artifacts link(s):
-- Docs link(s):
+## Telemetry Check
+events ✔ / traces ✔ / KPI ✔ / alerts route ✔
 
-## Build-Path Gates (required when touching builder/SoT paths)
-- [ ] Paste the validator line: ✅ contract-validate: OK (hash=<HASH>)
-- [ ] ZIP sha256 parity proof (default vs ?outdir=) included (hashes identical)
-- [ ] Statement confirming “no .tmp residue” test present for failure paths
-- [ ] Lock behavior verified if builder touched (423 + Retry-After header = 5)
+## Risk / Owner
+Risk: <low|med|high> • Owner: <name/role>
+
+## Compliance
+- [ ] No raw chain-of-thought; sanitized Reasoning Footprints only
+- [ ] HITL placements listed for legal/reg/fin (if applicable)
+
+## Rollback
+`git revert <merge_sha>` (notes if schema/data migration)

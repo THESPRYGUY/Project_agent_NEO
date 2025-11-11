@@ -4,9 +4,28 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      dry_run_tag:
+        description: "Optional tag label when running as a dry run"
+        required: false
+        default: ""
+
+permissions:
+  contents: write
 
 jobs:
+  contract-validate:
+    runs-on: ubuntu-latest
+    env:
+      STRICT_RELEASE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate contracts (strict release)
+        run: python ci/contract_validate.py
+
   build-and-release:
+    needs: contract-validate
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -21,26 +40,43 @@ jobs:
 
       - name: Compute build metadata
         id: meta
+        env:
+          DISPATCH_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run_tag || '' }}
         run: |
           echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-          echo "tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          if [ -n "$DISPATCH_TAG" ]; then
+            TAG="$DISPATCH_TAG"
+          elif [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            TAG="${GITHUB_REF_NAME}"
+          else
+            TAG="dry-run-${GITHUB_SHA::7}"
+          fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
 
       - name: Build Docker image
         run: |
-          docker build --build-arg GIT_SHA=${{ steps.meta.outputs.sha }} -t ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.tag }} .
+          IMAGE_REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          docker build --build-arg GIT_SHA=${{ steps.meta.outputs.sha }} -t ghcr.io/${IMAGE_REPO}:${{ steps.meta.outputs.tag }} .
 
       - name: Smoke test container
         run: |
-          docker run -d --rm -p 5000:5000 --name neo-smoke \
+          IMAGE_REPO=$(echo "${{ github.repository }}" | tr '[:upper:]' '[:lower:]')
+          docker run -d -p 5000:5000 --name neo-smoke \
             -e LOG_LEVEL=INFO \
             -e NEO_REPO_OUTDIR=/tmp/out \
-            ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.tag }}
+            ghcr.io/${IMAGE_REPO}:${{ steps.meta.outputs.tag }}
           echo "Waiting for health..."
-          for i in {1..20}; do \
+          STATUS=""
+          for i in $(seq 1 60); do \
             STATUS=$(curl -fsS -o /dev/null -w "%{http_code}" http://localhost:5000/health || true); \
             if [ "$STATUS" = "200" ]; then break; fi; sleep 1; \
           done
-          test "$STATUS" = "200"
+          if [ "$STATUS" != "200" ]; then \
+            echo "::error::neo-smoke health endpoint returned $STATUS after waiting 60s"; \
+            docker logs neo-smoke --since 10m || true; \
+            docker rm -f neo-smoke || true; \
+            exit 1; \
+          fi
           curl -fsS -D headers.txt http://localhost:5000/health -o health.json
           docker logs neo-smoke --since 5m || true
           docker rm -f neo-smoke || true
@@ -67,6 +103,7 @@ jobs:
           git archive --format zip -o repo.zip HEAD
 
       - name: Publish GitHub Release
+        if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.tag }}

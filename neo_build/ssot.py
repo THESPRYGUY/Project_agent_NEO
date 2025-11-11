@@ -38,17 +38,33 @@ def canonical_industry_from_naics(naics: Mapping[str, Any] | None) -> str:
         naics = {}
     lineage = naics.get("lineage") or []
     canonical: str | None = None
+    lineage_titles: list[str] = []
     for node in lineage:
         if not isinstance(node, Mapping):
             continue
         level = str(node.get("level", "")).lstrip("0")
-        if level == "2":
-            title = str(node.get("title") or "").strip()
-            if title:
-                canonical = title
-                break
+        title = str(node.get("title") or "").strip()
+        if title:
+            lineage_titles.append(title)
+        if level == "2" and title:
+            canonical = title
+            break
+    naics_title = str(naics.get("title") or "").strip()
     if not canonical:
-        canonical = str(naics.get("title") or "").strip()
+        canonical = naics_title
+
+    if not canonical:
+        code = str(naics.get("code") or "").strip()
+        try:
+            from .naics import title_for_naics  # type: ignore
+        except Exception:
+            title = None
+        else:
+            lineage_hint = lineage_titles or ([naics_title] if naics_title else None)
+            title = title_for_naics(code, lineage=lineage_hint)
+        if title:
+            canonical = title
+
     return canonical or "Unknown"
 
 

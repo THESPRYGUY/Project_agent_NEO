@@ -6,7 +6,11 @@
   "eval_cases": [
     "default_domain_eval"
   ],
-  "industry": "",
+  "industry": {
+    "code": "541110",
+    "level": 6,
+    "title": "Offices of Lawyers"
+  },
   "meta": {
     "agent_id": "AGT-541110-MKT:MANAGER-e4fd86a6",
     "authors": [

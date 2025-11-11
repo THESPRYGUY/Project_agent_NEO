@@ -108,7 +108,7 @@ Result: 02 finalized.
 - No artifacts staged
 - Review: schema & cross-refs match canon
 
-
-
-
+## Release Guard — Placeholder Owners
+- STRICT_RELEASE blocks tagging if any Agent Manifest owner has `REQUIRED_replace: true`.
+- Resolve Issue #116 (real owner contacts) before tagging.
 
