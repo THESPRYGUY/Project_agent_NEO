@@ -1,0 +1,19 @@
+﻿name: KPI Gate
+on: [pull_request]
+jobs:
+  kpi-gate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Enforce PRI/HAL/AUD thresholds
+        run: |
+          FILE="reports/kpi_report.json"
+          if [ -f "$FILE" ]; then
+            PRI=$(jq -r '.precision // 1' "$FILE")
+            HAL=$(jq -r '.hallucination // 0' "$FILE")
+            AUD=$(jq -r '.auditability // 1' "$FILE")
+            echo "PRI=$PRI HAL=$HAL AUD=$AUD"
+            awk 'BEGIN{exit !(('"$PRI"' >= 0.95) && ('"$HAL"' <= 0.02) && ('"$AUD"' >= 0.90))}'
+          else
+            echo "No KPI report found; soft-pass (add report to harden)."
+          fi
