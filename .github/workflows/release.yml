@@ -6,7 +6,17 @@ on:
       - "v*"
 
 jobs:
+  contract-validate:
+    runs-on: ubuntu-latest
+    env:
+      STRICT_RELEASE: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate contracts (strict release)
+        run: python ci/contract_validate.py
+
   build-and-release:
+    needs: contract-validate
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

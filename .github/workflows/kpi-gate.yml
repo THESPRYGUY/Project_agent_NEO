@@ -1,10 +1,26 @@
-﻿name: KPI Gate
-on: [pull_request]
+name: KPI Gate
+
+on:
+  pull_request:
+    branches: [main, staging]
+    types: [opened, synchronize, reopened, ready_for_review]
+  workflow_dispatch: {}
+
 jobs:
   kpi-gate:
+    name: KPI Gate
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: KPI Runner (stub)
+        run: ci/kpi_runner_stub.sh
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: kpi-artifacts
+          path: artifacts/
 
       - name: Parse KPI metrics
         shell: bash

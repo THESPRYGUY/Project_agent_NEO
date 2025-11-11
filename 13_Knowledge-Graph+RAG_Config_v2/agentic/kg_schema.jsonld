@@ -1,0 +1,6 @@
+{
+  "@context":{"neo":"https://glitch.inc/neo#","prov":"http://www.w3.org/ns/prov#"},
+  "@graph":[{"@id":"neo:Task","@type":"rdfs:Class"},
+            {"@id":"neo:usesTool","@type":"rdf:Property","domain":"neo:Task","range":"neo:Tool"}],
+  "version":"0.1","provenance":{"prov:wasAttributedTo":"DEV","prov:generatedAtTime":"TBD"}
+}

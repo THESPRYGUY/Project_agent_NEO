@@ -1,0 +1,16 @@
+[
+  {
+    "id": "AGENTIC-001",
+    "risk": "Observability sinks empty",
+    "owner": "CDO/SRE",
+    "treatment": "wire sinks; CI check",
+    "review": "weekly"
+  },
+  {
+    "id": "AGENTIC-002",
+    "risk": "NAICS mapping gaps",
+    "owner": "CPA",
+    "treatment": "fallback to deepest title; tests",
+    "review": "weekly"
+  }
+]

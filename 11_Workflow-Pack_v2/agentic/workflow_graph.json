@@ -1,0 +1,14 @@
+{
+  "nodes": [
+    {"id": "plan", "type": "role", "role": "Planner"},
+    {"id": "build", "type": "role", "role": "Builder"},
+    {"id": "evaluate", "type": "role", "role": "Evaluator"},
+    {"id": "human_gate", "type": "hitl", "approver": ["CAIO", "TeamLead"]},
+    {"id": "tool_rag", "type": "tool", "name": "retriever"}
+  ],
+  "edges": [
+    ["plan","build"], ["build","evaluate"], ["evaluate","plan"],
+    ["evaluate","human_gate"], ["plan","tool_rag"]
+  ],
+  "rollback": {"on_gate_fail":"return_to:plan","log_event":"gate_evaluation"}
+}
