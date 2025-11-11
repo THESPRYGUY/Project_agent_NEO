@@ -2,12 +2,12 @@ name: Shim Redirect Guard
 
 on:
   pull_request:
-    branches: [main]
+    branches: [main, staging]
     types: [opened, synchronize, reopened, ready_for_review]
   workflow_dispatch: {}
 
 jobs:
-  shim-redirect-guard:
+  shim_redirect_guard_main:
     name: Shim Redirect Guard
     runs-on: ubuntu-latest
     steps:
@@ -26,3 +26,16 @@ jobs:
             echo "Shim redirect hits must be zero."
             exit 1
           fi
+
+  shim_redirect_guard_alias:
+    name: shim-redirect-guard
+    runs-on: ubuntu-latest
+    needs: [shim_redirect_guard_main]
+    if: ${{ always() }}
+    steps:
+      - run: |
+          if [ "${{ needs.shim_redirect_guard_main.result }}" != "success" ]; then
+            echo "Shim Redirect Guard failed"
+            exit 1
+          fi
+          echo "Shim Redirect Guard alias context"

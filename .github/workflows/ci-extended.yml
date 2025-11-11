@@ -2,13 +2,15 @@ name: CI Extended
 
 on:
   pull_request:
-    branches: [ main ]
+    branches: [main, staging]
+    types: [opened, synchronize, reopened, ready_for_review]
   push:
     branches: [ main ]
+  workflow_dispatch: {}
 
 jobs:
 
-  golden-snapshot:
+  golden_snapshot_main:
     name: golden snapshot
     runs-on: ubuntu-latest
     steps:
@@ -34,3 +36,15 @@ jobs:
         if: steps.collect.outputs.count == '0'
         run: echo "No golden/snapshot tests found; skipping."
 
+  golden_snapshot_alias:
+    name: golden-snapshot
+    runs-on: ubuntu-latest
+    needs: [golden_snapshot_main]
+    if: ${{ always() }}
+    steps:
+      - run: |
+          if [ "${{ needs.golden_snapshot_main.result }}" != "success" ]; then
+            echo "Golden snapshot tests failed"
+            exit 1
+          fi
+          echo "Golden snapshot alias context"

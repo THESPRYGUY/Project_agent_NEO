@@ -2,13 +2,16 @@ name: kpi-report-smoke
 env:
   BUILD_ROOT: generated_repos/agent-build-007-2-1-1
 on:
-  pull_request: { branches: [ main ], types: [ opened, reopened, synchronize ] }
+  pull_request:
+    branches: [ main, staging ]
+    types: [ opened, reopened, synchronize, ready_for_review ]
   push: { branches: [ main, feature/**, hotfix/** ] }
   workflow_dispatch: {}
 permissions: { contents: read }
 defaults: { run: { shell: bash } }
 jobs:
-  kpi-report-smoke:
+  kpi_report_smoke:
+    name: kpi-report-smoke
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
