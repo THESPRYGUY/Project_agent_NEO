@@ -18,3 +18,4 @@
 16) SSOT Maps (slotâ†’deliverable, RACI, backlog with DoR/DoD)
 2025-11-11T15:05:28Z — SSOT header touch
 2025-11-11T15:47:37Z — noop to confirm second eval
+2025-11-11T15:58:12Z — ready-for-review gating check
