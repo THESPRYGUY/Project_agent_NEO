@@ -4,6 +4,12 @@ on:
   push:
     tags:
       - "v*"
+  workflow_dispatch:
+    inputs:
+      dry_run_tag:
+        description: "Optional tag label when running as a dry run"
+        required: false
+        default: ""
 
 jobs:
   contract-validate:
@@ -31,9 +37,18 @@ jobs:
 
       - name: Compute build metadata
         id: meta
+        env:
+          DISPATCH_TAG: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.dry_run_tag || '' }}
         run: |
           echo "sha=$(git rev-parse --short HEAD)" >> $GITHUB_OUTPUT
-          echo "tag=${GITHUB_REF_NAME}" >> $GITHUB_OUTPUT
+          if [ -n "$DISPATCH_TAG" ]; then
+            TAG="$DISPATCH_TAG"
+          elif [ "${GITHUB_REF_TYPE}" = "tag" ]; then
+            TAG="${GITHUB_REF_NAME}"
+          else
+            TAG="dry-run-${GITHUB_SHA::7}"
+          fi
+          echo "tag=${TAG}" >> $GITHUB_OUTPUT
 
       - name: Build Docker image
         run: |
@@ -77,6 +92,7 @@ jobs:
           git archive --format zip -o repo.zip HEAD
 
       - name: Publish GitHub Release
+        if: github.ref_type == 'tag'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: ${{ steps.meta.outputs.tag }}
