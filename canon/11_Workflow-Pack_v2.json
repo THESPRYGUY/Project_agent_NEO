@@ -58,10 +58,73 @@
     },
     "high_stakes_rule": "Use debate_consensus + HITL approval; log to Reasoning Footprints"
   },
+  "strategy_selector": {
+    "meta": {
+      "version": "1.0.0",
+      "description": "Maps task_type + risk_tier + complexity to prompt strategies from the strategy_library."
+    },
+    "profiles": {
+      "qa_low_simple": {
+        "task_type": "qa",
+        "risk_tier": "low",
+        "complexity": "simple",
+        "strategies": [
+          "ReflexiveReview_v1"
+        ]
+      },
+      "analysis_medium_internal": {
+        "task_type": "analysis",
+        "risk_tier": "medium",
+        "complexity": "moderate",
+        "strategies": [
+          "CAPEConversation_v1",
+          "FactoredChecklist_v1",
+          "ReflexiveReview_v1"
+        ]
+      },
+      "regulatory_high_complex": {
+        "task_type": "analysis",
+        "risk_tier": "high",
+        "complexity": "complex",
+        "strategies": [
+          "CAPEConversation_v1",
+          "AtomDecompose_v1",
+          "ChainVerification_v1",
+          "HallucinationCheck_v1",
+          "CertaintyReporter_v1"
+        ]
+      },
+      "research_rag_medium": {
+        "task_type": "research",
+        "risk_tier": "medium",
+        "complexity": "complex",
+        "strategies": [
+          "CAPEConversation_v1",
+          "ReActPattern_v1",
+          "ChainVerification_v1",
+          "HallucinationCheck_v1"
+        ]
+      },
+      "governance_incident_high": {
+        "task_type": "analysis",
+        "risk_tier": "high",
+        "complexity": "complex",
+        "strategies": [
+          "CAPEConversation_v1",
+          "AtomDecompose_v1",
+          "ChainFeedback_v1",
+          "HallucinationCheck_v1",
+          "DisinfoFilter_v1",
+          "CertaintyReporter_v1"
+        ]
+      }
+    }
+  },
   "graphs": [
     {
       "id": "WF_Onboarding_NewAgent_v2.0",
       "purpose": "Validate manifest, register OrgGraph, seed memory, attach prompts, baseline eval, and activate.",
+      "strategy_profile": "qa_low_simple",
       "memory_scopes": {
         "read": [
           "procedural:playbook/onboarding/*"
@@ -199,6 +262,7 @@
     {
       "id": "WF_PlanAndAct_v2.0",
       "purpose": "Decompose task and execute steps with reflection and governance gates.",
+      "strategy_profile": "analysis_medium_internal",
       "memory_scopes": {
         "read": [
           "semantic:*",
@@ -286,6 +350,7 @@
     {
       "id": "WF_RAG_Brief_v2.0",
       "purpose": "Produce a concise, cited brief using retrieval with filters and budgets; include reflection loop.",
+      "strategy_profile": "research_rag_medium",
       "memory_scopes": {
         "read": [
           "semantic:*"
@@ -388,6 +453,7 @@
     {
       "id": "WF_Eval_Gate_v2.0",
       "purpose": "Run evaluation suites and enforce activation/change gates with rollback.",
+      "strategy_profile": "regulatory_high_complex",
       "memory_scopes": {
         "read": [
           "episodic:eval/*",
@@ -487,6 +553,7 @@
     {
       "id": "WF_Governance_Incident_v2.0",
       "purpose": "Handle policy conflicts or safety events with escalation and remediation; archive Reasoning Footprints.",
+      "strategy_profile": "governance_incident_high",
       "memory_scopes": {
         "read": [
           "episodic:*",
@@ -578,6 +645,7 @@
     {
       "id": "WF_ASUP_Lifecycle_v2.0",
       "purpose": "Manage Agent Strategy Update Proposals from draft to implemented with evaluation & notes.",
+      "strategy_profile": "analysis_medium_internal",
       "memory_scopes": {
         "read": [
           "episodic:*",
