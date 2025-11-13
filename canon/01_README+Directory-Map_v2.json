@@ -254,6 +254,7 @@
           "graphs",
           "micro_loops",
           "gates",
+          "strategy_selector",
           "rollback"
         ],
         "token_budget": "≤3000"
