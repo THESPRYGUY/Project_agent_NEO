@@ -88,6 +88,13 @@
   "rollback": {
     "on_gate_fail": "return_to:Plan"
   },
+  "strategy_selector": {
+    "meta": {
+      "version": "1.0.0",
+      "description": "Maps task_type + risk_tier + complexity to prompt strategies from the strategy_library."
+    },
+    "profiles": {}
+  },
   "schema_keys": [
     "conventions",
     "defaults",
@@ -99,6 +106,7 @@
     "name",
     "objective",
     "rollback",
+    "strategy_selector",
     "token_budget",
     "version"
   ],

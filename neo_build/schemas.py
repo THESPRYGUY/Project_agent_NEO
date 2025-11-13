@@ -191,6 +191,7 @@ def required_keys_map() -> Dict[str, List[str]]:
                     "name",
                     "objective",
                     "rollback",
+                    "strategy_selector",
                     "token_budget",
                     "version"
             ],
