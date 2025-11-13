@@ -10,7 +10,8 @@
     "kpis",
     "metrics",
     "benchmarks",
-    "reasoning_kpis"
+    "reasoning_kpis",
+    "strategy_kpis"
   ],
   "token_budget": "\u22642500",
   "refs": {
@@ -159,6 +160,149 @@
       }
     }
   ],
+  "strategy_kpis": {
+    "strategy_metrics": {
+      "AtomDecompose_v1": {
+        "PRI": "increase",
+        "HAL": "decrease",
+        "AUD": "increase",
+        "notes": "Structured decomposition reduces reasoning jumps and surfaces gaps for review."
+      },
+      "ChainVerification_v1": {
+        "PRI": "increase",
+        "HAL": "decrease",
+        "AUD": "increase",
+        "notes": "Multi-hop verification tightens factual accuracy for regulatory work."
+      },
+      "ChainFeedback_v1": {
+        "PRI": "increase",
+        "HAL": "neutral",
+        "AUD": "increase",
+        "notes": "Feedback loop improves plan adherence; requires telemetry on delta between iterations."
+      },
+      "FactoredChecklist_v1": {
+        "PRI": "increase",
+        "HAL": "neutral",
+        "AUD": "increase",
+        "notes": "Checklist ensures coverage of compliance steps before completion."
+      },
+      "DensityCompression_v1": {
+        "PRI": "neutral",
+        "HAL": "neutral",
+        "AUD": "increase",
+        "notes": "Compression must cite sources; primary value is audit traceability."
+      },
+      "CAPEConversation_v1": {
+        "PRI": "increase",
+        "HAL": "neutral",
+        "AUD": "increase",
+        "notes": "Persona-led interviews surface missing context while keeping transcripts auditable."
+      },
+      "ReActPattern_v1": {
+        "PRI": "increase",
+        "HAL": "neutral",
+        "AUD": "decrease",
+        "notes": "Tool-augmented reasoning can drift; pair with HallucinationCheck_v1 for every high-risk profile."
+      },
+      "ReflexiveReview_v1": {
+        "PRI": "increase",
+        "HAL": "decrease",
+        "AUD": "increase",
+        "notes": "Reflection cycles reduce regression escape and improve audit notes."
+      },
+      "PersonaDebate_v1": {
+        "PRI": "increase",
+        "HAL": "neutral",
+        "AUD": "increase",
+        "notes": "Debate outputs require HITL; telemetry tracks delta between personas."
+      },
+      "HallucinationCheck_v1": {
+        "PRI": "neutral",
+        "HAL": "decrease",
+        "AUD": "increase",
+        "notes": "Fact-check module drives HAL toward <=0.02 and logs evidence references."
+      },
+      "DisinfoFilter_v1": {
+        "PRI": "neutral",
+        "HAL": "decrease",
+        "AUD": "increase",
+        "notes": "Always-on content filter for medium/high risk; no allowed degradation."
+      },
+      "CertaintyReporter_v1": {
+        "PRI": "increase",
+        "HAL": "neutral",
+        "AUD": "increase",
+        "notes": "Confidence statements must include evidence_count and route to HITL when certainty>0.9."
+      }
+    },
+    "profile_targets": {
+      "regulatory_high_complex": {
+        "PRI_min": 0.95,
+        "HAL_max": 0.02,
+        "AUD_min": 0.9,
+        "expected_strategies": [
+          "AtomDecompose_v1",
+          "ChainVerification_v1",
+          "HallucinationCheck_v1",
+          "CertaintyReporter_v1"
+        ]
+      },
+      "governance_incident_high": {
+        "PRI_min": 0.95,
+        "HAL_max": 0.02,
+        "AUD_min": 0.9,
+        "expected_strategies": [
+          "ReActPattern_v1",
+          "HallucinationCheck_v1",
+          "DisinfoFilter_v1",
+          "CertaintyReporter_v1"
+        ]
+      },
+      "research_rag_medium": {
+        "PRI_min": 0.9,
+        "HAL_max": 0.03,
+        "AUD_min": 0.9,
+        "expected_strategies": [
+          "AtomDecompose_v1",
+          "ChainVerification_v1",
+          "DisinfoFilter_v1",
+          "HallucinationCheck_v1"
+        ]
+      }
+    },
+    "enforcement": [
+      {
+        "strategy_profile": "regulatory_high_complex",
+        "thresholds": {
+          "PRI_min": 0.95,
+          "HAL_max": 0.02,
+          "AUD_min": 0.9
+        },
+        "on_breach": "Trigger HITL plus legal counsel sign-off before deliverable release.",
+        "telemetry_ref": "15_Observability+Telemetry_Spec_v2.json#alerts"
+      },
+      {
+        "strategy_profile": "governance_incident_high",
+        "thresholds": {
+          "PRI_min": 0.95,
+          "HAL_max": 0.02,
+          "AUD_min": 0.9
+        },
+        "on_breach": "Route to incident commander and freeze automation until remediation.",
+        "telemetry_ref": "15_Observability+Telemetry_Spec_v2.json#dashboards"
+      },
+      {
+        "strategy_profile": "research_rag_medium",
+        "thresholds": {
+          "PRI_min": 0.9,
+          "HAL_max": 0.03,
+          "AUD_min": 0.9
+        },
+        "on_breach": "Require secondary reviewer before publishing internal research memo.",
+        "telemetry_ref": "15_Observability+Telemetry_Spec_v2.json#dashboards"
+      }
+    ]
+  },
   "benchmarks": {
     "suite_defs": [
       {
@@ -180,6 +324,10 @@
       {
         "id": "latency_cost",
         "description": "Latency and cost under realistic loads"
+      },
+      {
+        "id": "strategy_assurance",
+        "description": "Validates strategy/profile KPI deltas and HITL escalation wiring"
       }
     ],
     "matrices": [
@@ -189,7 +337,8 @@
           "functional",
           "governance",
           "red_team",
-          "reasoning_quality"
+          "reasoning_quality",
+          "strategy_assurance"
         ]
       },
       {
@@ -198,6 +347,14 @@
           "functional",
           "governance",
           "reasoning_quality",
+          "latency_cost"
+        ]
+      },
+      {
+        "id": "strategy_profile_weekly",
+        "suites": [
+          "strategy_assurance",
+          "governance",
           "latency_cost"
         ]
       }
@@ -250,7 +407,24 @@
       "require_regression": true,
       "no_severity_downgrade": true,
       "allow_latency_increase_pct": 10
-    }
+    },
+    "profile_enforcement": [
+      {
+        "strategy_profile": "regulatory_high_complex",
+        "thresholds_ref": "strategy_kpis.profile_targets.regulatory_high_complex",
+        "action": "Auto-HITL plus regulatory counsel approval required when PRI/HAL/AUD drift outside thresholds."
+      },
+      {
+        "strategy_profile": "governance_incident_high",
+        "thresholds_ref": "strategy_kpis.profile_targets.governance_incident_high",
+        "action": "Freeze automation and require incident commander review on KPI breach."
+      },
+      {
+        "strategy_profile": "research_rag_medium",
+        "thresholds_ref": "strategy_kpis.profile_targets.research_rag_medium",
+        "action": "Route to secondary reviewer and re-run HallucinationCheck_v1 before sharing."
+      }
+    ]
   },
   "runner": {
     "config_refs": {

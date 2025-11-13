@@ -1,7 +1,10 @@
 {
   "alerts": [
     "HAL_breach",
-    "PRI_drop"
+    "PRI_drop",
+    "strategy_profile(regulatory_high_complex).hal_score>0.02_for_3_events",
+    "strategy_profile(governance_incident_high).hal_score>0.02_for_2_events",
+    "strategy_chain(ReActPattern_v1+HallucinationCheck_v1).latency_ms_p95>20000"
   ],
   "dashboards": {
     "compliance_view": [
@@ -36,6 +39,13 @@
       "latency_p50_p95",
       "pipeline_success_rate",
       "tool_error_rates"
+    ],
+    "strategy_observability": [
+      "avg_PRI_by_strategy_profile",
+      "avg_HAL_by_strategy_profile",
+      "avg_AUD_by_strategy_profile",
+      "strategy_token_p95",
+      "strategy_latency_p95"
     ]
   },
   "decision_event_field_types": {
@@ -83,6 +93,28 @@
         "autofill_method",
         "autofill_outcome"
       ]
+    },
+    {
+      "name": "strategy_invocation",
+      "description": "Logs every strategy chain with KPI deltas and HITL context.",
+      "severity": "info",
+      "metrics": [
+        "pri_score",
+        "hal_score",
+        "aud_score",
+        "token_count",
+        "latency_ms"
+      ],
+      "fields": [
+        "strategy_profile",
+        "strategy_chain",
+        "risk_tier",
+        "task_type",
+        "strategy_metrics",
+        "hitl_required",
+        "hitl_actor",
+        "status"
+      ]
     }
   ],
   "log_schema": {
@@ -114,10 +146,16 @@
       "citations_count",
       "cost_estimate_usd",
       "error_code",
+      "strategy_profile",
+      "strategy_chain",
+      "risk_tier",
       "kpi_local_AUD",
       "kpi_local_HAL",
       "kpi_local_PRI",
       "latency_ms",
+      "strategy_metrics",
+      "hitl_required",
+      "hitl_actor",
       "role",
       "status",
       "task_id",
@@ -125,6 +163,24 @@
       "tokens_input",
       "tokens_output",
       "tool_calls"
+    ],
+    "strategy_invocation": [
+      "timestamp",
+      "agent_id",
+      "workflow_id",
+      "task_id",
+      "strategy_profile",
+      "strategy_chain",
+      "task_type",
+      "risk_tier",
+      "token_count",
+      "latency_ms",
+      "pri_score",
+      "hal_score",
+      "aud_score",
+      "hitl_required",
+      "hitl_actor",
+      "status"
     ]
   },
   "meta": {

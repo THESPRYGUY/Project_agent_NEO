@@ -10,7 +10,8 @@
     "refusal_playbooks",
     "privacy_policies",
     "redlines",
-    "jurisdictional_rules"
+    "jurisdictional_rules",
+    "strategy_safety"
   ],
   "token_budget": "\u22642000",
   "principles": [
@@ -212,6 +213,183 @@
         "high_risk_profiled_content",
         "ambiguous_legality"
       ]
+    }
+  },
+  "strategy_safety": {
+    "strategies": {
+      "PersonaDebate_v1": {
+        "risk_tier": "high",
+        "allowed_use_cases": [
+          "internal_debate",
+          "stress_test_governance",
+          "counterargument_generation"
+        ],
+        "required_HITL": {
+          "legal": true,
+          "financial": true,
+          "external_comms": true
+        },
+        "forbidden_contexts": [
+          "external_communications",
+          "public_marketing_copy",
+          "persuasive_behavior"
+        ],
+        "notes": "Run persona debate loops only for internal stress tests; share outputs externally only after explicit counsel review."
+      },
+      "DisinfoFilter_v1": {
+        "risk_tier": "medium",
+        "allowed_use_cases": [
+          "fact_checking",
+          "content_moderation",
+          "governance_incident_review"
+        ],
+        "required_HITL": {
+          "legal": false,
+          "financial": false,
+          "external_comms": false
+        },
+        "forbidden_contexts": [],
+        "notes": "Mandatory companion for medium/high-risk workflows; never disabled when strategy_profile risk_tier >= medium."
+      },
+      "HallucinationCheck_v1": {
+        "risk_tier": "medium",
+        "allowed_use_cases": [
+          "fact_verification",
+          "regression_suite",
+          "high_risk_review"
+        ],
+        "required_HITL": {
+          "legal": false,
+          "financial": false,
+          "external_comms": true
+        },
+        "forbidden_contexts": [],
+        "notes": "Autonomously run on every high-risk profile; escalate to HITL if HAL score exceeds 0.02."
+      },
+      "CertaintyReporter_v1": {
+        "risk_tier": "medium",
+        "allowed_use_cases": [
+          "regulatory_reporting",
+          "exec_summaries",
+          "research_briefs"
+        ],
+        "required_HITL": {
+          "legal": true,
+          "financial": true,
+          "external_comms": true
+        },
+        "forbidden_contexts": [
+          "public_commitments_without_disclaimer"
+        ],
+        "notes": "Certainty deltas above 0.9 must cite verification evidence and HITL sign-off before publishing."
+      },
+      "ReActPattern_v1": {
+        "risk_tier": "high",
+        "allowed_use_cases": [
+          "tool_reasoning",
+          "live_incident_triage",
+          "complex_research"
+        ],
+        "required_HITL": {
+          "legal": true,
+          "financial": true,
+          "external_comms": true
+        },
+        "forbidden_contexts": [
+          "unsupervised_external_release"
+        ],
+        "required_companions": [
+          "HallucinationCheck_v1"
+        ],
+        "notes": "High-risk ReAct executions must include HallucinationCheck_v1 in the same chain and receive HITL review before external delivery."
+      },
+      "AtomDecompose_v1": {
+        "risk_tier": "medium",
+        "allowed_use_cases": [
+          "analysis",
+          "planning",
+          "regulatory_breakdown"
+        ],
+        "required_HITL": {
+          "legal": true,
+          "financial": true,
+          "external_comms": true
+        },
+        "forbidden_contexts": [
+          "automated_contract_generation_without_review"
+        ],
+        "notes": "Use to structure complex matters; HITL verifies recomposed narrative before delivery."
+      }
+    },
+    "profiles": {
+      "regulatory_high_complex": {
+        "risk_tier": "high",
+        "allowed_use_cases": [
+          "regulatory_filings",
+          "legal_memos",
+          "policy_updates"
+        ],
+        "required_HITL": {
+          "legal": true,
+          "financial": true,
+          "external_comms": true
+        },
+        "forbidden_contexts": [
+          "public_release_without_counsel",
+          "automated_signoff"
+        ],
+        "preferred_strategies": [
+          "AtomDecompose_v1",
+          "ChainVerification_v1",
+          "HallucinationCheck_v1",
+          "CertaintyReporter_v1"
+        ]
+      },
+      "governance_incident_high": {
+        "risk_tier": "high",
+        "allowed_use_cases": [
+          "incident_response",
+          "audit_remediation",
+          "risk_root_cause"
+        ],
+        "required_HITL": {
+          "legal": true,
+          "financial": true,
+          "external_comms": true
+        },
+        "forbidden_contexts": [
+          "external_statements_without_incident_commander"
+        ],
+        "preferred_strategies": [
+          "ReActPattern_v1",
+          "HallucinationCheck_v1",
+          "DisinfoFilter_v1",
+          "CertaintyReporter_v1"
+        ]
+      },
+      "research_rag_medium": {
+        "risk_tier": "medium",
+        "allowed_use_cases": [
+          "internal_research",
+          "rag_briefs",
+          "evidence_packaging"
+        ],
+        "required_HITL": {
+          "legal": true,
+          "financial": false,
+          "external_comms": true
+        },
+        "forbidden_contexts": [
+          "binding_commitments",
+          "investment_advice"
+        ],
+        "preferred_strategies": [
+          "AtomDecompose_v1",
+          "ChainVerification_v1",
+          "DisinfoFilter_v1",
+          "HallucinationCheck_v1"
+        ]
+      }
     }
   },
   "operational_hooks": {
