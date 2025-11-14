@@ -174,7 +174,9 @@
         "Innovation_Index",
         "PRI"
       ],
-      "mission": "Own AI policy, Global-Instructions, and fleet strategy; approve high-risk capabilities and go-lives."
+      "mission": "Own AI policy, Global-Instructions, and fleet strategy; approve high-risk capabilities and go-lives.",
+      "strategy_profile": "regulatory_high_complex",
+      "risk_tier": "high"
     },
     {
       "capabilities": [
@@ -191,7 +193,9 @@
         "AUD",
         "INC"
       ],
-      "mission": "Own safety/privacy guardrails, jurisdictional controls, and exceptions for regulated contexts."
+      "mission": "Own safety/privacy guardrails, jurisdictional controls, and exceptions for regulated contexts.",
+      "strategy_profile": "regulatory_high_complex",
+      "risk_tier": "high"
     },
     {
       "capabilities": [
@@ -212,7 +216,9 @@
         "RFG",
         "RTI"
       ],
-      "mission": "Own prompt packs, role recipes, and reasoning quality; enforce token hygiene and safe agentic patterns."
+      "mission": "Own prompt packs, role recipes, and reasoning quality; enforce token hygiene and safe agentic patterns.",
+      "strategy_profile": "analysis_medium_internal",
+      "risk_tier": "medium"
     },
     {
       "capabilities": [
@@ -231,7 +237,9 @@
         "PRI",
         "RST"
       ],
-      "mission": "Own test matrices and certification; run functional, governance, red-team, reasoning-quality suites."
+      "mission": "Own test matrices and certification; run functional, governance, red-team, reasoning-quality suites.",
+      "strategy_profile": "governance_incident_high",
+      "risk_tier": "high"
     },
     {
       "capabilities": [
@@ -251,7 +259,9 @@
         "LAT",
         "pipeline_success_rate"
       ],
-      "mission": "Own data/tool registries, memory schema, observability stack, and reliability SLAs."
+      "mission": "Own data/tool registries, memory schema, observability stack, and reliability SLAs.",
+      "strategy_profile": "analysis_medium_internal",
+      "risk_tier": "medium"
     },
     {
       "capabilities": [
@@ -271,7 +281,9 @@
         "LAT",
         "RST"
       ],
-      "mission": "Own workflows and lifecycle; ensure gates, schedules, and change control."
+      "mission": "Own workflows and lifecycle; ensure gates, schedules, and change control.",
+      "strategy_profile": "analysis_medium_internal",
+      "risk_tier": "medium"
     }
   ],
   "roles_index": [

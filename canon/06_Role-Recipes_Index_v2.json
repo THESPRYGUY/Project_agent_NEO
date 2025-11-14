@@ -17,6 +17,8 @@
     {
       "id": "CAIO",
       "mission": "Own AI policy, Global-Instructions, and fleet strategy; approve high-risk capabilities and go-lives.",
+      "strategy_profile": "regulatory_high_complex",
+      "risk_tier": "high",
       "capabilities": [
         "approve_policy",
         "approve_major_release",
@@ -39,6 +41,8 @@
     {
       "id": "CPA",
       "mission": "Own prompt packs, role recipes, and reasoning quality; enforce token hygiene and safe agentic patterns.",
+      "strategy_profile": "analysis_medium_internal",
+      "risk_tier": "medium",
       "capabilities": [
         "prompt_pack_edit",
         "eval_matrix_edit",
@@ -60,6 +64,8 @@
     {
       "id": "COO/PMO",
       "mission": "Own workflows and lifecycle; ensure gates, schedules, and change control.",
+      "strategy_profile": "analysis_medium_internal",
+      "risk_tier": "medium",
       "capabilities": [
         "workflow_edit",
         "run_regression",
@@ -80,6 +86,8 @@
     {
       "id": "CISO/Legal",
       "mission": "Own safety/privacy guardrails, jurisdictional controls, and exceptions for regulated contexts.",
+      "strategy_profile": "regulatory_high_complex",
+      "risk_tier": "high",
       "capabilities": [
         "guardrails_edit",
         "privacy_rule_edit",
@@ -97,6 +105,8 @@
     {
       "id": "CDO/SRE",
       "mission": "Own data/tool registries, memory schema, observability stack, and reliability SLAs.",
+      "strategy_profile": "analysis_medium_internal",
+      "risk_tier": "medium",
       "capabilities": [
         "telemetry_config",
         "dataset_contracts",
@@ -117,6 +127,8 @@
     {
       "id": "Evaluator",
       "mission": "Own test matrices and certification; run functional, governance, red-team, reasoning-quality suites.",
+      "strategy_profile": "governance_incident_high",
+      "risk_tier": "high",
       "capabilities": [
         "run_eval_suites",
         "certify_release",
