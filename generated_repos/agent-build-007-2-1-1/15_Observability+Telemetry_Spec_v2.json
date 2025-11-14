@@ -99,6 +99,7 @@
       "description": "Logs every strategy chain with KPI deltas and HITL context.",
       "severity": "info",
       "metrics": [
+        "strategy_invocations",
         "pri_score",
         "hal_score",
         "aud_score",
@@ -106,11 +107,19 @@
         "latency_ms"
       ],
       "fields": [
+        "timestamp",
+        "agent_id",
+        "workflow_id",
+        "task_id",
         "strategy_profile",
         "strategy_chain",
-        "risk_tier",
         "task_type",
-        "strategy_metrics",
+        "risk_tier",
+        "token_count",
+        "latency_ms",
+        "pri_score",
+        "hal_score",
+        "aud_score",
         "hitl_required",
         "hitl_actor",
         "status"

@@ -216,6 +216,18 @@
           "financial": true,
           "external_comms": true
         }
+      },
+      "ChainVerification_v1": {
+        "risk_tier": "high",
+        "allowed_use_cases": [
+          "regulatory_validation",
+          "fact_checking"
+        ],
+        "required_HITL": {
+          "legal": true,
+          "financial": true,
+          "external_comms": true
+        }
       }
     },
     "profiles": {

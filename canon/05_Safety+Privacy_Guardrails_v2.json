@@ -319,6 +319,28 @@
           "automated_contract_generation_without_review"
         ],
         "notes": "Use to structure complex matters; HITL verifies recomposed narrative before delivery."
+      },
+      "ChainVerification_v1": {
+        "risk_tier": "high",
+        "allowed_use_cases": [
+          "regulatory_validation",
+          "fact_chain_verification",
+          "research_fact_check"
+        ],
+        "required_HITL": {
+          "legal": true,
+          "financial": true,
+          "external_comms": true
+        },
+        "forbidden_contexts": [
+          "external_communications_without_counsel",
+          "automated_signoff",
+          "legal_advice_without_review"
+        ],
+        "required_companions": [
+          "HallucinationCheck_v1"
+        ],
+        "notes": "Use to verify multi-hop reasoning before filings or public releases; always pair with HallucinationCheck_v1 on high-risk profiles."
       }
     },
     "profiles": {
