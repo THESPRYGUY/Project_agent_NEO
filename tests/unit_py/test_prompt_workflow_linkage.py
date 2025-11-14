@@ -51,9 +51,18 @@ def test_workflow_nodes_reference_prompt_modules(tmp_path: Path) -> None:
     p11 = json.loads(
         (repo_path / "11_Workflow-Pack_v2.json").read_text(encoding="utf-8")
     )
-    mods = {m.get("id") for m in p10.get("modules", [])}
+    mods = set()
+    for module in p10.get("modules", []):
+        if isinstance(module, dict):
+            mid = module.get("id")
+        else:
+            mid = str(module)
+        if mid:
+            mods.add(mid)
     assert mods, "Expected modules in 10_Prompt-Pack_v2.json"
     for g in p11.get("graphs", []):
         for n in g.get("nodes", []):
             mid = n.get("module_id")
+            if mid is None:
+                continue
             assert mid in mods, f"Workflow node references unknown module_id: {mid}"

@@ -25,6 +25,15 @@ def _read_json(p: Path) -> Mapping[str, Any]:
     return json.loads(p.read_text(encoding="utf-8"))
 
 
+def _manifest_entry_for_agent(
+    agents: list[Mapping[str, Any]] | None, agent_id: str
+) -> Mapping[str, Any]:
+    for entry in agents or []:
+        if isinstance(entry, Mapping) and entry.get("agent_id") == agent_id:
+            return entry
+    return (agents or [{}])[0]
+
+
 def test_rbac_owners_propagation(outdir: Path) -> None:
     # Case 1: owners present -> roles = [CAIO,CPA,TeamLead] + sorted_unique(owners)
     profile_with_owners = {
@@ -70,10 +79,8 @@ def test_manifest_role_title(outdir: Path) -> None:
     # 09 should mirror selected role_title
     amc = _read_json(outdir / "09_Agent-Manifests_Catalog_v2.json")
     agents = amc.get("agents", [])
-    assert (
-        isinstance(agents, list) and agents
-    ), "agents list should have at least one entry"
-    assert agents[0].get("role_title") == "Selected Role Title"
+    entry = _manifest_entry_for_agent(agents, "atlas")
+    assert entry.get("role_title") == "Selected Role Title"
 
 
 def test_manifest_role_title_fallbacks(outdir: Path) -> None:
@@ -85,7 +92,8 @@ def test_manifest_role_title_fallbacks(outdir: Path) -> None:
     }
     write_repo_files(profile_a, outdir)
     amc_a = _read_json(outdir / "09_Agent-Manifests_Catalog_v2.json")
-    assert amc_a.get("agents", [{}])[0].get("role_title") == "From RoleProfile"
+    entry_a = _manifest_entry_for_agent(amc_a.get("agents", []), "atlas")
+    assert entry_a.get("role_title") == "From RoleProfile"
 
     # Case B: role + role_profile empty -> fallback to 06.roles_index[*].title (which uses role.title legacy)
     outdir_b = outdir.parent / "repo_b"
@@ -97,4 +105,5 @@ def test_manifest_role_title_fallbacks(outdir: Path) -> None:
     }
     write_repo_files(profile_b, outdir_b)
     amc_b = _read_json(outdir_b / "09_Agent-Manifests_Catalog_v2.json")
-    assert amc_b.get("agents", [{}])[0].get("role_title") == "Legacy Role Title"
+    entry_b = _manifest_entry_for_agent(amc_b.get("agents", []), "atlas")
+    assert entry_b.get("role_title") == "Legacy Role Title"
