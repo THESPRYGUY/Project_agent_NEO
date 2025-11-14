@@ -309,7 +309,8 @@
           "rationale_summary",
           "decision_factors",
           "error_taxonomy",
-          "lessons_learned"
+          "lessons_learned",
+          "runtime_metrics"
         ],
         "token_budget": "≤1500"
       },
@@ -329,7 +330,8 @@
           "exec_brief",
           "compliance_report",
           "data_pack",
-          "kpi_views"
+          "kpi_views",
+          "strategy_performance"
         ],
         "token_budget": "≤2500"
       },

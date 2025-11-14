@@ -130,6 +130,25 @@
       }
     }
   },
+  "strategy_performance": {
+    "purpose": "Summarize strategy KPIs and safety posture.",
+    "source_fields": {
+      "reasoning_footprints": [
+        "runtime_metrics.strategy_profile",
+        "runtime_metrics.pri_score",
+        "runtime_metrics.hal_score",
+        "runtime_metrics.aud_score",
+        "runtime_metrics.token_count",
+        "runtime_metrics.latency_ms"
+      ],
+      "telemetry_strategy_invocation": [
+        "strategy_profile",
+        "token_count",
+        "latency_ms",
+        "safety_flags"
+      ]
+    }
+  },
   "meta": {
     "agent_id": "AGT-112330-TURKEY-RND-0001",
     "authors": [
@@ -172,6 +191,7 @@
     "definition_of_done",
     "exec_brief",
     "kpi_views",
+    "strategy_performance",
     "meta",
     "objective",
     "outputs",

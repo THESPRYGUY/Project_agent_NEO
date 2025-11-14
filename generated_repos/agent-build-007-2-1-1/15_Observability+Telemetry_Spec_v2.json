@@ -96,7 +96,7 @@
     },
     {
       "name": "strategy_invocation",
-      "description": "Logs every strategy chain with KPI deltas and HITL context.",
+      "description": "Logs every strategy chain with KPI deltas and HITL context; footprint_id links to Reasoning Footprints.",
       "severity": "info",
       "metrics": [
         "strategy_invocations",
@@ -111,6 +111,7 @@
         "agent_id",
         "workflow_id",
         "task_id",
+        "footprint_id",
         "strategy_profile",
         "strategy_chain",
         "task_type",
@@ -120,6 +121,7 @@
         "pri_score",
         "hal_score",
         "aud_score",
+        "safety_flags",
         "hitl_required",
         "hitl_actor",
         "status"
@@ -178,6 +180,7 @@
       "agent_id",
       "workflow_id",
       "task_id",
+      "footprint_id",
       "strategy_profile",
       "strategy_chain",
       "task_type",
@@ -187,6 +190,7 @@
       "pri_score",
       "hal_score",
       "aud_score",
+      "safety_flags",
       "hitl_required",
       "hitl_actor",
       "status"
