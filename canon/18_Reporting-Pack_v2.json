@@ -10,7 +10,8 @@
     "exec_brief",
     "compliance_report",
     "data_pack",
-    "kpi_views"
+    "kpi_views",
+    "strategy_performance"
   ],
   "token_budget": "\u22642500",
   "refs": {
@@ -144,6 +145,73 @@
         "owner": "Evaluator"
       }
     }
+  },
+  "strategy_performance": {
+    "purpose": "Highlight how strategy profiles perform across PRI/HAL/AUD and runtime cost metrics.",
+    "source_fields": {
+      "reasoning_footprints": [
+        "runtime_metrics.strategy_profile",
+        "runtime_metrics.strategy_chain",
+        "runtime_metrics.risk_tier",
+        "runtime_metrics.pri_score",
+        "runtime_metrics.hal_score",
+        "runtime_metrics.aud_score",
+        "runtime_metrics.token_count",
+        "runtime_metrics.latency_ms",
+        "runtime_metrics.safety_flags"
+      ],
+      "telemetry_strategy_invocation": [
+        "strategy_profile",
+        "strategy_chain",
+        "risk_tier",
+        "pri_score",
+        "hal_score",
+        "aud_score",
+        "token_count",
+        "latency_ms",
+        "safety_flags",
+        "hitl_required",
+        "hitl_actor",
+        "footprint_id"
+      ]
+    },
+    "views": [
+      {
+        "id": "strategy_kpi_rollup",
+        "metrics": [
+          "avg_pri",
+          "avg_hal",
+          "avg_aud"
+        ],
+        "dimensions": [
+          "strategy_profile"
+        ],
+        "window_days": 7
+      },
+      {
+        "id": "strategy_chain_costs",
+        "metrics": [
+          "token_count_p95",
+          "latency_ms_p95"
+        ],
+        "dimensions": [
+          "strategy_chain"
+        ],
+        "window_days": 7
+      },
+      {
+        "id": "safety_event_counts",
+        "metrics": [
+          "hitl_applied_count",
+          "disinfo_filtered_count",
+          "persona_debate_usage_count"
+        ],
+        "dimensions": [
+          "strategy_profile"
+        ],
+        "notes": "Derived from runtime_metrics.safety_flags and telemetry safety flags."
+      }
+    ]
   },
   "definition_of_done": [
     "Executive brief template available and token-light",

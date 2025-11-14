@@ -10,7 +10,8 @@
     "rationale_summary",
     "decision_factors",
     "error_taxonomy",
-    "lessons_learned"
+    "lessons_learned",
+    "runtime_metrics"
   ],
   "token_budget": "\u22641500",
   "policy": {
@@ -59,6 +60,36 @@
       "regression_test_added"
     ],
     "write_scope": "episodic:eval/*"
+  },
+  "runtime_metrics": {
+    "fields": {
+      "strategy_profile": "string",
+      "strategy_chain": [
+        "string"
+      ],
+      "risk_tier": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "pri_score": "number",
+      "hal_score": "number",
+      "aud_score": "number",
+      "token_count": "integer",
+      "latency_ms": "integer",
+      "footprint_id": "string (UUID or hash reference for telemetry linkage)",
+      "safety_flags": {
+        "hitl_required": "boolean",
+        "hitl_applied": "boolean",
+        "disinfo_filtered": "boolean",
+        "persona_debate_used": "boolean"
+      }
+    },
+    "notes": [
+      "Aligns 1:1 with observability strategy_invocation events.",
+      "Fields populated by Prompt Pack strategy_selector outputs and KPI evaluators.",
+      "footprint_id mirrors telemetry.event.strategy_invocation.footprint_id for joins."
+    ]
   },
   "kpi_bindings": {
     "RTI_ref": "rationale_summary",

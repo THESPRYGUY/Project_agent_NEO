@@ -72,6 +72,7 @@
       "agent_id",
       "workflow_id",
       "task_id",
+      "footprint_id",
       "strategy_profile",
       "strategy_chain",
       "task_type",
@@ -81,6 +82,7 @@
       "pri_score",
       "hal_score",
       "aud_score",
+      "safety_flags",
       "hitl_required",
       "hitl_actor",
       "status"
@@ -183,7 +185,7 @@
     },
     {
       "name": "strategy_invocation",
-      "description": "Emitted whenever a workflow executes a strategy_chain with KPI deltas and HITL context.",
+      "description": "Emitted whenever a workflow executes a strategy_chain with KPI deltas and HITL context. Each event MUST include footprint_id referencing the associated Reasoning Footprint entry.",
       "severity": "info",
       "metrics": [
         "strategy_invocations",
@@ -199,6 +201,7 @@
         "agent_id",
         "workflow_id",
         "task_id",
+        "footprint_id",
         "strategy_profile",
         "strategy_chain",
         "task_type",
@@ -208,12 +211,14 @@
         "pri_score",
         "hal_score",
         "aud_score",
+        "safety_flags",
         "hitl_required",
         "hitl_actor",
         "status"
       ],
       "examples": [
         {
+          "footprint_id": "fp_01HZY6TR2C2YF",
           "strategy_profile": "regulatory_high_complex",
           "strategy_chain": [
             "CAPEConversation_v1",
@@ -229,11 +234,18 @@
           "pri_score": 0.97,
           "hal_score": 0.01,
           "aud_score": 0.95,
+          "safety_flags": {
+            "hitl_required": true,
+            "hitl_applied": true,
+            "disinfo_filtered": true,
+            "persona_debate_used": false
+          },
           "hitl_required": true,
           "hitl_actor": "regulatory_counsel",
           "status": "completed"
         },
         {
+          "footprint_id": "fp_01HZY6TR4DAJ3",
           "strategy_profile": "governance_incident_high",
           "strategy_chain": [
             "ReActPattern_v1",
@@ -248,6 +260,12 @@
           "pri_score": 0.93,
           "hal_score": 0.018,
           "aud_score": 0.92,
+          "safety_flags": {
+            "hitl_required": true,
+            "hitl_applied": false,
+            "disinfo_filtered": true,
+            "persona_debate_used": false
+          },
           "hitl_required": true,
           "hitl_actor": "incident_commander",
           "status": "hitl_pending"
