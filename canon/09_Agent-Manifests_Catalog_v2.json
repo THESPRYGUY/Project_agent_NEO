@@ -28,6 +28,8 @@
       "agent_id": "AIA-R-001",
       "display_name": "Researcher (Core)",
       "owner": "CPA",
+      "strategy_profile": "research_rag_medium",
+      "risk_tier": "medium",
       "capabilities": [
         "retrieve",
         "summarize",
@@ -96,6 +98,8 @@
       "agent_id": "AIA-P-001",
       "display_name": "Planner (Core)",
       "owner": "COO/PMO",
+      "strategy_profile": "analysis_medium_internal",
+      "risk_tier": "medium",
       "capabilities": [
         "plan",
         "route",
@@ -145,6 +149,8 @@
       "agent_id": "AIA-B-001",
       "display_name": "Builder (Core)",
       "owner": "CPA",
+      "strategy_profile": "analysis_medium_internal",
+      "risk_tier": "medium",
       "capabilities": [
         "generate",
         "refactor",
@@ -194,6 +200,8 @@
       "agent_id": "AIA-E-001",
       "display_name": "Evaluator (Core)",
       "owner": "Evaluator",
+      "strategy_profile": "governance_incident_high",
+      "risk_tier": "high",
       "capabilities": [
         "evaluate",
         "red_team",
