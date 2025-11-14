@@ -76,6 +76,57 @@
       "require_regression": true
     }
   },
+  "strategy_kpis": {
+    "strategy_metrics": {
+      "AtomDecompose_v1": {
+        "PRI": "increase",
+        "HAL": "decrease",
+        "AUD": "increase"
+      },
+      "ChainVerification_v1": {
+        "PRI": "increase",
+        "HAL": "decrease",
+        "AUD": "increase"
+      },
+      "PersonaDebate_v1": {
+        "PRI": "increase",
+        "HAL": "neutral",
+        "AUD": "increase"
+      },
+      "HallucinationCheck_v1": {
+        "PRI": "neutral",
+        "HAL": "decrease",
+        "AUD": "increase"
+      },
+      "DisinfoFilter_v1": {
+        "PRI": "neutral",
+        "HAL": "decrease",
+        "AUD": "increase"
+      },
+      "CertaintyReporter_v1": {
+        "PRI": "increase",
+        "HAL": "neutral",
+        "AUD": "increase"
+      }
+    },
+    "profile_targets": {
+      "regulatory_high_complex": {
+        "PRI_min": 0.95,
+        "HAL_max": 0.02,
+        "AUD_min": 0.9
+      },
+      "governance_incident_high": {
+        "PRI_min": 0.95,
+        "HAL_max": 0.02,
+        "AUD_min": 0.9
+      },
+      "research_rag_medium": {
+        "PRI_min": 0.9,
+        "HAL_max": 0.03,
+        "AUD_min": 0.9
+      }
+    }
+  },
   "kpis": [
     {
       "collection": {
@@ -260,6 +311,7 @@
     "metrics",
     "objective",
     "reasoning_kpis",
+    "strategy_kpis",
     "refs",
     "reports",
     "runner",

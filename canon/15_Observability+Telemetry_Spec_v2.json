@@ -27,6 +27,9 @@
       "task_id",
       "role",
       "archetype",
+      "strategy_profile",
+      "strategy_chain",
+      "risk_tier",
       "tokens_input",
       "tokens_output",
       "latency_ms",
@@ -36,6 +39,9 @@
       "kpi_local_PRI",
       "kpi_local_HAL",
       "kpi_local_AUD",
+      "strategy_metrics",
+      "hitl_required",
+      "hitl_actor",
       "status",
       "error_code"
     ],
@@ -60,6 +66,24 @@
       "rfg",
       "reflection_loops",
       "debate_participants"
+    ],
+    "strategy_invocation": [
+      "timestamp",
+      "agent_id",
+      "workflow_id",
+      "task_id",
+      "strategy_profile",
+      "strategy_chain",
+      "task_type",
+      "risk_tier",
+      "token_count",
+      "latency_ms",
+      "pri_score",
+      "hal_score",
+      "aud_score",
+      "hitl_required",
+      "hitl_actor",
+      "status"
     ]
   },
   "privacy_controls": {
@@ -105,6 +129,14 @@
       "time_to_close_incidents",
       "industry_autofix_count",
       "industry_autofix_pct"
+    ],
+    "strategy_observability": [
+      "avg_PRI_by_strategy_profile",
+      "avg_HAL_by_strategy_profile",
+      "avg_AUD_by_strategy_profile",
+      "token_p95_by_strategy_chain",
+      "latency_p95_by_strategy_profile",
+      "hitl_activation_rate_by_profile"
     ]
   },
   "alerts": {
@@ -112,12 +144,16 @@
       "pipeline_fail_rate>1%",
       "HAL>0.02",
       "AUD<0.90",
-      "incident_S2_or_higher"
+      "incident_S2_or_higher",
+      "strategy_profile(regulatory_high_complex).hal_score>0.02_for_3_events"
     ],
     "p2": [
       "LAT_p95>15000ms",
       "PRI<0.95",
-      "cost_budget_exceeded"
+      "cost_budget_exceeded",
+      "strategy_profile(governance_incident_high).hal_score>0.02_for_2_events",
+      "strategy_chain(ReActPattern_v1+HallucinationCheck_v1).latency_ms_p95>20000",
+      "token_count_outlier_by_strategy_profile>3sigma"
     ]
   },
   "storage": {
@@ -143,6 +179,79 @@
         "naics_codes",
         "autofill_method",
         "autofill_outcome"
+      ]
+    },
+    {
+      "name": "strategy_invocation",
+      "description": "Emitted whenever a workflow executes a strategy_chain with KPI deltas and HITL context.",
+      "severity": "info",
+      "metrics": [
+        "strategy_invocations",
+        "pri_score",
+        "hal_score",
+        "aud_score",
+        "token_count",
+        "latency_ms",
+        "hitl_activation_rate"
+      ],
+      "fields": [
+        "timestamp",
+        "agent_id",
+        "workflow_id",
+        "task_id",
+        "strategy_profile",
+        "strategy_chain",
+        "task_type",
+        "risk_tier",
+        "token_count",
+        "latency_ms",
+        "pri_score",
+        "hal_score",
+        "aud_score",
+        "hitl_required",
+        "hitl_actor",
+        "status"
+      ],
+      "examples": [
+        {
+          "strategy_profile": "regulatory_high_complex",
+          "strategy_chain": [
+            "CAPEConversation_v1",
+            "AtomDecompose_v1",
+            "ChainVerification_v1",
+            "HallucinationCheck_v1",
+            "CertaintyReporter_v1"
+          ],
+          "task_type": "regulatory_filing",
+          "risk_tier": "high",
+          "token_count": 1834,
+          "latency_ms": 4800,
+          "pri_score": 0.97,
+          "hal_score": 0.01,
+          "aud_score": 0.95,
+          "hitl_required": true,
+          "hitl_actor": "regulatory_counsel",
+          "status": "completed"
+        },
+        {
+          "strategy_profile": "governance_incident_high",
+          "strategy_chain": [
+            "ReActPattern_v1",
+            "DisinfoFilter_v1",
+            "HallucinationCheck_v1",
+            "CertaintyReporter_v1"
+          ],
+          "task_type": "incident_postmortem",
+          "risk_tier": "high",
+          "token_count": 1420,
+          "latency_ms": 7200,
+          "pri_score": 0.93,
+          "hal_score": 0.018,
+          "aud_score": 0.92,
+          "hitl_required": true,
+          "hitl_actor": "incident_commander",
+          "status": "hitl_pending"
+        }
       ]
     }
   ]
