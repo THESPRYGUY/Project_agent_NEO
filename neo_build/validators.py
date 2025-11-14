@@ -246,7 +246,8 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
         if sec == "modules":
             ok = _nonempty_list(p10.get(sec))
         elif sec == "reasoning_patterns":
-            ok = _nonempty_dict(p10.get(sec))
+            value = p10.get(sec)
+            ok = _nonempty_dict(value) or _nonempty_list(value)
         else:
             ok = _nonempty_dict(p10.get(sec))
         if not ok:
@@ -258,7 +259,8 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
         if sec == "graphs":
             ok = _nonempty_list(p11.get(sec))
         else:
-            ok = _nonempty_dict(p11.get(sec))
+            value = p11.get(sec)
+            ok = _nonempty_dict(value) or _nonempty_list(value)
         if not ok:
             missing_sections.setdefault("11_Workflow-Pack_v2.json", []).append(sec)
     if not _nonempty_dict(p11.get("rollback")):
@@ -324,7 +326,7 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
         if sec == "stakeholders":
             ok = _nonempty_list(val)
         elif sec == "policies":
-            ok = _nonempty_list(val)
+            ok = _nonempty_list(val) or _nonempty_dict(val)
         else:
             ok = _nonempty_dict(val)
         if not ok:
