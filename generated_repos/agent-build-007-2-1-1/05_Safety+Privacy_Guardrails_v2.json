@@ -145,6 +145,118 @@
     "Regulatory evasion",
     "Sensitive personal data"
   ],
+  "strategy_safety": {
+    "strategies": {
+      "PersonaDebate_v1": {
+        "risk_tier": "high",
+        "allowed_use_cases": [
+          "internal_stress_tests"
+        ],
+        "required_HITL": {
+          "legal": true,
+          "financial": true,
+          "external_comms": true
+        }
+      },
+      "DisinfoFilter_v1": {
+        "risk_tier": "medium",
+        "allowed_use_cases": [
+          "fact_checking",
+          "incident_review"
+        ],
+        "required_HITL": {
+          "legal": false,
+          "financial": false,
+          "external_comms": false
+        }
+      },
+      "HallucinationCheck_v1": {
+        "risk_tier": "medium",
+        "allowed_use_cases": [
+          "governance_suite"
+        ],
+        "required_HITL": {
+          "legal": false,
+          "financial": false,
+          "external_comms": true
+        }
+      },
+      "CertaintyReporter_v1": {
+        "risk_tier": "medium",
+        "allowed_use_cases": [
+          "regulatory_reporting"
+        ],
+        "required_HITL": {
+          "legal": true,
+          "financial": true,
+          "external_comms": true
+        }
+      },
+      "ReActPattern_v1": {
+        "risk_tier": "high",
+        "allowed_use_cases": [
+          "tool_reasoning"
+        ],
+        "required_HITL": {
+          "legal": true,
+          "financial": true,
+          "external_comms": true
+        },
+        "required_companions": [
+          "HallucinationCheck_v1"
+        ]
+      },
+      "AtomDecompose_v1": {
+        "risk_tier": "medium",
+        "allowed_use_cases": [
+          "analysis"
+        ],
+        "required_HITL": {
+          "legal": true,
+          "financial": true,
+          "external_comms": true
+        }
+      },
+      "ChainVerification_v1": {
+        "risk_tier": "high",
+        "allowed_use_cases": [
+          "regulatory_validation",
+          "fact_checking"
+        ],
+        "required_HITL": {
+          "legal": true,
+          "financial": true,
+          "external_comms": true
+        }
+      }
+    },
+    "profiles": {
+      "regulatory_high_complex": {
+        "risk_tier": "high",
+        "required_HITL": {
+          "legal": true,
+          "financial": true,
+          "external_comms": true
+        }
+      },
+      "governance_incident_high": {
+        "risk_tier": "high",
+        "required_HITL": {
+          "legal": true,
+          "financial": true,
+          "external_comms": true
+        }
+      },
+      "research_rag_medium": {
+        "risk_tier": "medium",
+        "required_HITL": {
+          "legal": true,
+          "financial": false,
+          "external_comms": true
+        }
+      }
+    }
+  },
   "schema_keys": [
     "audit_checklist",
     "content_filters",
@@ -159,6 +271,7 @@
     "privacy_policies",
     "redlines",
     "refusal_playbooks",
+    "strategy_safety",
     "token_budget",
     "version"
   ],

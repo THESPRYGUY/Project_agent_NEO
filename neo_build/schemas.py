@@ -97,6 +97,7 @@ def required_keys_map() -> Dict[str, List[str]]:
                     "privacy_policies",
                     "redlines",
                     "refusal_playbooks",
+                    "strategy_safety",
                     "token_budget",
                     "version"
             ],
@@ -245,6 +246,7 @@ def required_keys_map() -> Dict[str, List[str]]:
                     "refs",
                     "reports",
                     "runner",
+                    "strategy_kpis",
                     "suites",
                     "targets",
                     "terms",
