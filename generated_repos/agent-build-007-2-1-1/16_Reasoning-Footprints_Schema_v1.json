@@ -34,6 +34,31 @@
     ],
     "write_scope": "episodic:eval/*"
   },
+  "runtime_metrics": {
+    "fields": {
+      "strategy_profile": "string",
+      "strategy_chain": [
+        "string"
+      ],
+      "risk_tier": [
+        "low",
+        "medium",
+        "high"
+      ],
+      "pri_score": "number",
+      "hal_score": "number",
+      "aud_score": "number",
+      "token_count": "integer",
+      "latency_ms": "integer",
+      "footprint_id": "string",
+      "safety_flags": {
+        "hitl_required": "boolean",
+        "hitl_applied": "boolean",
+        "disinfo_filtered": "boolean",
+        "persona_debate_used": "boolean"
+      }
+    }
+  },
   "meta": {
     "agent_id": "AGT-112330-TURKEY-RND-0001",
     "authors": [
@@ -78,6 +103,7 @@
     "error_taxonomy",
     "kpi_bindings",
     "lessons_learned",
+    "runtime_metrics",
     "meta",
     "objective",
     "policy",
