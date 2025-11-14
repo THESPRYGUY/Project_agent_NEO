@@ -321,18 +321,27 @@
         "id": "reasoning_quality",
         "description": "CoR depth, SoT clarity, consensus accuracy, reflection gain"
       },
-      {
-        "id": "latency_cost",
-        "description": "Latency and cost under realistic loads"
-      },
-      {
-        "id": "strategy_assurance",
-        "description": "Validates strategy/profile KPI deltas and HITL escalation wiring"
-      }
-    ],
-    "matrices": [
-      {
-        "id": "baseline",
+    {
+      "id": "latency_cost",
+      "description": "Latency and cost under realistic loads"
+    },
+    {
+      "id": "strategy_assurance",
+      "description": "Validates strategy/profile KPI deltas and HITL escalation wiring"
+    },
+    {
+      "id": "strategy_eval_suite",
+      "description": "Compare strategy profiles on key scenarios using PRI/HAL/AUD and runtime metrics.",
+      "scenarios": [
+        "steelport_vpp_scenario",
+        "drac_pricing_case",
+        "generic_regulatory_memo"
+      ]
+    }
+  ],
+  "matrices": [
+    {
+      "id": "baseline",
         "suites": [
           "functional",
           "governance",
@@ -356,6 +365,53 @@
           "strategy_assurance",
           "governance",
           "latency_cost"
+        ]
+      },
+      {
+        "id": "strategy_eval_suite",
+        "scenarios": [
+          {
+            "scenario_id": "steelport_vpp_scenario",
+            "strategy_profiles": [
+              "analysis_medium_internal",
+              "regulatory_high_complex"
+            ],
+            "kpi_targets": {
+              "PRI_min": 0.95,
+              "HAL_max": 0.02,
+              "AUD_min": 0.9,
+              "token_count_p95_max": 3500,
+              "latency_ms_p95_max": 6500
+            }
+          },
+          {
+            "scenario_id": "drac_pricing_case",
+            "strategy_profiles": [
+              "analysis_medium_internal",
+              "research_rag_medium"
+            ],
+            "kpi_targets": {
+              "PRI_min": 0.94,
+              "HAL_max": 0.025,
+              "AUD_min": 0.88,
+              "token_count_p95_max": 3200,
+              "latency_ms_p95_max": 6000
+            }
+          },
+          {
+            "scenario_id": "generic_regulatory_memo",
+            "strategy_profiles": [
+              "regulatory_high_complex",
+              "governance_incident_high"
+            ],
+            "kpi_targets": {
+              "PRI_min": 0.96,
+              "HAL_max": 0.015,
+              "AUD_min": 0.92,
+              "token_count_p95_max": 3600,
+              "latency_ms_p95_max": 7000
+            }
+          }
         ]
       }
     ]
@@ -395,6 +451,18 @@
         "LAT",
         "CST"
       ]
+    },
+    "strategy_eval_suite": {
+      "kpis": [
+        "PRI",
+        "HAL",
+        "AUD"
+      ],
+      "telemetry_metrics": [
+        "token_count",
+        "latency_ms"
+      ],
+      "notes": "Used for scenario-level comparisons between strategy profiles."
     }
   },
   "gates": {
@@ -423,6 +491,78 @@
         "strategy_profile": "research_rag_medium",
         "thresholds_ref": "strategy_kpis.profile_targets.research_rag_medium",
         "action": "Route to secondary reviewer and re-run HallucinationCheck_v1 before sharing."
+      },
+      {
+        "scenario_id": "steelport_vpp_scenario",
+        "strategy_profile": "analysis_medium_internal",
+        "thresholds": {
+          "PRI_min": 0.95,
+          "HAL_max": 0.02,
+          "AUD_min": 0.9,
+          "token_count_p95_max": 3500,
+          "latency_ms_p95_max": 6500
+        },
+        "action": "Monitor VPP analysis strategy performance; escalate to regulatory_high_complex if thresholds breach."
+      },
+      {
+        "scenario_id": "steelport_vpp_scenario",
+        "strategy_profile": "regulatory_high_complex",
+        "thresholds": {
+          "PRI_min": 0.96,
+          "HAL_max": 0.018,
+          "AUD_min": 0.92,
+          "token_count_p95_max": 3600,
+          "latency_ms_p95_max": 7000
+        },
+        "action": "Require CAIO review before delivering VPP memo if thresholds breach."
+      },
+      {
+        "scenario_id": "drac_pricing_case",
+        "strategy_profile": "analysis_medium_internal",
+        "thresholds": {
+          "PRI_min": 0.94,
+          "HAL_max": 0.025,
+          "AUD_min": 0.88,
+          "token_count_p95_max": 3200,
+          "latency_ms_p95_max": 6000
+        },
+        "action": "Flag DRAC pricing drift; consider research_rag_medium reruns."
+      },
+      {
+        "scenario_id": "drac_pricing_case",
+        "strategy_profile": "research_rag_medium",
+        "thresholds": {
+          "PRI_min": 0.95,
+          "HAL_max": 0.02,
+          "AUD_min": 0.9,
+          "token_count_p95_max": 3400,
+          "latency_ms_p95_max": 6200
+        },
+        "action": "Trigger HITL if pricing memo breaches KPI thresholds."
+      },
+      {
+        "scenario_id": "generic_regulatory_memo",
+        "strategy_profile": "regulatory_high_complex",
+        "thresholds": {
+          "PRI_min": 0.96,
+          "HAL_max": 0.015,
+          "AUD_min": 0.92,
+          "token_count_p95_max": 3600,
+          "latency_ms_p95_max": 7000
+        },
+        "action": "Require legal HITL for memo before release when KPIs slip."
+      },
+      {
+        "scenario_id": "generic_regulatory_memo",
+        "strategy_profile": "governance_incident_high",
+        "thresholds": {
+          "PRI_min": 0.95,
+          "HAL_max": 0.02,
+          "AUD_min": 0.9,
+          "token_count_p95_max": 3800,
+          "latency_ms_p95_max": 7500
+        },
+        "action": "Escalate to incident commander if regulatory memo KPIs breach."
       }
     ]
   },

@@ -139,13 +139,15 @@
         "runtime_metrics.hal_score",
         "runtime_metrics.aud_score",
         "runtime_metrics.token_count",
-        "runtime_metrics.latency_ms"
+        "runtime_metrics.latency_ms",
+        "runtime_metrics.scenario_id"
       ],
       "telemetry_strategy_invocation": [
         "strategy_profile",
         "token_count",
         "latency_ms",
-        "safety_flags"
+        "safety_flags",
+        "scenario_id"
       ]
     }
   },

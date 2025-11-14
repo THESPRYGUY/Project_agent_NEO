@@ -67,6 +67,7 @@
       "strategy_chain": [
         "string"
       ],
+      "scenario_id": "string",
       "risk_tier": [
         "low",
         "medium",
@@ -88,7 +89,8 @@
     "notes": [
       "Aligns 1:1 with observability strategy_invocation events.",
       "Fields populated by Prompt Pack strategy_selector outputs and KPI evaluators.",
-      "footprint_id mirrors telemetry.event.strategy_invocation.footprint_id for joins."
+      "footprint_id mirrors telemetry.event.strategy_invocation.footprint_id for joins.",
+      "scenario_id should reference evaluation_sets metadata (e.g., strategy_eval_suite) when applicable."
     ]
   },
   "kpi_bindings": {

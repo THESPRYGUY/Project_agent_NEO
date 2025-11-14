@@ -1,0 +1,59 @@
+[
+  {
+    "scenario_id": "steelport_vpp_scenario",
+    "description": "VPP campus analysis scenario inspired by the Steelport deployment study.",
+    "category": "vpp_analysis",
+    "strategy_profiles": [
+      "analysis_medium_internal",
+      "regulatory_high_complex"
+    ],
+    "kpi_suite_ref": "strategy_eval_suite",
+    "input_hint": "Use a VPP campus analysis style prompt referencing Steelport load + DER mix.",
+    "success_criteria": {
+      "PRI_min": 0.95,
+      "HAL_max": 0.02,
+      "AUD_min": 0.9,
+      "token_count_p95_max": 3500,
+      "latency_ms_p95_max": 6500
+    },
+    "notes": "Metadata only; scenarios reference public case descriptions."
+  },
+  {
+    "scenario_id": "drac_pricing_case",
+    "description": "DRAC pricing and compliance scenario derived from utility tariff change review.",
+    "category": "pricing_model",
+    "strategy_profiles": [
+      "analysis_medium_internal",
+      "research_rag_medium"
+    ],
+    "kpi_suite_ref": "strategy_eval_suite",
+    "input_hint": "Compare DRAC baseline vs proposed tariffs with safe-harbor rationale.",
+    "success_criteria": {
+      "PRI_min": 0.94,
+      "HAL_max": 0.025,
+      "AUD_min": 0.88,
+      "token_count_p95_max": 3200,
+      "latency_ms_p95_max": 6000
+    },
+    "notes": "No proprietary data; treat as abstracted pricing memo."
+  },
+  {
+    "scenario_id": "generic_regulatory_memo",
+    "description": "Generic regulatory memo requiring governance alignment and precise citations.",
+    "category": "regulatory_memo",
+    "strategy_profiles": [
+      "regulatory_high_complex",
+      "governance_incident_high"
+    ],
+    "kpi_suite_ref": "strategy_eval_suite",
+    "input_hint": "Summarize updated compliance obligations for a fictional energy regulator.",
+    "success_criteria": {
+      "PRI_min": 0.96,
+      "HAL_max": 0.015,
+      "AUD_min": 0.92,
+      "token_count_p95_max": 3600,
+      "latency_ms_p95_max": 7000
+    },
+    "notes": "Focus on reasoning hygiene + HITL readiness for external memos."
+  }
+]
