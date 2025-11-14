@@ -1106,7 +1106,15 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
         expected_keys = sorted(set(required))
         if payload.get("schema_keys") != expected_keys:
             payload["schema_keys"] = expected_keys
-            json_write(out_dir / fname, payload)
+            if fname == "03_Operating-Rules_v2.json":
+                (out_dir / fname).write_text(
+                    json.dumps(payload, indent=2, ensure_ascii=False, sort_keys=True)
+                    + "\n",
+                    encoding="utf-8",
+                    newline="\n",
+                )
+            else:
+                json_write(out_dir / fname, payload)
 
     manifest = packs.get("09_Agent-Manifests_Catalog_v2.json")
     if isinstance(manifest, dict):
