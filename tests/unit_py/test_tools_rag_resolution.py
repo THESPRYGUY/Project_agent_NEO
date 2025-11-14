@@ -87,7 +87,12 @@ def test_tools_secrets_and_rag_names_resolve(tmp_path: Path) -> None:
     retrievers = {r.get("name"): r.get("index") for r in p13.get("retrievers", [])}
     indices = {i.get("name") for i in p13.get("indices", [])}
     for m in p10.get("modules", []):
-        rv = m.get("retriever")
+        if isinstance(m, str):
+            rv = None
+        elif isinstance(m, dict):
+            rv = m.get("retriever")
+        else:
+            rv = None
         if rv:
             assert rv in retrievers
             idx = retrievers[rv]

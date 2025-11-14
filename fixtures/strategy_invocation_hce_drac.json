@@ -1,0 +1,42 @@
+{
+  "agent_id": "AGT-513210-DATA:ANLMGR-32c31357",
+  "event_type": "strategy_invocation",
+  "schema_version": "1.1.0",
+  "run_id": "run_hce_drac_internal_advisory",
+  "workflow_id": "wf_drac_internal_advisory",
+  "workflow_run_id": "wf_run_drac_internal_advisory_01",
+  "correlation_id": "corr_drac_internal_advisory_2025Q4",
+  "timestamp": "2025-09-12T18:52:28Z",
+  "task_id": "task_internal_advisory",
+  "footprint_id": "fp_drac_internal_advisory_001",
+  "scenario_id": "drac_internal_advisory",
+  "strategy_profile": "analysis_medium_internal",
+  "strategy_chain": [
+    "ReActPattern_v1",
+    "TariffCompare_v1",
+    "HallucinationCheck_v1"
+  ],
+  "task_type": "internal_pricing_review",
+  "risk_tier": "medium",
+  "token_count": null,
+  "tokens_input": null,
+  "tokens_output": null,
+  "latency_ms": null,
+  "pri_score": null,
+  "hal_score": null,
+  "aud_score": null,
+  "kpi_targets": {
+    "PRI_min": 0.95,
+    "HAL_max": 0.02,
+    "AUD_min": 0.9
+  },
+  "safety_flags": {
+    "disinfo_filtered": true,
+    "persona_debate_used": false,
+    "pii_redaction": "selectors_only"
+  },
+  "hitl_required": true,
+  "hitl_applied": false,
+  "hitl_actor": null,
+  "status": "hitl_pending"
+}

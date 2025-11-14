@@ -69,8 +69,13 @@
     ],
     "strategy_invocation": [
       "timestamp",
+      "event_type",
+      "schema_version",
       "agent_id",
+      "run_id",
       "workflow_id",
+      "workflow_run_id",
+      "correlation_id",
       "task_id",
       "footprint_id",
       "scenario_id",
@@ -79,12 +84,16 @@
       "task_type",
       "risk_tier",
       "token_count",
+      "tokens_input",
+      "tokens_output",
       "latency_ms",
       "pri_score",
       "hal_score",
       "aud_score",
+      "kpi_targets",
       "safety_flags",
       "hitl_required",
+      "hitl_applied",
       "hitl_actor",
       "status"
     ]
@@ -187,6 +196,14 @@
     {
       "name": "strategy_invocation",
       "description": "Emitted whenever a workflow executes a strategy_chain with KPI deltas and HITL context. Each event MUST include footprint_id referencing the associated Reasoning Footprint entry and scenario_id when the run originates from an evaluation_set.",
+      "event_type": "strategy_invocation",
+      "schema_version": "1.1.0",
+      "notes": [
+        "Required fields: timestamp, event_type, schema_version, agent_id, run_id, workflow_id, workflow_run_id, correlation_id, task_id, footprint_id, scenario_id, strategy_profile, strategy_chain, task_type, risk_tier, kpi_targets, hitl_required, hitl_applied, status.",
+        "Optional fields: token_count, tokens_input, tokens_output, latency_ms, pri_score, hal_score, aud_score, safety_flags, hitl_actor (MUST be null unless hitl_applied=true).",
+        "KPI thresholds are tracked only inside kpi_targets (PRI_min, HAL_max, AUD_min).",
+        "HITL semantics are enumerated in hitl_semantics and SHALL be followed for advisory_pending, completed_non_hitl, and completed_hitl events."
+      ],
       "severity": "info",
       "metrics": [
         "strategy_invocations",
@@ -199,8 +216,13 @@
       ],
       "fields": [
         "timestamp",
+        "event_type",
+        "schema_version",
         "agent_id",
+        "run_id",
         "workflow_id",
+        "workflow_run_id",
+        "correlation_id",
         "task_id",
         "footprint_id",
         "scenario_id",
@@ -209,70 +231,443 @@
         "task_type",
         "risk_tier",
         "token_count",
+        "tokens_input",
+        "tokens_output",
+        "latency_ms",
+        "pri_score",
+        "hal_score",
+        "aud_score",
+        "kpi_targets",
+        "safety_flags",
+        "hitl_required",
+        "hitl_applied",
+        "hitl_actor",
+        "status"
+      ],
+      "required_fields": [
+        "timestamp",
+        "event_type",
+        "schema_version",
+        "agent_id",
+        "run_id",
+        "workflow_id",
+        "workflow_run_id",
+        "correlation_id",
+        "task_id",
+        "footprint_id",
+        "scenario_id",
+        "strategy_profile",
+        "strategy_chain",
+        "task_type",
+        "risk_tier",
+        "kpi_targets",
+        "hitl_required",
+        "hitl_applied",
+        "status"
+      ],
+      "optional_fields": [
+        "token_count",
+        "tokens_input",
+        "tokens_output",
         "latency_ms",
         "pri_score",
         "hal_score",
         "aud_score",
         "safety_flags",
-        "hitl_required",
-        "hitl_actor",
-        "status"
+        "hitl_actor"
       ],
+      "kpi_targets": {
+        "AUD_min": 0.9,
+        "HAL_max": 0.02,
+        "PRI_min": 0.95
+      },
+      "hitl_semantics": {
+        "advisory_pending": {
+          "hitl_actor": null,
+          "hitl_applied": false,
+          "hitl_required": true,
+          "status": "hitl_pending"
+        },
+        "completed_hitl": {
+          "hitl_actor": "regulatory_counsel",
+          "hitl_applied": true,
+          "hitl_required": true,
+          "status": "completed"
+        },
+        "completed_non_hitl": {
+          "hitl_actor": null,
+          "hitl_applied": false,
+          "hitl_required": false,
+          "status": "completed"
+        }
+      },
       "examples": [
         {
-          "footprint_id": "fp_01HZY6TR2C2YF",
-          "strategy_profile": "regulatory_high_complex",
-          "strategy_chain": [
-            "CAPEConversation_v1",
-            "AtomDecompose_v1",
-            "ChainVerification_v1",
-            "HallucinationCheck_v1",
-            "CertaintyReporter_v1"
-          ],
-          "task_type": "regulatory_filing",
-          "scenario_id": "steelport_vpp_scenario",
-          "risk_tier": "high",
-          "token_count": 1834,
-          "latency_ms": 4800,
-          "pri_score": 0.97,
-          "hal_score": 0.01,
-          "aud_score": 0.95,
+          "agent_id": "agent.HCE_DRAC.GEN2",
+          "aud_score": null,
+          "correlation_id": "corr_drac_internal_advisory_2025Q4",
+          "event_type": "strategy_invocation",
+          "footprint_id": "fp_drac_internal_advisory_001",
+          "hal_score": null,
+          "hitl_actor": null,
+          "hitl_applied": false,
+          "hitl_required": true,
+          "kpi_targets": {
+            "AUD_min": 0.9,
+            "HAL_max": 0.02,
+            "PRI_min": 0.95
+          },
+          "latency_ms": null,
+          "pri_score": null,
+          "risk_tier": "medium",
+          "run_id": "run_drac_internal_advisory",
           "safety_flags": {
-            "hitl_required": true,
-            "hitl_applied": true,
             "disinfo_filtered": true,
             "persona_debate_used": false
           },
-          "hitl_required": true,
-          "hitl_actor": "regulatory_counsel",
-          "status": "completed"
+          "scenario_id": "drac_internal_advisory",
+          "schema_version": "1.1.0",
+          "status": "hitl_pending",
+          "strategy_chain": [
+            "ReActPattern_v1",
+            "TariffCompare_v1",
+            "HallucinationCheck_v1"
+          ],
+          "strategy_profile": "analysis_medium_internal",
+          "task_id": "task_internal_advisory",
+          "task_type": "internal_pricing_review",
+          "timestamp": "2025-09-12T18:52:28Z",
+          "token_count": null,
+          "tokens_input": null,
+          "tokens_output": null,
+          "workflow_id": "wf_drac_internal_advisory",
+          "workflow_run_id": "wf_run_drac_internal_advisory_01"
         },
         {
-          "footprint_id": "fp_01HZY6TR4DAJ3",
-          "strategy_profile": "governance_incident_high",
+          "agent_id": "agent.HCE_DRAC.GEN2",
+          "aud_score": 0.94,
+          "correlation_id": "corr_drac_pricing_case_2025Q4",
+          "event_type": "strategy_invocation",
+          "footprint_id": "fp_drac_pricing_case_002",
+          "hal_score": 0.009,
+          "hitl_actor": null,
+          "hitl_applied": false,
+          "hitl_required": false,
+          "kpi_targets": {
+            "AUD_min": 0.9,
+            "HAL_max": 0.02,
+            "PRI_min": 0.95
+          },
+          "latency_ms": 5800,
+          "pri_score": 0.96,
+          "risk_tier": "medium",
+          "run_id": "run_drac_pricing_case_2025Q4",
+          "safety_flags": {
+            "disinfo_filtered": true,
+            "persona_debate_used": false,
+            "pii_redaction": "selectors_only"
+          },
+          "scenario_id": "drac_pricing_case",
+          "schema_version": "1.1.0",
+          "status": "completed",
           "strategy_chain": [
+            "CAPEConversation_v1",
+            "TariffCompare_v1",
+            "CertaintyReporter_v1",
+            "HallucinationCheck_v1"
+          ],
+          "strategy_profile": "analysis_medium_internal",
+          "task_id": "task_pricing_case_summary",
+          "task_type": "pricing_update",
+          "timestamp": "2025-10-14T15:11:00Z",
+          "token_count": 1520,
+          "tokens_input": 8800,
+          "tokens_output": 1620,
+          "workflow_id": "wf_drac_pricing_case",
+          "workflow_run_id": "wf_run_drac_pricing_case_07"
+        },
+        {
+          "agent_id": "agent.HCE_DRAC.GEN2",
+          "aud_score": 0.95,
+          "correlation_id": "corr_drac_board_brief_2025",
+          "event_type": "strategy_invocation",
+          "footprint_id": "fp_drac_board_brief_003",
+          "hal_score": 0.008,
+          "hitl_actor": "regulatory_counsel",
+          "hitl_applied": true,
+          "hitl_required": true,
+          "kpi_targets": {
+            "AUD_min": 0.9,
+            "HAL_max": 0.02,
+            "PRI_min": 0.95
+          },
+          "latency_ms": 6400,
+          "pri_score": 0.97,
+          "risk_tier": "medium",
+          "run_id": "run_drac_board_brief_v1",
+          "safety_flags": {
+            "disinfo_filtered": true,
+            "persona_debate_used": true
+          },
+          "scenario_id": "drac_board_brief",
+          "schema_version": "1.1.0",
+          "status": "completed",
+          "strategy_chain": [
+            "PlannerScaffold_v1",
             "ReActPattern_v1",
             "DisinfoFilter_v1",
             "HallucinationCheck_v1",
             "CertaintyReporter_v1"
           ],
-          "task_type": "incident_postmortem",
-          "scenario_id": "generic_regulatory_memo",
-          "risk_tier": "high",
-          "token_count": 1420,
-          "latency_ms": 7200,
-          "pri_score": 0.93,
-          "hal_score": 0.018,
-          "aud_score": 0.92,
+          "strategy_profile": "analysis_medium_internal",
+          "task_id": "task_board_brief",
+          "task_type": "board_brief",
+          "timestamp": "2025-10-20T09:41:00Z",
+          "token_count": 1710,
+          "tokens_input": 9100,
+          "tokens_output": 1280,
+          "workflow_id": "wf_drac_board_brief",
+          "workflow_run_id": "wf_run_drac_board_brief_02"
+        }
+      ]
+    }
+  ],
+  "strategy_invocation": [
+    {
+      "name": "strategy_invocation",
+      "description": "Emitted whenever a workflow executes a strategy_chain with KPI deltas and HITL context. Each event MUST include footprint_id referencing the associated Reasoning Footprint entry and scenario_id when the run originates from an evaluation_set.",
+      "event_type": "strategy_invocation",
+      "schema_version": "1.1.0",
+      "notes": [
+        "Required fields: timestamp, event_type, schema_version, agent_id, run_id, workflow_id, workflow_run_id, correlation_id, task_id, footprint_id, scenario_id, strategy_profile, strategy_chain, task_type, risk_tier, kpi_targets, hitl_required, hitl_applied, status.",
+        "Optional fields: token_count, tokens_input, tokens_output, latency_ms, pri_score, hal_score, aud_score, safety_flags, hitl_actor (MUST be null unless hitl_applied=true).",
+        "KPI thresholds are tracked only inside kpi_targets (PRI_min, HAL_max, AUD_min).",
+        "HITL semantics are enumerated in hitl_semantics and SHALL be followed for advisory_pending, completed_non_hitl, and completed_hitl events."
+      ],
+      "severity": "info",
+      "metrics": [
+        "strategy_invocations",
+        "pri_score",
+        "hal_score",
+        "aud_score",
+        "token_count",
+        "latency_ms",
+        "hitl_activation_rate"
+      ],
+      "fields": [
+        "timestamp",
+        "event_type",
+        "schema_version",
+        "agent_id",
+        "run_id",
+        "workflow_id",
+        "workflow_run_id",
+        "correlation_id",
+        "task_id",
+        "footprint_id",
+        "scenario_id",
+        "strategy_profile",
+        "strategy_chain",
+        "task_type",
+        "risk_tier",
+        "token_count",
+        "tokens_input",
+        "tokens_output",
+        "latency_ms",
+        "pri_score",
+        "hal_score",
+        "aud_score",
+        "kpi_targets",
+        "safety_flags",
+        "hitl_required",
+        "hitl_applied",
+        "hitl_actor",
+        "status"
+      ],
+      "required_fields": [
+        "timestamp",
+        "event_type",
+        "schema_version",
+        "agent_id",
+        "run_id",
+        "workflow_id",
+        "workflow_run_id",
+        "correlation_id",
+        "task_id",
+        "footprint_id",
+        "scenario_id",
+        "strategy_profile",
+        "strategy_chain",
+        "task_type",
+        "risk_tier",
+        "kpi_targets",
+        "hitl_required",
+        "hitl_applied",
+        "status"
+      ],
+      "optional_fields": [
+        "token_count",
+        "tokens_input",
+        "tokens_output",
+        "latency_ms",
+        "pri_score",
+        "hal_score",
+        "aud_score",
+        "safety_flags",
+        "hitl_actor"
+      ],
+      "kpi_targets": {
+        "AUD_min": 0.9,
+        "HAL_max": 0.02,
+        "PRI_min": 0.95
+      },
+      "hitl_semantics": {
+        "advisory_pending": {
+          "hitl_actor": null,
+          "hitl_applied": false,
+          "hitl_required": true,
+          "status": "hitl_pending"
+        },
+        "completed_hitl": {
+          "hitl_actor": "regulatory_counsel",
+          "hitl_applied": true,
+          "hitl_required": true,
+          "status": "completed"
+        },
+        "completed_non_hitl": {
+          "hitl_actor": null,
+          "hitl_applied": false,
+          "hitl_required": false,
+          "status": "completed"
+        }
+      },
+      "examples": [
+        {
+          "agent_id": "agent.HCE_DRAC.GEN2",
+          "aud_score": null,
+          "correlation_id": "corr_drac_internal_advisory_2025Q4",
+          "event_type": "strategy_invocation",
+          "footprint_id": "fp_drac_internal_advisory_001",
+          "hal_score": null,
+          "hitl_actor": null,
+          "hitl_applied": false,
+          "hitl_required": true,
+          "kpi_targets": {
+            "AUD_min": 0.9,
+            "HAL_max": 0.02,
+            "PRI_min": 0.95
+          },
+          "latency_ms": null,
+          "pri_score": null,
+          "risk_tier": "medium",
+          "run_id": "run_drac_internal_advisory",
           "safety_flags": {
-            "hitl_required": true,
-            "hitl_applied": false,
             "disinfo_filtered": true,
             "persona_debate_used": false
           },
+          "scenario_id": "drac_internal_advisory",
+          "schema_version": "1.1.0",
+          "status": "hitl_pending",
+          "strategy_chain": [
+            "ReActPattern_v1",
+            "TariffCompare_v1",
+            "HallucinationCheck_v1"
+          ],
+          "strategy_profile": "analysis_medium_internal",
+          "task_id": "task_internal_advisory",
+          "task_type": "internal_pricing_review",
+          "timestamp": "2025-09-12T18:52:28Z",
+          "token_count": null,
+          "tokens_input": null,
+          "tokens_output": null,
+          "workflow_id": "wf_drac_internal_advisory",
+          "workflow_run_id": "wf_run_drac_internal_advisory_01"
+        },
+        {
+          "agent_id": "agent.HCE_DRAC.GEN2",
+          "aud_score": 0.94,
+          "correlation_id": "corr_drac_pricing_case_2025Q4",
+          "event_type": "strategy_invocation",
+          "footprint_id": "fp_drac_pricing_case_002",
+          "hal_score": 0.009,
+          "hitl_actor": null,
+          "hitl_applied": false,
+          "hitl_required": false,
+          "kpi_targets": {
+            "AUD_min": 0.9,
+            "HAL_max": 0.02,
+            "PRI_min": 0.95
+          },
+          "latency_ms": 5800,
+          "pri_score": 0.96,
+          "risk_tier": "medium",
+          "run_id": "run_drac_pricing_case_2025Q4",
+          "safety_flags": {
+            "disinfo_filtered": true,
+            "persona_debate_used": false,
+            "pii_redaction": "selectors_only"
+          },
+          "scenario_id": "drac_pricing_case",
+          "schema_version": "1.1.0",
+          "status": "completed",
+          "strategy_chain": [
+            "CAPEConversation_v1",
+            "TariffCompare_v1",
+            "CertaintyReporter_v1",
+            "HallucinationCheck_v1"
+          ],
+          "strategy_profile": "analysis_medium_internal",
+          "task_id": "task_pricing_case_summary",
+          "task_type": "pricing_update",
+          "timestamp": "2025-10-14T15:11:00Z",
+          "token_count": 1520,
+          "tokens_input": 8800,
+          "tokens_output": 1620,
+          "workflow_id": "wf_drac_pricing_case",
+          "workflow_run_id": "wf_run_drac_pricing_case_07"
+        },
+        {
+          "agent_id": "agent.HCE_DRAC.GEN2",
+          "aud_score": 0.95,
+          "correlation_id": "corr_drac_board_brief_2025",
+          "event_type": "strategy_invocation",
+          "footprint_id": "fp_drac_board_brief_003",
+          "hal_score": 0.008,
+          "hitl_actor": "regulatory_counsel",
+          "hitl_applied": true,
           "hitl_required": true,
-          "hitl_actor": "incident_commander",
-          "status": "hitl_pending"
+          "kpi_targets": {
+            "AUD_min": 0.9,
+            "HAL_max": 0.02,
+            "PRI_min": 0.95
+          },
+          "latency_ms": 6400,
+          "pri_score": 0.97,
+          "risk_tier": "medium",
+          "run_id": "run_drac_board_brief_v1",
+          "safety_flags": {
+            "disinfo_filtered": true,
+            "persona_debate_used": true
+          },
+          "scenario_id": "drac_board_brief",
+          "schema_version": "1.1.0",
+          "status": "completed",
+          "strategy_chain": [
+            "PlannerScaffold_v1",
+            "ReActPattern_v1",
+            "DisinfoFilter_v1",
+            "HallucinationCheck_v1",
+            "CertaintyReporter_v1"
+          ],
+          "strategy_profile": "analysis_medium_internal",
+          "task_id": "task_board_brief",
+          "task_type": "board_brief",
+          "timestamp": "2025-10-20T09:41:00Z",
+          "token_count": 1710,
+          "tokens_input": 9100,
+          "tokens_output": 1280,
+          "workflow_id": "wf_drac_board_brief",
+          "workflow_run_id": "wf_run_drac_board_brief_02"
         }
       ]
     }

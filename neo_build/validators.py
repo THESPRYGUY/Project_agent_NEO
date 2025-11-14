@@ -93,8 +93,21 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
             ev.update(set(raw_events))
         except Exception:
             pass
-    al = set(obs.get("alerts", []))
-    out["checks"]["observability"] = set(REQUIRED_EVENTS).issubset(ev) and set(REQUIRED_ALERTS).issubset(al)
+    raw_alerts = obs.get("alerts", [])
+    alerts: Set[str] = set()
+    if isinstance(raw_alerts, Mapping):
+        for value in raw_alerts.values():
+            if isinstance(value, list):
+                for item in value:
+                    if isinstance(item, str):
+                        alerts.add(item)
+    elif isinstance(raw_alerts, list):
+        for item in raw_alerts:
+            if isinstance(item, str):
+                alerts.add(item)
+    elif isinstance(raw_alerts, str):
+        alerts.add(raw_alerts)
+    out["checks"]["observability"] = set(REQUIRED_EVENTS).issubset(ev) and set(REQUIRED_ALERTS).issubset(alerts)
     # Owners present
     owners = ((packs.get("09_Agent-Manifests_Catalog_v2.json") or {}).get("owners") or [])
     out["checks"]["owners_present"] = isinstance(owners, list) and len(owners) > 0
@@ -230,14 +243,23 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
     # 10
     p10 = packs.get("10_Prompt-Pack_v2.json") or {}
     for sec in ("modules", "reasoning_patterns", "guardrails", "output_contracts"):
-        ok = _nonempty_list(p10.get(sec)) if sec in ("modules", "reasoning_patterns") else _nonempty_dict(p10.get(sec))
+        if sec == "modules":
+            ok = _nonempty_list(p10.get(sec))
+        elif sec == "reasoning_patterns":
+            ok = _nonempty_dict(p10.get(sec))
+        else:
+            ok = _nonempty_dict(p10.get(sec))
         if not ok:
             missing_sections.setdefault("10_Prompt-Pack_v2.json", []).append(sec)
 
     # 11
     p11 = packs.get("11_Workflow-Pack_v2.json") or {}
     for sec in ("micro_loops", "graphs", "engine_adapters"):
-        if not _nonempty_list(p11.get(sec)):
+        if sec == "graphs":
+            ok = _nonempty_list(p11.get(sec))
+        else:
+            ok = _nonempty_dict(p11.get(sec))
+        if not ok:
             missing_sections.setdefault("11_Workflow-Pack_v2.json", []).append(sec)
     if not _nonempty_dict(p11.get("rollback")):
         missing_sections.setdefault("11_Workflow-Pack_v2.json", []).append("rollback")
@@ -299,7 +321,9 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
     p20 = packs.get("20_Overlay-Pack_Enterprise_v1.json") or {}
     for sec in ("refs", "policies", "brand", "legal", "stakeholders", "escalations"):
         val = p20.get(sec)
-        if sec in ("stakeholders",):
+        if sec == "stakeholders":
+            ok = _nonempty_list(val)
+        elif sec == "policies":
             ok = _nonempty_list(val)
         else:
             ok = _nonempty_dict(val)
