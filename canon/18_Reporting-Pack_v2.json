@@ -148,6 +148,8 @@
   },
   "strategy_performance": {
     "purpose": "Highlight how strategy profiles perform across PRI/HAL/AUD and runtime cost metrics.",
+    "eval_suite_ref": "14_KPI+Evaluation-Framework_v2.json#strategy_eval_suite",
+    "evaluation_sets_ref": "evaluation_sets/strategy_eval_suite_v1.json",
     "source_fields": {
       "reasoning_footprints": [
         "runtime_metrics.strategy_profile",
@@ -210,6 +212,31 @@
           "strategy_profile"
         ],
         "notes": "Derived from runtime_metrics.safety_flags and telemetry safety flags."
+      },
+      {
+        "id": "steelport_profile_comparison",
+        "scenario_id": "steelport_vpp_scenario",
+        "metrics": [
+          "avg_PRI",
+          "avg_HAL",
+          "avg_AUD"
+        ],
+        "dimensions": [
+          "strategy_profile"
+        ],
+        "notes": "Compare analysis_medium_internal vs regulatory_high_complex performance for Steelport VPP case."
+      },
+      {
+        "id": "regulatory_memo_cost_tradeoff",
+        "scenario_id": "generic_regulatory_memo",
+        "metrics": [
+          "token_count_p95",
+          "latency_ms_p95"
+        ],
+        "dimensions": [
+          "strategy_profile"
+        ],
+        "notes": "Contrast regulatory_high_complex vs governance_incident_high runtime costs for regulatory memos."
       }
     ]
   },

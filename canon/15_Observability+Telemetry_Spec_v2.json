@@ -73,6 +73,7 @@
       "workflow_id",
       "task_id",
       "footprint_id",
+      "scenario_id",
       "strategy_profile",
       "strategy_chain",
       "task_type",
@@ -185,7 +186,7 @@
     },
     {
       "name": "strategy_invocation",
-      "description": "Emitted whenever a workflow executes a strategy_chain with KPI deltas and HITL context. Each event MUST include footprint_id referencing the associated Reasoning Footprint entry.",
+      "description": "Emitted whenever a workflow executes a strategy_chain with KPI deltas and HITL context. Each event MUST include footprint_id referencing the associated Reasoning Footprint entry and scenario_id when the run originates from an evaluation_set.",
       "severity": "info",
       "metrics": [
         "strategy_invocations",
@@ -202,6 +203,7 @@
         "workflow_id",
         "task_id",
         "footprint_id",
+        "scenario_id",
         "strategy_profile",
         "strategy_chain",
         "task_type",
@@ -228,6 +230,7 @@
             "CertaintyReporter_v1"
           ],
           "task_type": "regulatory_filing",
+          "scenario_id": "steelport_vpp_scenario",
           "risk_tier": "high",
           "token_count": 1834,
           "latency_ms": 4800,
@@ -254,6 +257,7 @@
             "CertaintyReporter_v1"
           ],
           "task_type": "incident_postmortem",
+          "scenario_id": "generic_regulatory_memo",
           "risk_tier": "high",
           "token_count": 1420,
           "latency_ms": 7200,
