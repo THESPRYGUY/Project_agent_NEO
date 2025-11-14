@@ -15,6 +15,8 @@
         "semantic:policy/*"
       ],
       "mission": "Test outputs for quality/safety/compliance; own red-team suites and regression certification.",
+      "strategy_profile": "governance_incident_high",
+      "risk_tier": "high",
       "outputs_contract": "Eval_Report.schema.json"
     },
     {
@@ -32,6 +34,8 @@
         "semantic:templates/*"
       ],
       "mission": "Produce artifacts (code/docs/datasets/configs) within guardrails; package releases and data packs.",
+      "strategy_profile": "analysis_medium_internal",
+      "risk_tier": "medium",
       "outputs_contract": "Build_Artifact.schema.json"
     },
     {
@@ -49,6 +53,8 @@
         "semantic:workflows/*"
       ],
       "mission": "Decompose tasks; design dependency-aware plans; route steps to tools/agents with gates/HITL as needed.",
+      "strategy_profile": "analysis_medium_internal",
+      "risk_tier": "medium",
       "outputs_contract": "Plan_Contract.schema.json"
     },
     {
@@ -66,6 +72,8 @@
         "semantic:domain/*"
       ],
       "mission": "Discover, retrieve, and synthesize cited knowledge; produce compact, source-grounded briefs.",
+      "strategy_profile": "research_rag_medium",
+      "risk_tier": "medium",
       "outputs_contract": "Brief_Contract.schema.json"
     }
   ],

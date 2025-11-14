@@ -11,6 +11,8 @@
       "display_name": "Turkey R&D Agent",
       "notes": "Primary GEN2 agent manifest entry.",
       "owner": "CAIO",
+      "strategy_profile": "analysis_medium_internal",
+      "risk_tier": "medium",
       "owners": [
         "CAIO",
         "CPA",
