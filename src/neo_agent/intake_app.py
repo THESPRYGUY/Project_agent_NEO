@@ -265,6 +265,7 @@ FORM_TEMPLATE = Template(
             .summary { margin-top: 2rem; }
             .summary pre { background: #0b1b36; color: #e3f6f5; padding: 1rem; border-radius: 8px; }
             .notice { margin-bottom: 1rem; color: #205072; }
+            .form-error { color: #b71c1c; margin-top: 0.35rem; font-size: 0.9rem; }
             .generate-agent { display: flex; justify-content: flex-end; margin-top: 1rem; }
             /* Build Panel styles */
             .build-panel { position: relative; margin-top: 1.5rem; padding: 1rem; background: #ffffff; border: 1px solid #dbe2ef; border-radius: 8px; box-shadow: 0 2px 6px rgba(0,0,0,0.05); }
@@ -478,7 +479,8 @@ $build_panel_styles
             <fieldset>
                 <legend>Advanced Overrides (JSON)</legend>
                 <label>Overrides
-                    <textarea name="advanced_overrides" rows="6" placeholder='{ }'></textarea>
+                    <textarea name="advanced_overrides" rows="6" placeholder='{ }'>$advanced_overrides</textarea>
+                    $advanced_overrides_error
                 </label>
             </fieldset>
 
@@ -607,6 +609,34 @@ def _notice(message: str | None) -> str:
     if not message:
         return ""
     return f'<div class="notice"><p>{message}</p></div>'
+
+
+INTERNAL_PREFIXES = ("_",)
+INTERNAL_KEYS = {"validation_errors", "errors"}
+
+
+def _safe_summary_profile(
+    profile: Mapping[str, Any] | None
+) -> Mapping[str, Any] | None:
+    if not isinstance(profile, Mapping) or not profile:
+        return None
+    clean: dict[str, Any] = {}
+    for key, value in profile.items():
+        try:
+            if any(str(key).startswith(prefix) for prefix in INTERNAL_PREFIXES):
+                continue
+            if str(key) in INTERNAL_KEYS:
+                continue
+        except Exception:
+            continue
+        clean[str(key)] = value
+    return clean
+
+
+def _render_field_error(message: str | None) -> str:
+    if not message:
+        return ""
+    return f'<div class="form-error">{html.escape(message)}</div>'
 
 
 def _summary_block(
@@ -1622,7 +1652,9 @@ class IntakeApplication:
         *,
         message: str | None = None,
         profile: Mapping[str, Any] | None = None,
+        errors: Mapping[str, Any] | None = None,
     ) -> str:
+        errors = errors or {}
         submitted_profile_arg = (
             profile if isinstance(profile, Mapping) and profile else None
         )
@@ -2046,6 +2078,28 @@ window.addEventListener('DOMContentLoaded', function () {
         agent_name = _str(agent_section.get("name", ""))
         agent_version = _str(agent_section.get("version", "1.0.0")) or "1.0.0"
         notes_value = _str(profile.get("notes") if isinstance(profile, Mapping) else "")
+        advanced_overrides_value = ""
+        try:
+            if isinstance(profile, Mapping):
+                raw_adv = profile.get("_raw_advanced_overrides")
+                if isinstance(raw_adv, str) and raw_adv.strip():
+                    advanced_overrides_value = raw_adv
+                else:
+                    adv_val = profile.get("advanced_overrides")
+                    if isinstance(adv_val, Mapping):
+                        advanced_overrides_value = json.dumps(
+                            adv_val, ensure_ascii=False, indent=2
+                        )
+        except Exception:
+            advanced_overrides_value = ""
+        advanced_overrides_error = ""
+        try:
+            if isinstance(errors, Mapping):
+                err_msg = errors.get("advanced_overrides")
+                if err_msg:
+                    advanced_overrides_error = _render_field_error(str(err_msg))
+        except Exception:
+            advanced_overrides_error = ""
 
         communication_options = _option_list(
             COMMUNICATION_STYLES, selected=communication_style
@@ -2102,13 +2156,19 @@ window.addEventListener('DOMContentLoaded', function () {
 
         # JSON viewer: prefer submitted profile, else last-saved on disk
         submitted_profile = submitted_profile_arg
-        summary_source = submitted_profile
-        if summary_source is None:
-            summary_source = self._safe_read_json(self.profile_path, None)
-            if not isinstance(summary_source, Mapping):
-                summary_source = None
-        summary_html = _summary_block(
-            summary_source, str(self.profile_path), str(self.spec_dir)
+        summary_source: Mapping[str, Any] | None = None
+        if not errors:
+            if submitted_profile is not None:
+                summary_source = _safe_summary_profile(submitted_profile)
+            else:
+                saved = self._safe_read_json(self.profile_path, None)
+                summary_source = _safe_summary_profile(
+                    saved if isinstance(saved, Mapping) else None
+                )
+        summary_html = (
+            _summary_block(summary_source, str(self.profile_path), str(self.spec_dir))
+            if summary_source
+            else ""
         )
 
         # NAICS coercion to strings before escaping/injecting
@@ -2168,6 +2228,8 @@ window.addEventListener('DOMContentLoaded', function () {
             agent_version=html.escape(agent_version, quote=True),
             agent_id=html.escape(agent_id_value or "", quote=True),
             notes=html.escape(notes_value or "", quote=True),
+            advanced_overrides=html.escape(advanced_overrides_value or "", quote=True),
+            advanced_overrides_error=advanced_overrides_error or "",
             communication_options=communication_options,
             collaboration_options=collaboration_options,
             autonomy_value=str(autonomy_value),
@@ -2500,7 +2562,7 @@ window.addEventListener('DOMContentLoaded', function () {
         self,
         params: Mapping[str, list[str] | str],
         persona_state: Mapping[str, Any] | None,
-    ) -> Mapping[str, Any]:
+    ) -> tuple[Mapping[str, Any], dict[str, str]]:
         def _get(name: str, default: str = "") -> str:
             v = params.get(name)
             if isinstance(v, list):
@@ -2663,7 +2725,38 @@ window.addEventListener('DOMContentLoaded', function () {
                 _telemetry.emit_event("persona:selected", meta)
         except Exception:
             pass
-        return profile
+        errors: dict[str, str] = {}
+
+        advanced_overrides_raw = _get("advanced_overrides").strip()
+        if advanced_overrides_raw:
+            profile["_raw_advanced_overrides"] = advanced_overrides_raw
+            try:
+                advanced_overrides_value = json.loads(advanced_overrides_raw)
+            except Exception:
+                errors["advanced_overrides"] = "Advanced Overrides must be valid JSON"
+                try:
+                    LOGGER.warning(
+                        "advanced_overrides_json_invalid",
+                        extra={"error": "json_decode_failed"},
+                    )
+                except Exception:
+                    pass
+            else:
+                if not isinstance(advanced_overrides_value, Mapping):
+                    errors["advanced_overrides"] = (
+                        "Advanced Overrides JSON must be an object"
+                    )
+                    try:
+                        LOGGER.warning(
+                            "advanced_overrides_json_invalid",
+                            extra={"error": "non_object_payload"},
+                        )
+                    except Exception:
+                        pass
+                else:
+                    profile["advanced_overrides"] = advanced_overrides_value
+
+        return profile, errors
 
     # ------------------------------- WSGI layer -------------------------------
     def wsgi_app(self, environ: Mapping[str, Any], start_response) -> Iterable[bytes]:
@@ -3884,6 +3977,8 @@ window.addEventListener('DOMContentLoaded', function () {
         if path == "/" and method in {"GET", "POST"}:
             notice = None
             form_profile: Mapping[str, Any] | None = None
+            form_errors: dict[str, str] = {}
+            raw_advanced_overrides = ""
             if method == "POST":
                 try:
                     length = int(environ.get("CONTENT_LENGTH") or 0)
@@ -3891,7 +3986,56 @@ window.addEventListener('DOMContentLoaded', function () {
                     length = 0
                 raw = (environ.get("wsgi.input").read(length) if length else b"") or b""
                 params = parse_qs(raw.decode("utf-8"), keep_blank_values=True)
-                form_profile = self._build_profile(params, self._load_persona_state())
+                form_profile, form_errors = self._build_profile(
+                    params, self._load_persona_state()
+                )
+                if isinstance(form_profile, Mapping):
+                    try:
+                        raw_adv_val = form_profile.get("_raw_advanced_overrides")
+                        raw_advanced_overrides = (
+                            str(raw_adv_val).strip() if raw_adv_val else ""
+                        )
+                    except Exception:
+                        raw_advanced_overrides = ""
+                    form_profile = dict(form_profile)
+                    form_profile.pop("_raw_advanced_overrides", None)
+                else:
+                    form_profile = {}
+
+                try:
+                    notice = self._save_persona_state(params)
+                except Exception:
+                    notice = "Failed to persist persona state"
+
+                # Validation guard: do not save if advanced_overrides failed to parse
+                if form_errors:
+                    render_profile = dict(form_profile)
+                    if raw_advanced_overrides:
+                        render_profile["_raw_advanced_overrides"] = (
+                            raw_advanced_overrides
+                        )
+                    error_text = "; ".join(str(v) for v in form_errors.values())
+                    validation_notice = f"Validation error: {error_text}"
+                    if notice:
+                        notice = f"{notice} ({validation_notice})"
+                    else:
+                        notice = validation_notice
+                    body_html = self.render_form(
+                        message=notice, profile=render_profile, errors=form_errors
+                    )
+                    body_bytes = body_html.encode("utf-8")
+                    headers = self._ensure_content_length(
+                        [
+                            ("Content-Type", "text/html; charset=utf-8"),
+                            ("Cache-Control", "no-store, must-revalidate"),
+                            ("Pragma", "no-cache"),
+                            ("Expires", "0"),
+                            ("X-NEO-Intake-Version", INTAKE_BUILD_TAG),
+                        ],
+                        len(body_bytes),
+                    )
+                    start_response("200 OK", headers)
+                    return [body_bytes]
 
                 # Sprint-1: Normalize v3 context/role into builder keys and build repo immediately
                 try:
@@ -4107,7 +4251,15 @@ window.addEventListener('DOMContentLoaded', function () {
                 except Exception as exc:
                     notice = f"Failed to generate specs: {exc}"
 
-            body_html = self.render_form(message=notice, profile=form_profile)
+            render_profile = (
+                dict(form_profile) if isinstance(form_profile, Mapping) else {}
+            )
+            if raw_advanced_overrides:
+                render_profile["_raw_advanced_overrides"] = raw_advanced_overrides
+
+            body_html = self.render_form(
+                message=notice, profile=render_profile, errors=form_errors
+            )
             body_bytes = body_html.encode("utf-8")
             headers = self._ensure_content_length(
                 [
