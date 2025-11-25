@@ -163,6 +163,113 @@ def test_api_agent_generate_endpoint(app: IntakeApplication, temp_base_dir: Path
     assert repos_dir.exists()
 
 
+def test_api_generate_accepts_json_profile_payload(
+    app: IntakeApplication, temp_base_dir: Path
+) -> None:
+    profile = {
+        "agent": {"name": "JSON Agent", "version": "1.0.0"},
+        "identity": {"agent_id": "json-123", "display_name": "JSON Agent"},
+        "business_function": "Finance & Accounting",
+        "role": {
+            "code": "AIA-M",
+            "title": "Financial Controller",
+            "seniority": "Manager",
+        },
+        "classification": {
+            "naics": {
+                "code": "541211",
+                "title": "Offices of Certified Public Accountants",
+                "level": 6,
+            }
+        },
+        "context": {"region": ["US"]},
+        "advanced_overrides": {"foo": "bar"},
+    }
+    body_dict = {"profile": profile}
+    raw = json.dumps(body_dict).encode("utf-8")
+    environ = {
+        "REQUEST_METHOD": "POST",
+        "PATH_INFO": "/api/agent/generate",
+        "CONTENT_LENGTH": str(len(raw)),
+        "CONTENT_TYPE": "application/json",
+        "wsgi.input": io.BytesIO(raw),
+    }
+
+    responses: list[tuple[str, list]] = []
+
+    def start_response(status: str, headers: list):
+        responses.append((status, headers))
+
+    result = list(app.wsgi_app(environ, start_response))
+    assert responses[0][0] == "200 OK"
+    payload = json.loads(b"".join(result).decode("utf-8"))
+    assert payload.get("status") == "ok"
+    out_dir = Path(payload.get("out_dir"))
+    assert out_dir.exists()
+
+    profile_path = temp_base_dir / "agent_profile.json"
+    saved_profile = json.loads(profile_path.read_text(encoding="utf-8"))
+    assert saved_profile.get("advanced_overrides") == {"foo": "bar"}
+
+
+def test_api_generate_rejects_json_profile_with_invalid_advanced_overrides(
+    app: IntakeApplication, temp_base_dir: Path
+) -> None:
+    profile = {
+        "agent": {"name": "JSON Agent", "version": "1.0.0"},
+        "identity": {"agent_id": "json-123", "display_name": "JSON Agent"},
+        "advanced_overrides": ["not", "a", "dict"],
+    }
+    raw = json.dumps({"profile": profile}).encode("utf-8")
+    environ = {
+        "REQUEST_METHOD": "POST",
+        "PATH_INFO": "/api/agent/generate",
+        "CONTENT_LENGTH": str(len(raw)),
+        "CONTENT_TYPE": "application/json",
+        "wsgi.input": io.BytesIO(raw),
+    }
+
+    responses: list[tuple[str, list]] = []
+
+    def start_response(status: str, headers: list):
+        responses.append((status, headers))
+
+    result = b"".join(app.wsgi_app(environ, start_response))
+    assert responses[0][0] == "400 Bad Request"
+    payload = json.loads(result.decode("utf-8"))
+    assert payload.get("status") == "invalid"
+    assert "advanced_overrides" in (payload.get("errors") or {})
+    assert not (temp_base_dir / "agent_profile.json").exists()
+    repo_root = temp_base_dir / "generated_repos"
+    assert not any(repo_root.rglob("*.json"))
+
+
+def test_api_generate_rejects_json_without_profile_key(
+    app: IntakeApplication, temp_base_dir: Path
+) -> None:
+    raw = json.dumps({"foo": "bar"}).encode("utf-8")
+    environ = {
+        "REQUEST_METHOD": "POST",
+        "PATH_INFO": "/api/agent/generate",
+        "CONTENT_LENGTH": str(len(raw)),
+        "CONTENT_TYPE": "application/json",
+        "wsgi.input": io.BytesIO(raw),
+    }
+
+    responses: list[tuple[str, list]] = []
+
+    def start_response(status: str, headers: list):
+        responses.append((status, headers))
+
+    result = b"".join(app.wsgi_app(environ, start_response))
+    assert responses[0][0] == "400 Bad Request"
+    payload = json.loads(result.decode("utf-8"))
+    assert payload.get("status") == "invalid"
+    assert not (temp_base_dir / "agent_profile.json").exists()
+    repo_root = temp_base_dir / "generated_repos"
+    assert not any(repo_root.rglob("*.json"))
+
+
 def test_agent_id_persists_across_rerender(app: IntakeApplication, temp_base_dir: Path):
     """Test that agent_id persists in the form after submission."""
     test_agent_id = "persistent-agent-123"

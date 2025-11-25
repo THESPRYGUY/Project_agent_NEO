@@ -2906,6 +2906,30 @@ window.addEventListener('DOMContentLoaded', function () {
         profile = self._merge_with_last_saved_profile(profile)
         return profile, errors, raw_advanced_overrides
 
+    def _canonical_profile_from_json_profile(
+        self, profile: Mapping[str, Any]
+    ) -> tuple[Mapping[str, Any], dict[str, str]]:
+        """Validate and normalize a JSON profile payload for builder consumption."""
+        errors: dict[str, str] = {}
+        if not isinstance(profile, Mapping):
+            return {}, {"profile": "Profile must be an object"}
+        profile_dict = dict(profile)
+        if "advanced_overrides" in profile_dict:
+            adv_val = profile_dict.get("advanced_overrides")
+            if not isinstance(adv_val, Mapping):
+                errors["advanced_overrides"] = (
+                    "Advanced Overrides JSON must be an object"
+                )
+        if errors:
+            return profile_dict, errors
+        try:
+            normalized = normalize_context_role(profile_dict)
+            profile_dict.update(normalized)
+        except Exception:
+            pass
+        profile_dict = self._merge_with_last_saved_profile(profile_dict)
+        return profile_dict, errors
+
     # ------------------------------- WSGI layer -------------------------------
     def wsgi_app(self, environ: Mapping[str, Any], start_response) -> Iterable[bytes]:
         method = str(environ.get("REQUEST_METHOD", "GET")).upper()
@@ -3495,15 +3519,70 @@ window.addEventListener('DOMContentLoaded', function () {
             except Exception:
                 length = 0
             body = (environ.get("wsgi.input").read(length) if length else b"") or b""
-            params = parse_qs(body.decode("utf-8"), keep_blank_values=True)
-            profile, errors, _ = self._canonical_profile_from_params(params)
-            if errors or not isinstance(profile, Mapping):
-                payload = json.dumps(
-                    {"status": "invalid", "errors": errors or {"profile": "Invalid"}}
-                ).encode("utf-8")
-                headers = _std_headers("application/json", len(payload))
-                start_response("400 Bad Request", headers)
-                return [payload]
+            content_type = str(environ.get("CONTENT_TYPE") or "")
+            is_json = "json" in content_type.lower()
+            if is_json:
+                try:
+                    payload_obj = json.loads(body.decode("utf-8") or "{}")
+                except Exception as exc:
+                    payload = json.dumps(
+                        {
+                            "status": "invalid",
+                            "errors": {"json": f"Invalid JSON: {exc}"},
+                        }
+                    ).encode("utf-8")
+                    headers = _std_headers("application/json", len(payload))
+                    start_response("400 Bad Request", headers)
+                    return [payload]
+                if not isinstance(payload_obj, Mapping):
+                    payload = json.dumps(
+                        {
+                            "status": "invalid",
+                            "errors": {
+                                "profile": "Payload must be an object containing 'profile'"
+                            },
+                        }
+                    ).encode("utf-8")
+                    headers = _std_headers("application/json", len(payload))
+                    start_response("400 Bad Request", headers)
+                    return [payload]
+                profile_raw = payload_obj.get("profile")
+                if not isinstance(profile_raw, Mapping):
+                    payload = json.dumps(
+                        {
+                            "status": "invalid",
+                            "errors": {
+                                "profile": "Missing or invalid 'profile' in JSON payload"
+                            },
+                        }
+                    ).encode("utf-8")
+                    headers = _std_headers("application/json", len(payload))
+                    start_response("400 Bad Request", headers)
+                    return [payload]
+                profile, errors = self._canonical_profile_from_json_profile(profile_raw)
+                if errors or not isinstance(profile, Mapping):
+                    payload = json.dumps(
+                        {
+                            "status": "invalid",
+                            "errors": errors or {"profile": "Invalid profile payload"},
+                        }
+                    ).encode("utf-8")
+                    headers = _std_headers("application/json", len(payload))
+                    start_response("400 Bad Request", headers)
+                    return [payload]
+            else:
+                params = parse_qs(body.decode("utf-8"), keep_blank_values=True)
+                profile, errors, _ = self._canonical_profile_from_params(params)
+                if errors or not isinstance(profile, Mapping):
+                    payload = json.dumps(
+                        {
+                            "status": "invalid",
+                            "errors": errors or {"profile": "Invalid"},
+                        }
+                    ).encode("utf-8")
+                    headers = _std_headers("application/json", len(payload))
+                    start_response("400 Bad Request", headers)
+                    return [payload]
 
             try:
                 with self.profile_path.open("w", encoding="utf-8") as handle:
