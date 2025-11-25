@@ -26,7 +26,8 @@ def test_mbti_selection_emits_persona_event(monkeypatch, tmp_path: Path) -> None
     }
     parsed = {key: [value] for key, value in form_data.items()}
 
-    profile = app._build_profile(parsed, {})
+    profile, errors = app._build_profile(parsed, {})
+    assert not errors
 
     assert len(captured) == 1
     event = captured[0]
