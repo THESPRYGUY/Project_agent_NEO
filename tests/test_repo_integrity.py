@@ -131,8 +131,27 @@ def test_20_pack_presence_and_integrity(tmp_path: Path) -> None:
             encoding="utf-8"
         )
     )
-    assert set(REQUIRED_EVENTS).issubset(set(obs.get("events", [])))
-    assert set(REQUIRED_ALERTS).issubset(set(obs.get("alerts", [])))
+    events = obs.get("events", [])
+    event_names = set()
+    for item in events or []:
+        if isinstance(item, dict):
+            name = item.get("name")
+            if isinstance(name, str):
+                event_names.add(name)
+        elif isinstance(item, str):
+            event_names.add(item)
+    alerts = obs.get("alerts", [])
+    alert_names = set()
+    if isinstance(alerts, dict):
+        for value in alerts.values():
+            if isinstance(value, list):
+                alert_names.update({entry for entry in value if isinstance(entry, str)})
+    elif isinstance(alerts, list):
+        alert_names.update({entry for entry in alerts if isinstance(entry, str)})
+    elif isinstance(alerts, str):
+        alert_names.add(alerts)
+    assert set(REQUIRED_EVENTS).issubset(event_names)
+    assert set(REQUIRED_ALERTS).issubset(alert_names)
 
     # Human gate actions include required
     rules = json.loads(
