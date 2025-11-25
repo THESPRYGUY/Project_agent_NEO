@@ -14,7 +14,7 @@ import json
 import shutil
 from copy import deepcopy
 from functools import lru_cache
-from typing import Any, Dict, List, Mapping, Tuple
+from typing import Any, Dict, List, Mapping, Tuple, Optional
 
 from .contracts import (
     CANONICAL_PACK_FILENAMES,
@@ -546,6 +546,32 @@ def _dget(mapping: Mapping[str, Any] | None, path: str, default: Any = None) -> 
     return cur if cur is not None else default
 
 
+def _advanced_overrides(profile: Mapping[str, Any]) -> Dict[str, Any]:
+    adv = _get(profile, "advanced_overrides", {}) or {}
+    if not isinstance(adv, Mapping):
+        return {}
+    overrides = adv.get("overrides")
+    return overrides if isinstance(overrides, Mapping) else adv
+
+
+def _extract_engagement_notes(profile: Mapping[str, Any]) -> Dict[str, Any]:
+    """Parse engagement notes from dedicated key or JSON string."""
+
+    notes = _get(profile, "engagement_notes")
+    if isinstance(notes, Mapping):
+        return dict(notes)
+
+    raw = _get(profile, "notes", "")
+    if isinstance(raw, str):
+        try:
+            parsed = json.loads(raw)
+            if isinstance(parsed, Mapping):
+                return dict(parsed.get("engagement_notes") or parsed)
+        except Exception:
+            return {}
+    return {}
+
+
 def _profile_sections(
     profile: Mapping[str, Any]
 ) -> Tuple[dict, dict, dict, dict, dict, dict, dict]:
@@ -610,11 +636,32 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
     agent = _get(profile, "agent", {}) or {}
     agent_id = str(_get(identity, "agent_id", ""))
     naics = _naics_summary(profile)
+    adv_overrides = _advanced_overrides(profile)
+    adv_kpi_overrides = _get(adv_overrides, "kpi", {})
+    behavior_overrides = _get(adv_overrides, "behavior", {})
+    output_defaults = _get(adv_overrides, "output_defaults", {})
+    style_overrides = _get(adv_overrides, "style", {})
+    guardrail_overrides = _get(adv_overrides, "guardrails", {})
+    engagement_notes = _extract_engagement_notes(profile)
+    toolsets = _get(profile, "toolsets", {}) or {}
+    attributes = _get(profile, "attributes", {}) or {}
+    sliders = _get(preferences, "sliders", {}) if isinstance(preferences, Mapping) else {}
+    collaboration_slider = sliders.get("collaboration")
+    confidence_slider = sliders.get("confidence")
+    persona_value: Optional[str] = None
+    for candidate in (
+        _dget(profile, "agent.persona", None),
+        _dget(profile, "persona.agent.code", None),
+        _dget(profile, "persona.code", None),
+    ):
+        if isinstance(candidate, str) and candidate.strip():
+            persona_value = candidate.strip()
+            break
     eff_autonomy = compute_effective_autonomy(
         preferences, _get(profile, "routing_defaults", {})
     )
     files = list(CANONICAL_PACK_FILENAMES)
-    kpi_targets = kpi_targets_sync()
+    kpi_targets = kpi_targets_sync(overrides=adv_kpi_overrides, profile=profile)
     governance_data = governance_eval or {}
     governance_pii_flags = normalise_pii_flags(
         _get(governance_data, "pii_flags", []) or []
@@ -640,6 +687,36 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
     )
     p02.setdefault("context", {})["naics"] = naics
     p02["effective_autonomy"] = eff_autonomy
+    defaults_block = p02.setdefault("defaults", {})
+    if persona_value:
+        defaults_block["persona"] = persona_value
+        defaults_block.pop("persona_inferred", None)
+    else:
+        defaults_block["persona"] = ""
+        defaults_block["persona_inferred"] = True
+    if isinstance(style_overrides, Mapping):
+        tone = style_overrides.get("tone")
+        fmt = style_overrides.get("default_format")
+        avoid = style_overrides.get("avoid")
+        if tone:
+            defaults_block["tone"] = tone
+        if fmt:
+            defaults_block["format_default"] = fmt
+        if isinstance(avoid, list) and avoid:
+            defaults_block["style_avoid"] = list(avoid)
+    routing_policy = p02.setdefault("agentic_policies", {}).setdefault("routing", {})
+    try:
+        collab_ratio = float(collaboration_slider) / 100.0 if collaboration_slider is not None else None
+    except Exception:
+        collab_ratio = None
+    try:
+        confidence_ratio = float(confidence_slider) / 100.0 if confidence_slider is not None else None
+    except Exception:
+        confidence_ratio = None
+    if collab_ratio is not None:
+        routing_policy["ask_before_assuming"] = collab_ratio >= 0.7
+    if confidence_ratio is not None:
+        routing_policy["confidence_hint"] = round(confidence_ratio, 3)
     refs = p02.setdefault("references", {})
     refs["reasoning_schema"] = "16_Reasoning-Footprints_Schema_v1.json"
     refs["memory_schema"] = "08_Memory-Schema_v2.json"
@@ -681,11 +758,15 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
     p03.setdefault("rbac", {})["roles"] = roles_out
     gates = p03.setdefault("gates", {})
     gates["activation"] = [
-        f"PRI>={KPI_TARGETS.get('PRI_min')}",
-        f"HAL<={KPI_TARGETS.get('HAL_max')}",
-        f"AUD>={KPI_TARGETS.get('AUD_min')}",
+        f"PRI>={kpi_targets.get('PRI_min')}",
+        f"HAL<={kpi_targets.get('HAL_max')}",
+        f"AUD>={kpi_targets.get('AUD_min')}",
     ]
     gates["effective_autonomy"] = eff_autonomy
+    if isinstance(guardrail_overrides, Mapping) and guardrail_overrides:
+        p03.setdefault("guardrail_overrides", {}).update(
+            {k: v for k, v in guardrail_overrides.items() if k}
+        )
     packs["03_Operating-Rules_v2.json"] = p03
     (out_dir / "03_Operating-Rules_v2.json").write_text(
         json.dumps(p03, indent=2, ensure_ascii=False, sort_keys=True) + "\n",
@@ -732,6 +813,8 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
     p05["no_impersonation"] = bool(_get(identity, "no_impersonation", True))
     p05["pii_mask_on_ingest"] = True
     p05.setdefault("privacy_policies", {})["pii_flags"] = privacy_pii_flags
+    if isinstance(guardrail_overrides, Mapping) and guardrail_overrides:
+        p05.setdefault("guardrail_overrides", {}).update(guardrail_overrides)
     persist("05_Safety+Privacy_Guardrails_v2.json", p05)
 
     # 06 Role Recipes Index
@@ -864,6 +947,58 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
     agent_entry["owners"] = owners
     agent_entry["agent_id"] = agent_id
     agent_entry["role_title"] = selected_role_title
+    selected_toolsets = toolsets.get("selected") if isinstance(toolsets, Mapping) else None
+    if isinstance(selected_toolsets, list) and selected_toolsets:
+        caps = list(agent_entry.get("capabilities", []) or [])
+        caps.extend([str(c) for c in selected_toolsets if c])
+        agent_entry["capabilities"] = _dedupe_preserve_order(caps)
+    selected_attributes = attributes.get("selected") if isinstance(attributes, Mapping) else None
+    if isinstance(selected_attributes, list) and selected_attributes:
+        traits = list(agent_entry.get("traits", []) or [])
+        traits.extend([str(t) for t in selected_attributes if t])
+        agent_entry["traits"] = _dedupe_preserve_order(traits)
+    mem_scopes_manifest = _dget(profile, "memory.scopes", _get(memory, "memory_scopes", []))
+    if isinstance(mem_scopes_manifest, list) and mem_scopes_manifest:
+        agent_entry["memory_scopes"] = _dedupe_preserve_order(
+            [str(s) for s in mem_scopes_manifest if s]
+        )
+    bias = behavior_overrides.get("bias") if isinstance(behavior_overrides, Mapping) else None
+    focus_domains = behavior_overrides.get("focus_domains") if isinstance(behavior_overrides, Mapping) else None
+    tags = list(agent_entry.get("tags", []) or [])
+    if bias:
+        tags.append(str(bias))
+    if isinstance(focus_domains, list):
+        tags.extend([str(d) for d in focus_domains if d])
+    if tags:
+        agent_entry["tags"] = _dedupe_preserve_order(tags)
+    note_parts: List[str] = []
+    if bias:
+        note_parts.append(f"Behavior bias: {bias}")
+    if focus_domains:
+        note_parts.append(f"Focus domains: {', '.join([str(d) for d in focus_domains if d])}")
+    if style_overrides:
+        tone = style_overrides.get("tone")
+        fmt = style_overrides.get("default_format")
+        avoid = style_overrides.get("avoid")
+        style_parts = []
+        if tone:
+            style_parts.append(f"tone={tone}")
+        if fmt:
+            style_parts.append(f"format={fmt}")
+        if avoid:
+            style_parts.append(f"avoid={', '.join([str(a) for a in avoid if a])}")
+        if style_parts:
+            note_parts.append("Style: " + "; ".join(style_parts))
+    if note_parts:
+        existing_notes = str(agent_entry.get("notes", "") or "").strip()
+        merged = "; ".join(note_parts)
+        agent_entry["notes"] = merged if not existing_notes else f"{existing_notes} | {merged}"
+    if engagement_notes:
+        agent_entry["engagement_notes"] = {
+            k: v
+            for k, v in engagement_notes.items()
+            if k in {"mission", "user_profile", "operating_mode", "interaction_preferences", "success_criteria_90d", "prompting_tips_for_user"}
+        }
     strategy_defaults = _agent_strategy_defaults()
     for card in p09.get("agents", []):
         if not isinstance(card, dict):
@@ -879,6 +1014,78 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
 
     # 10 Prompt Pack
     p10 = _attach_agent_meta(_pack_template("10_Prompt-Pack_v2.json"), agent_id)
+    if isinstance(style_overrides, Mapping):
+        style_block = p10.setdefault("style_defaults", {})
+        if style_overrides.get("tone"):
+            style_block["tone"] = style_overrides.get("tone")
+        if style_overrides.get("default_format"):
+            style_block["default_format"] = style_overrides.get("default_format")
+        if isinstance(style_overrides.get("avoid"), list):
+            style_block["avoid"] = list(style_overrides.get("avoid"))
+    strategy_defaults = p10.setdefault("strategy_defaults", {})
+    if bias:
+        strategy_defaults["bias"] = bias
+    if isinstance(focus_domains, list) and focus_domains:
+        strategy_defaults["focus_domains"] = list(focus_domains)
+    response_prefs = p10.setdefault("response_preferences", {})
+    if collab_ratio is not None:
+        response_prefs["ask_before_assuming"] = collab_ratio >= 0.7
+    if confidence_ratio is not None:
+        response_prefs["confidence_hint"] = round(confidence_ratio, 3)
+    if engagement_notes:
+        p10["engagement_notes"] = engagement_notes
+
+    def _upsert_output_contract(name: str, payload: Mapping[str, Any]) -> None:
+        contracts = p10.setdefault("output_contracts", [])
+        for entry in contracts:
+            if isinstance(entry, Mapping) and entry.get("name") == name:
+                entry.update(payload)
+                return
+        merged = {"name": name}
+        merged.update(payload)
+        contracts.append(merged)
+
+    large_sections = _dget(output_defaults, "large_response.sections", [])
+    if isinstance(large_sections, list) and large_sections:
+        _upsert_output_contract(
+            "Large_Response_Template_v1",
+            {
+                "fields_min": list(large_sections),
+                "notes": ["Structured large response template derived from intake output_defaults.large_response"],
+            },
+        )
+
+    checklist_cfg = _get(output_defaults, "daily_checklist", {})
+    if isinstance(checklist_cfg, Mapping) and checklist_cfg:
+        fields = ["items"]
+        if checklist_cfg.get("include_due_timing"):
+            fields.append("due_timing")
+        grouping = checklist_cfg.get("group_by")
+        contract: Dict[str, Any] = {
+            "fields_min": fields,
+            "max_items": checklist_cfg.get("max_items"),
+        }
+        if isinstance(grouping, list) and grouping:
+            contract["group_by"] = grouping
+        _upsert_output_contract("Daily_Checklist_v1", contract)
+
+    outreach_cfg = _get(output_defaults, "weekly_outreach_plan", {})
+    if isinstance(outreach_cfg, Mapping) and outreach_cfg:
+        contract = {
+            "fields_min": ["utilities", "rankings", "rationale"],
+            "rank_by": outreach_cfg.get("rank_by"),
+            "max_utilities": outreach_cfg.get("max_utilities"),
+            "format": outreach_cfg.get("format"),
+        }
+        _upsert_output_contract("Weekly_Outreach_Plan_v1", contract)
+
+    site_summary_cfg = _get(output_defaults, "site_summary", {})
+    if isinstance(site_summary_cfg, Mapping) and site_summary_cfg:
+        contract = {
+            "fields_min": list(site_summary_cfg.get("required_fields", []) or []),
+            "target_length_words": site_summary_cfg.get("target_length_words"),
+        }
+        _upsert_output_contract("Site_Summary_v1", contract)
     persist("10_Prompt-Pack_v2.json", p10)
 
     # 11 Workflow Pack
@@ -887,14 +1094,29 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
     workflow_gates["kpi_targets"] = kpi_targets
     workflow_gates["effective_autonomy"] = eff_autonomy
     persona_defaults = {
-        "persona": _dget(
-            profile, "persona.mbti", _get(agent, "persona", "")
+        "persona": (
+            persona_value
+            or _dget(
+                profile, "persona.mbti", _get(agent, "persona", "")
+            )
         ),
-        "tone": _dget(profile, "persona.tone", ""),
+        "tone": (
+            style_overrides.get("tone")
+            if isinstance(style_overrides, Mapping)
+            else _dget(profile, "persona.tone", "")
+        ),
     }
     p11.setdefault("defaults", {}).update(
         {k: v for k, v in persona_defaults.items() if v}
     )
+    if collab_ratio is not None or confidence_ratio is not None:
+        flow_hints = p11.setdefault("flow_hints", {})
+        if collab_ratio is not None:
+            flow_hints["ask_before_assuming"] = collab_ratio >= 0.7
+        if confidence_ratio is not None:
+            flow_hints["confidence_hint"] = round(confidence_ratio, 3)
+    if isinstance(output_defaults, Mapping) and output_defaults:
+        p11.setdefault("task_templates", {})["output_defaults"] = output_defaults
     persist("11_Workflow-Pack_v2.json", p11)
 
     # 12 Tool + Data Registry
@@ -1017,9 +1239,9 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
     lifecycle_gates = p17.setdefault("gates", {})
     lifecycle_gates["kpi_targets"] = kpi_targets
     lifecycle_gates["activation"] = [
-        f"PRI>={KPI_TARGETS.get('PRI_min')}",
-        f"HAL<={KPI_TARGETS.get('HAL_max')}",
-        f"AUD>={KPI_TARGETS.get('AUD_min')}",
+        f"PRI>={kpi_targets.get('PRI_min')}",
+        f"HAL<={kpi_targets.get('HAL_max')}",
+        f"AUD>={kpi_targets.get('AUD_min')}",
     ]
     lifecycle_gates["effective_autonomy"] = eff_autonomy
     p17["stages"] = [str(_dget(profile, "lifecycle.stage", "dev"))]
@@ -1061,6 +1283,8 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
             },
         }
     )
+    if engagement_notes:
+        p19["engagement_notes"] = engagement_notes
     sme_payload = write_sme_overlay(
         p19, out_dir / "19_Overlay-Pack_SME-Domain_v1.json"
     )
@@ -1070,6 +1294,8 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
     p20 = _attach_agent_meta(
         _pack_template("20_Overlay-Pack_Enterprise_v1.json"), agent_id
     )
+    if engagement_notes:
+        p20["engagement_notes"] = engagement_notes
     persist("20_Overlay-Pack_Enterprise_v1.json", p20)
 
     # Ship evaluation set
@@ -1158,6 +1384,45 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
                     updated = True
                 if card.get("risk_tier") != risk_value:
                     card["risk_tier"] = risk_value
+                    updated = True
+        if target_entry is not None:
+            if isinstance(selected_toolsets, list) and selected_toolsets:
+                caps = list(target_entry.get("capabilities", []) or [])
+                caps.extend([str(c) for c in selected_toolsets if c])
+                new_caps = _dedupe_preserve_order(caps)
+                if target_entry.get("capabilities") != new_caps:
+                    target_entry["capabilities"] = new_caps
+                    updated = True
+            if isinstance(selected_attributes, list) and selected_attributes:
+                traits = list(target_entry.get("traits", []) or [])
+                traits.extend([str(t) for t in selected_attributes if t])
+                new_traits = _dedupe_preserve_order(traits)
+                if target_entry.get("traits") != new_traits:
+                    target_entry["traits"] = new_traits
+                    updated = True
+            if isinstance(mem_scopes_manifest, list) and mem_scopes_manifest:
+                scopes = _dedupe_preserve_order([str(s) for s in mem_scopes_manifest if s])
+                if target_entry.get("memory_scopes") != scopes:
+                    target_entry["memory_scopes"] = scopes
+                    updated = True
+            if bias or focus_domains:
+                tags = list(target_entry.get("tags", []) or [])
+                if bias:
+                    tags.append(str(bias))
+                if isinstance(focus_domains, list):
+                    tags.extend([str(d) for d in focus_domains if d])
+                new_tags = _dedupe_preserve_order(tags)
+                if new_tags and target_entry.get("tags") != new_tags:
+                    target_entry["tags"] = new_tags
+                    updated = True
+            if engagement_notes:
+                filtered_notes = {
+                    k: v
+                    for k, v in engagement_notes.items()
+                    if k in {"mission", "user_profile", "operating_mode", "interaction_preferences", "success_criteria_90d", "prompting_tips_for_user"}
+                }
+                if filtered_notes and target_entry.get("engagement_notes") != filtered_notes:
+                    target_entry["engagement_notes"] = filtered_notes
                     updated = True
         if updated:
             json_write(manifest_path, manifest)

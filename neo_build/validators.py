@@ -13,15 +13,32 @@ from .schemas import required_keys_map
 
 
 def compute_effective_autonomy(preferences: Mapping[str, Any] | None, routing_defaults: Mapping[str, Any] | None) -> float:
+    """Derive effective_autonomy from intake sliders with a small safety fallback."""
+
     sliders = (preferences or {}).get("sliders", {}) if isinstance(preferences, Mapping) else {}
-    autonomy = float(sliders.get("autonomy", 0)) / 100.0
+    slider_val = sliders.get("autonomy")
+    autonomy = None
+    try:
+        autonomy = float(slider_val) / 100.0
+    except Exception:
+        autonomy = None
+
     rd_default = 0.28
     if routing_defaults and isinstance(routing_defaults, Mapping):
         try:
             rd_default = float(routing_defaults.get("autonomy_default", rd_default))
         except Exception:
             pass
-    return min(autonomy, rd_default)
+
+    if autonomy is None:
+        autonomy = rd_default
+
+    # Keep within [0,1] and prefer the explicit slider value when present
+    try:
+        autonomy = max(0.0, min(1.0, float(autonomy)))
+    except Exception:
+        autonomy = rd_default
+    return autonomy
 
 
 def human_gate_actions(actions: list[str] | None) -> list[str]:
@@ -47,8 +64,43 @@ def observability_spec(existing: Mapping[str, Any] | None = None) -> Dict[str, A
     return spec
 
 
-def kpi_targets_sync() -> Dict[str, float]:
-    return dict(KPI_TARGETS)
+def _normalize_kpi_overrides(overrides: Mapping[str, Any] | None) -> Dict[str, float]:
+    """Normalize user-provided KPI overrides to PRI_min/HAL_max/AUD_min keys."""
+
+    if not isinstance(overrides, Mapping):
+        return {}
+    mapped = {}
+    for src, dst in (
+        ("PRI_min", "PRI_min"),
+        ("pri_min", "PRI_min"),
+        ("HAL_max", "HAL_max"),
+        ("hal_max", "HAL_max"),
+        ("AUD_min", "AUD_min"),
+        ("aud_min", "AUD_min"),
+    ):
+        val = overrides.get(src)
+        if val is None:
+            continue
+        try:
+            mapped[dst] = float(val)
+        except Exception:
+            continue
+    return mapped
+
+
+def kpi_targets_sync(*, overrides: Mapping[str, Any] | None = None, profile: Mapping[str, Any] | None = None) -> Dict[str, float]:
+    """Return KPI targets, allowing optional overrides from intake profile."""
+
+    effective_overrides = overrides
+    if effective_overrides is None and isinstance(profile, Mapping):
+        adv = profile.get("advanced_overrides") or {}
+        if isinstance(adv, Mapping):
+            effective_overrides = (adv.get("overrides") or {}).get("kpi")
+
+    targets = dict(KPI_TARGETS)
+    normalized = _normalize_kpi_overrides(effective_overrides)
+    targets.update(normalized)
+    return targets
 
 
 def preferences_flow_flags(collaboration_mode: str | None) -> Dict[str, bool]:
@@ -68,8 +120,16 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
     """Build a light integrity summary across packs for optional emission."""
 
     out: Dict[str, Any] = {"status": "ok", "checks": {}}
+    errors = out.setdefault("errors", [])
+    adv_overrides = {}
+    if isinstance(profile, Mapping):
+        adv_raw = profile.get("advanced_overrides") or {}
+        if isinstance(adv_raw, Mapping):
+            adv_overrides = adv_raw.get("overrides") or adv_raw
+    adv_kpi = adv_overrides.get("kpi") if isinstance(adv_overrides, Mapping) else None
+
     # Check KPI sync
-    desired = kpi_targets_sync()
+    desired = kpi_targets_sync(overrides=adv_kpi, profile=profile)
     k11 = ((packs.get("11_Workflow-Pack_v2.json") or {}).get("gates") or {}).get("kpi_targets")
     k14 = (packs.get("14_KPI+Evaluation-Framework_v2.json") or {}).get("targets")
     k17 = ((packs.get("17_Lifecycle-Pack_v2.json") or {}).get("gates") or {}).get("kpi_targets")
@@ -183,6 +243,107 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
     out["parity_deltas"] = parity_deltas
     out["parity_ok"] = bool(all(parity.values()))
 
+    def _dget_local(mapping: Mapping[str, Any] | None, path: str, default: Any = None) -> Any:
+        cur: Any = mapping
+        for part in path.split("."):
+            if not isinstance(cur, Mapping):
+                return default
+            cur = cur.get(part)
+        return cur if cur is not None else default
+
+    # Advanced overrides wiring checks
+    adv_checks: list[bool] = []
+    if isinstance(adv_overrides, Mapping) and adv_overrides:
+        # KPI overrides must appear in packs
+        if isinstance(adv_kpi, Mapping) and adv_kpi:
+            kpi_applied = _eq(p02, desired)
+            adv_checks.append(kpi_applied)
+            if not kpi_applied:
+                errors.append("advanced_overrides.kpi_not_applied")
+        bias = adv_overrides.get("behavior", {}).get("bias") if isinstance(adv_overrides.get("behavior"), Mapping) else None
+        focus_domains = adv_overrides.get("behavior", {}).get("focus_domains") if isinstance(adv_overrides.get("behavior"), Mapping) else None
+        if bias or focus_domains:
+            bias_applied = False
+            strat_defaults = _dget_local(packs.get("10_Prompt-Pack_v2.json"), "strategy_defaults", {})
+            if isinstance(strat_defaults, Mapping) and bias and strat_defaults.get("bias") == bias:
+                bias_applied = True
+            if isinstance(strat_defaults, Mapping) and focus_domains:
+                fd = strat_defaults.get("focus_domains") if isinstance(strat_defaults.get("focus_domains"), list) else []
+                if set(fd) >= set(focus_domains):
+                    bias_applied = True
+            manifest_tags = _dget_local(packs.get("09_Agent-Manifests_Catalog_v2.json"), "agents.0.tags", [])
+            if isinstance(manifest_tags, list):
+                if (bias and bias in manifest_tags) or (focus_domains and set(focus_domains).issubset(set(manifest_tags))):
+                    bias_applied = True
+            adv_checks.append(bool(bias_applied))
+            if not bias_applied:
+                errors.append("advanced_overrides.behavior_not_applied")
+        output_defaults = adv_overrides.get("output_defaults") if isinstance(adv_overrides, Mapping) else {}
+        if isinstance(output_defaults, Mapping) and output_defaults:
+            contracts = _dget_local(packs.get("10_Prompt-Pack_v2.json"), "output_contracts", [])
+            names = {c.get("name") for c in contracts} if isinstance(contracts, list) else set()
+            needed = {"Large_Response_Template_v1", "Daily_Checklist_v1", "Weekly_Outreach_Plan_v1", "Site_Summary_v1"}
+            applied = needed.issubset(names) if names else False
+            adv_checks.append(applied)
+            if not applied:
+                errors.append("advanced_overrides.output_defaults_missing")
+        style_overrides = adv_overrides.get("style") if isinstance(adv_overrides, Mapping) else {}
+        if isinstance(style_overrides, Mapping) and style_overrides:
+            style_defaults = _dget_local(packs.get("10_Prompt-Pack_v2.json"), "style_defaults", {})
+            style_applied = isinstance(style_defaults, Mapping) and bool(style_defaults)
+            adv_checks.append(style_applied)
+            if not style_applied:
+                errors.append("advanced_overrides.style_not_applied")
+        guardrails = adv_overrides.get("guardrails") if isinstance(adv_overrides, Mapping) else {}
+        if isinstance(guardrails, Mapping) and guardrails:
+            guard_applied = bool(_dget_local(packs.get("05_Safety+Privacy_Guardrails_v2.json"), "guardrail_overrides", {}))
+            adv_checks.append(guard_applied)
+            if not guard_applied:
+                errors.append("advanced_overrides.guardrails_not_applied")
+    out["checks"]["advanced_overrides_applied"] = bool(all(adv_checks)) if adv_checks else True
+
+    # effective_autonomy alignment with intake slider (±0.05 tolerance)
+    slider_autonomy = None
+    try:
+        slider_autonomy = float(
+            _dget_local(profile, "preferences.sliders.autonomy", None)  # type: ignore[arg-type]
+        ) / 100.0
+    except Exception:
+        slider_autonomy = None
+    eff_values = []
+    for fname, path in (
+        ("02_Global-Instructions_v2.json", "effective_autonomy"),
+        ("03_Operating-Rules_v2.json", "gates.effective_autonomy"),
+        ("11_Workflow-Pack_v2.json", "gates.effective_autonomy"),
+        ("17_Lifecycle-Pack_v2.json", "gates.effective_autonomy"),
+    ):
+        eff_values.append(_dget_local(packs.get(fname), path))
+    eff_values = [v for v in eff_values if isinstance(v, (int, float))]
+    eff_check = True
+    if slider_autonomy is not None and eff_values:
+        eff_check = all(abs(v - slider_autonomy) <= 0.05 for v in eff_values)
+        if not eff_check:
+            errors.append("effective_autonomy_out_of_range")
+    out["checks"]["effective_autonomy_alignment"] = eff_check
+
+    # Persona propagation
+    persona_intake = None
+    try:
+        persona_intake = (
+            (_dget_local(profile, "agent.persona", None)  # type: ignore[arg-type]
+             or _dget_local(profile, "persona.agent.code", None)  # type: ignore[arg-type]
+             or _dget_local(profile, "persona.code", None))  # type: ignore[arg-type]
+        )
+    except Exception:
+        persona_intake = None
+    persona_ok = True
+    if persona_intake:
+        persona_default = _dget_local(packs.get("02_Global-Instructions_v2.json"), "defaults.persona")
+        persona_ok = persona_default == persona_intake
+        if not persona_ok:
+            errors.append("persona_not_propagated")
+    out["checks"]["persona_wired"] = persona_ok
+
     # Contract: required top-level keys presence per file
     missing_keys: Dict[str, list[str]] = {}
     req = required_keys_map()
@@ -248,6 +409,9 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
         elif sec == "reasoning_patterns":
             value = p10.get(sec)
             ok = _nonempty_dict(value) or _nonempty_list(value)
+        elif sec == "output_contracts":
+            value = p10.get(sec)
+            ok = _nonempty_list(value) or _nonempty_dict(value)
         else:
             ok = _nonempty_dict(p10.get(sec))
         if not ok:
@@ -445,5 +609,8 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
             out.setdefault("errors", []).append("parity_failed")
     except Exception:
         pass
+
+    if errors:
+        out["status"] = "error"
 
     return out
