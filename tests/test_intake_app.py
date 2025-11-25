@@ -35,6 +35,25 @@ def _invoke(app, method: str, data: dict[str, list[str] | str]) -> bytes:
     return body
 
 
+def _base_form_data() -> dict[str, list[str] | str]:
+    return {
+        "agent_name": "Test Agent",
+        "agent_version": "1.0.0",
+        "agent_persona": "ENTJ",
+        "domain": "Finance",
+        "role": "Enterprise Analyst",
+        "toolsets": ["Data Analysis", "Reporting"],
+        "attributes": ["Strategic"],
+        "autonomy": "75",
+        "confidence": "60",
+        "collaboration": "80",
+        "communication_style": "Conversational",
+        "collaboration_mode": "Cross-Functional",
+        "notes": "Test submission",
+        "linkedin_url": "",
+    }
+
+
 def test_intake_form_submission(tmp_path: Path) -> None:
     app = create_app(base_dir=tmp_path)
 
@@ -239,3 +258,66 @@ def test_api_generate_agent_repo(tmp_path: Path) -> None:
     # Writers place packs directly in the target directory; check canonical file present
     expect = gen_root / "01_README+Directory-Map_v2.json"
     assert expect.exists(), f"missing {expect}"
+
+
+def test_advanced_overrides_persist_on_form_post(tmp_path: Path) -> None:
+    app = create_app(base_dir=tmp_path)
+    post_data = _base_form_data()
+    post_data["advanced_overrides"] = '{"foo": "bar", "flag": true}'
+
+    body = _invoke(app, "POST", post_data)
+
+    profile_path = tmp_path / "agent_profile.json"
+    assert profile_path.exists()
+    profile = json.loads(profile_path.read_text(encoding="utf-8"))
+    assert profile.get("advanced_overrides") == {"foo": "bar", "flag": True}
+    assert b"_raw_advanced_overrides" not in body
+    assert b"Validation error" not in body.split(b"</h1>", 1)[0]
+
+
+def test_advanced_overrides_omitted_when_empty(tmp_path: Path) -> None:
+    app = create_app(base_dir=tmp_path)
+    post_data = _base_form_data()
+    post_data["advanced_overrides"] = "   "
+
+    _invoke(app, "POST", post_data)
+
+    profile_path = tmp_path / "agent_profile.json"
+    profile = json.loads(profile_path.read_text(encoding="utf-8"))
+    assert "advanced_overrides" not in profile
+
+
+def test_advanced_overrides_invalid_json_blocks_save(tmp_path: Path) -> None:
+    app = create_app(base_dir=tmp_path)
+
+    # Seed a valid profile to confirm it remains untouched
+    _invoke(app, "POST", _base_form_data())
+    profile_path = tmp_path / "agent_profile.json"
+    baseline = profile_path.read_text(encoding="utf-8")
+    baseline_mtime = profile_path.stat().st_mtime_ns
+
+    bad_payload = _base_form_data()
+    bad_payload["advanced_overrides"] = '{"foo": "bar",}'
+
+    body = _invoke(app, "POST", bad_payload)
+    assert b"Advanced Overrides must be valid JSON" in body
+    assert b"{&quot;foo&quot;: &quot;bar&quot;,}" in body
+    assert b"_raw_advanced_overrides" not in body
+    assert b"Validation error" not in body.split(b"</h1>", 1)[0]  # no header blob
+    assert profile_path.read_text(encoding="utf-8") == baseline
+    assert profile_path.stat().st_mtime_ns == baseline_mtime
+
+
+def test_advanced_overrides_non_object_blocks_save(tmp_path: Path) -> None:
+    app = create_app(base_dir=tmp_path)
+
+    bad_payload = _base_form_data()
+    bad_payload["advanced_overrides"] = '["not", "an", "object"]'
+
+    body = _invoke(app, "POST", bad_payload)
+    assert b"Advanced Overrides JSON must be an object" in body
+    assert b"[&quot;not&quot;, &quot;an&quot;, &quot;object&quot;]" in body
+    assert b"_raw_advanced_overrides" not in body
+    assert b"Validation error" not in body.split(b"</h1>", 1)[0]
+    profile_path = tmp_path / "agent_profile.json"
+    assert not profile_path.exists()
