@@ -2758,6 +2758,178 @@ window.addEventListener('DOMContentLoaded', function () {
 
         return profile, errors
 
+    def _normalize_profile_from_params(
+        self, profile: Mapping[str, Any], params: Mapping[str, list[str] | str]
+    ) -> Mapping[str, Any]:
+        """Apply context/role normalization to align with builder expectations."""
+        try:
+
+            def _p(key: str) -> str:
+                v = params.get(key)
+                if isinstance(v, list):
+                    return str(v[0]) if v else ""
+                return str(v) if isinstance(v, str) else ""
+
+            naics_code = _p("naics_code")
+            naics_title = _p("naics_title")
+            naics_level = _p("naics_level")
+            naics_lineage_json = _p("naics_lineage_json")
+            naics_lineage = []
+            if naics_lineage_json:
+                try:
+                    naics_lineage = json.loads(naics_lineage_json)
+                    if not isinstance(naics_lineage, list):
+                        naics_lineage = []
+                except Exception:
+                    naics_lineage = []
+
+            # Region: prefer explicit; else default inside normalizer
+            region_vals = (
+                params.get("context.region")
+                or params.get("sector_profile.region")
+                or []
+            )
+            region = [str(x) for x in region_vals if x]
+
+            v3_payload = {
+                "context": {
+                    "naics": {
+                        "code": naics_code,
+                        "title": naics_title,
+                        "level": (
+                            int(naics_level)
+                            if str(naics_level).isdigit()
+                            else naics_level
+                        ),
+                        "lineage": naics_lineage,
+                    },
+                    "region": region,
+                },
+                "role": {
+                    "function_code": _p("business_function"),
+                    "role_code": _p("role_code") or _p("role_profile.archetype"),
+                    "role_title": _p("role_title") or _p("role_profile.role_title"),
+                    "objectives": [],
+                },
+            }
+
+            normalized = normalize_context_role(v3_payload)
+            fp = dict(profile)
+            fp.update(normalized)
+            classification = dict(fp.get("classification") or {})
+            classification["naics"] = v3_payload["context"]["naics"]
+            fp["classification"] = classification
+            profile = fp
+        except Exception:
+            pass
+        return profile
+
+    def _merge_with_last_saved_profile(
+        self, profile: Mapping[str, Any]
+    ) -> Mapping[str, Any]:
+        """Fill in missing identifiers/context from the last saved profile."""
+        try:
+            last_saved = self._safe_read_json(self.profile_path, {})
+            if not isinstance(last_saved, Mapping):
+                return profile
+            fp = dict(profile)
+            ident = dict(fp.get("identity") or {})
+            if not str(ident.get("agent_id") or "").strip():
+                ls_id = (last_saved.get("identity") or {}).get("agent_id")
+                if ls_id:
+                    ident["agent_id"] = ls_id
+            fp["identity"] = ident
+            cls = dict(fp.get("classification") or {})
+            if not isinstance(cls.get("naics"), Mapping) or not cls.get("naics"):
+                ls_na = (
+                    (last_saved.get("classification") or {}).get("naics")
+                    or last_saved.get("naics")
+                    or {}
+                )
+                if isinstance(ls_na, Mapping) and ls_na:
+                    cls["naics"] = ls_na
+            fp["classification"] = cls
+            if not isinstance(fp.get("naics"), Mapping) or not fp.get("naics"):
+                if isinstance(cls.get("naics"), Mapping) and cls.get("naics"):
+                    fp["naics"] = cls["naics"]
+            if not str(fp.get("business_function") or "").strip():
+                bf = last_saved.get("business_function")
+                if bf:
+                    fp["business_function"] = bf
+            role_cur = fp.get("role") if isinstance(fp.get("role"), Mapping) else {}
+            if not role_cur:
+                ls_role = (
+                    last_saved.get("role")
+                    if isinstance(last_saved.get("role"), Mapping)
+                    else {}
+                )
+                if ls_role:
+                    fp["role"] = ls_role
+            else:
+                ls_role = (
+                    last_saved.get("role")
+                    if isinstance(last_saved.get("role"), Mapping)
+                    else {}
+                )
+                for k in ("code", "title", "seniority", "function"):
+                    if (
+                        not str(role_cur.get(k) or "").strip()
+                        and str((ls_role or {}).get(k) or "").strip()
+                    ):
+                        role_cur[k] = ls_role[k]
+                fp["role"] = role_cur
+            return fp
+        except Exception:
+            return profile
+
+    def _canonical_profile_from_params(
+        self, params: Mapping[str, list[str] | str]
+    ) -> tuple[Mapping[str, Any], dict[str, str], str]:
+        """Build a validated, normalized profile ready for persistence/build."""
+        profile, errors = self._build_profile(params, self._load_persona_state())
+        raw_advanced_overrides = ""
+        if isinstance(profile, Mapping):
+            try:
+                raw_adv_val = profile.get("_raw_advanced_overrides")
+                raw_advanced_overrides = str(raw_adv_val).strip() if raw_adv_val else ""
+            except Exception:
+                raw_advanced_overrides = ""
+            profile = dict(profile)
+            profile.pop("_raw_advanced_overrides", None)
+        else:
+            profile = {}
+
+        if errors:
+            return profile, errors, raw_advanced_overrides
+
+        profile = self._normalize_profile_from_params(profile, params)
+        profile = self._merge_with_last_saved_profile(profile)
+        return profile, errors, raw_advanced_overrides
+
+    def _canonical_profile_from_json_profile(
+        self, profile: Mapping[str, Any]
+    ) -> tuple[Mapping[str, Any], dict[str, str]]:
+        """Validate and normalize a JSON profile payload for builder consumption."""
+        errors: dict[str, str] = {}
+        if not isinstance(profile, Mapping):
+            return {}, {"profile": "Profile must be an object"}
+        profile_dict = dict(profile)
+        if "advanced_overrides" in profile_dict:
+            adv_val = profile_dict.get("advanced_overrides")
+            if not isinstance(adv_val, Mapping):
+                errors["advanced_overrides"] = (
+                    "Advanced Overrides JSON must be an object"
+                )
+        if errors:
+            return profile_dict, errors
+        try:
+            normalized = normalize_context_role(profile_dict)
+            profile_dict.update(normalized)
+        except Exception:
+            pass
+        profile_dict = self._merge_with_last_saved_profile(profile_dict)
+        return profile_dict, errors
+
     # ------------------------------- WSGI layer -------------------------------
     def wsgi_app(self, environ: Mapping[str, Any], start_response) -> Iterable[bytes]:
         method = str(environ.get("REQUEST_METHOD", "GET")).upper()
@@ -3346,81 +3518,96 @@ window.addEventListener('DOMContentLoaded', function () {
                 length = int(environ.get("CONTENT_LENGTH") or 0)
             except Exception:
                 length = 0
-            body = (environ.get("wsgi.input").read(length) if length else b"") or b"{}"
+            body = (environ.get("wsgi.input").read(length) if length else b"") or b""
+            content_type = str(environ.get("CONTENT_TYPE") or "")
+            is_json = "json" in content_type.lower()
+            if is_json:
+                try:
+                    payload_obj = json.loads(body.decode("utf-8") or "{}")
+                except Exception as exc:
+                    payload = json.dumps(
+                        {
+                            "status": "invalid",
+                            "errors": {"json": f"Invalid JSON: {exc}"},
+                        }
+                    ).encode("utf-8")
+                    headers = _std_headers("application/json", len(payload))
+                    start_response("400 Bad Request", headers)
+                    return [payload]
+                if not isinstance(payload_obj, Mapping):
+                    payload = json.dumps(
+                        {
+                            "status": "invalid",
+                            "errors": {
+                                "profile": "Payload must be an object containing 'profile'"
+                            },
+                        }
+                    ).encode("utf-8")
+                    headers = _std_headers("application/json", len(payload))
+                    start_response("400 Bad Request", headers)
+                    return [payload]
+                profile_raw = payload_obj.get("profile")
+                if not isinstance(profile_raw, Mapping):
+                    payload = json.dumps(
+                        {
+                            "status": "invalid",
+                            "errors": {
+                                "profile": "Missing or invalid 'profile' in JSON payload"
+                            },
+                        }
+                    ).encode("utf-8")
+                    headers = _std_headers("application/json", len(payload))
+                    start_response("400 Bad Request", headers)
+                    return [payload]
+                profile, errors = self._canonical_profile_from_json_profile(profile_raw)
+                if errors or not isinstance(profile, Mapping):
+                    payload = json.dumps(
+                        {
+                            "status": "invalid",
+                            "errors": errors or {"profile": "Invalid profile payload"},
+                        }
+                    ).encode("utf-8")
+                    headers = _std_headers("application/json", len(payload))
+                    start_response("400 Bad Request", headers)
+                    return [payload]
+            else:
+                params = parse_qs(body.decode("utf-8"), keep_blank_values=True)
+                profile, errors, _ = self._canonical_profile_from_params(params)
+                if errors or not isinstance(profile, Mapping):
+                    payload = json.dumps(
+                        {
+                            "status": "invalid",
+                            "errors": errors or {"profile": "Invalid"},
+                        }
+                    ).encode("utf-8")
+                    headers = _std_headers("application/json", len(payload))
+                    start_response("400 Bad Request", headers)
+                    return [payload]
+
             try:
-                data = json.loads(body.decode("utf-8"))
-            except Exception:
-                data = {}
-            profile = data.get("profile") if isinstance(data, dict) else None
-            if not isinstance(profile, dict):
+                with self.profile_path.open("w", encoding="utf-8") as handle:
+                    json.dump(profile, handle, indent=2)
+            except Exception as exc:
                 payload = json.dumps(
-                    {"status": "error", "issues": ["Missing profile in payload."]}
+                    {
+                        "status": "error",
+                        "issues": [f"Failed to write agent_profile.json: {exc}"],
+                    }
                 ).encode("utf-8")
-                headers = [
-                    ("Content-Type", "application/json"),
-                    ("Content-Length", str(len(payload))),
-                ]
-                start_response("400 Bad Request", headers)
+                headers = _std_headers("application/json", len(payload))
+                start_response("500 Internal Server Error", headers)
                 return [payload]
-
-            # Normalize NAICS + Function/Role â†’ role_profile/sector_profile
-            try:
-                # Extract region from multiple possible sources
-                region_vals = []
-                if isinstance(profile.get("context"), dict):
-                    region_vals = profile["context"].get("region", [])
-                if not region_vals and isinstance(profile.get("sector_profile"), dict):
-                    region_vals = profile["sector_profile"].get("region", [])
-                if not isinstance(region_vals, list):
-                    region_vals = []
-
-                naics_data = (
-                    (profile.get("classification") or {}).get("naics")
-                    or profile.get("naics")
-                    or {}
-                )
-
-                v3 = {
-                    "context": {
-                        "naics": naics_data,
-                        "region": (
-                            region_vals if region_vals else ["CA"]
-                        ),  # Default to CA if empty
-                    },
-                    "role": {
-                        "function_code": str(profile.get("business_function", "")),
-                        "role_code": str(
-                            ((profile.get("role") or {}).get("code") or "")
-                        ),
-                        "role_title": str(
-                            ((profile.get("role") or {}).get("title") or "")
-                        ),
-                        "objectives": list(
-                            ((profile.get("role") or {}).get("objectives") or [])
-                        ),
-                    },
-                }
-                normalized = normalize_context_role(v3)
-                merged = dict(profile)
-                merged.update(normalized)
-                # Ensure classification.naics present for writers
-                classification = dict(merged.get("classification") or {})
-                classification["naics"] = naics_data
-                merged["classification"] = classification
-            except Exception as norm_exc:
-                LOGGER.warning("Normalization failed in API: %s", norm_exc)
-                merged = profile
 
             # Write repo to generated_repos/{slug}
             try:
                 # Create unique repo subdirectory based on agent identity
                 agent_section = (
-                    merged.get("agent") if isinstance(merged, Mapping) else {}
+                    profile.get("agent") if isinstance(profile, Mapping) else {}
                 )
                 if not isinstance(agent_section, Mapping):
                     agent_section = {}
                 identity_section = (
-                    merged.get("identity") if isinstance(merged, Mapping) else {}
+                    profile.get("identity") if isinstance(profile, Mapping) else {}
                 )
                 if not isinstance(identity_section, Mapping):
                     identity_section = {}
@@ -3452,9 +3639,9 @@ window.addEventListener('DOMContentLoaded', function () {
                     counter += 1
 
                 # Write repo files to the unique subdirectory
-                packs = write_repo_files(merged, repo_dir)
+                packs = write_repo_files(profile, repo_dir)
                 # Generate and write integrity report
-                report = integrity_report(merged, packs)
+                report = integrity_report(profile, packs)
                 integrity_path = repo_dir / "INTEGRITY_REPORT.json"
                 with integrity_path.open("w", encoding="utf-8") as handle:
                     json.dump(report, handle, indent=2, ensure_ascii=False)
@@ -3986,21 +4173,11 @@ window.addEventListener('DOMContentLoaded', function () {
                     length = 0
                 raw = (environ.get("wsgi.input").read(length) if length else b"") or b""
                 params = parse_qs(raw.decode("utf-8"), keep_blank_values=True)
-                form_profile, form_errors = self._build_profile(
-                    params, self._load_persona_state()
-                )
-                if isinstance(form_profile, Mapping):
-                    try:
-                        raw_adv_val = form_profile.get("_raw_advanced_overrides")
-                        raw_advanced_overrides = (
-                            str(raw_adv_val).strip() if raw_adv_val else ""
-                        )
-                    except Exception:
-                        raw_advanced_overrides = ""
-                    form_profile = dict(form_profile)
-                    form_profile.pop("_raw_advanced_overrides", None)
-                else:
-                    form_profile = {}
+                (
+                    form_profile,
+                    form_errors,
+                    raw_advanced_overrides,
+                ) = self._canonical_profile_from_params(params)
 
                 try:
                     notice = self._save_persona_state(params)
@@ -4036,138 +4213,6 @@ window.addEventListener('DOMContentLoaded', function () {
                     )
                     start_response("200 OK", headers)
                     return [body_bytes]
-
-                # Sprint-1: Normalize v3 context/role into builder keys and build repo immediately
-                try:
-
-                    def _p(key: str) -> str:
-                        v = params.get(key)
-                        if isinstance(v, list):
-                            return str(v[0]) if v else ""
-                        return str(v) if isinstance(v, str) else ""
-
-                    naics_code = _p("naics_code")
-                    naics_title = _p("naics_title")
-                    naics_level = _p("naics_level")
-                    naics_lineage_json = _p("naics_lineage_json")
-                    naics_lineage = []
-                    if naics_lineage_json:
-                        try:
-                            naics_lineage = json.loads(naics_lineage_json)
-                            if not isinstance(naics_lineage, list):
-                                naics_lineage = []
-                        except Exception:
-                            naics_lineage = []
-
-                    # Region: prefer explicit; else default inside normalizer
-                    region_vals = (
-                        params.get("context.region")
-                        or params.get("sector_profile.region")
-                        or []
-                    )
-                    region = [str(x) for x in region_vals if x]
-
-                    v3_payload = {
-                        "context": {
-                            "naics": {
-                                "code": naics_code,
-                                "title": naics_title,
-                                "level": (
-                                    int(naics_level)
-                                    if str(naics_level).isdigit()
-                                    else naics_level
-                                ),
-                                "lineage": naics_lineage,
-                            },
-                            "region": region,
-                        },
-                        "role": {
-                            "function_code": _p("business_function"),
-                            "role_code": _p("role_code")
-                            or _p("role_profile.archetype"),
-                            "role_title": _p("role_title")
-                            or _p("role_profile.role_title"),
-                            "objectives": [],
-                        },
-                    }
-
-                    normalized = normalize_context_role(v3_payload)
-                    # Merge normalized keys into the form profile
-                    fp = dict(form_profile)
-                    fp.update(normalized)
-                    # Ensure NAICS is present under classification for the builder
-                    classification = dict(fp.get("classification") or {})
-                    classification["naics"] = v3_payload["context"]["naics"]
-                    fp["classification"] = classification
-                    form_profile = fp
-                except Exception:
-                    # Non-fatal: if normalization fails, continue with raw profile
-                    pass
-                # Merge with last-saved profile to preserve missing agent_id/NAICS/function/role
-                try:
-                    last_saved = self._safe_read_json(self.profile_path, {})
-                    if isinstance(last_saved, Mapping):
-                        fp = dict(form_profile)
-                        ident = dict(fp.get("identity") or {})
-                        if not str(ident.get("agent_id") or "").strip():
-                            ls_id = (last_saved.get("identity") or {}).get("agent_id")
-                            if ls_id:
-                                ident["agent_id"] = ls_id
-                        fp["identity"] = ident
-                        # classification.naics + top-level naics
-                        cls = dict(fp.get("classification") or {})
-                        if not isinstance(cls.get("naics"), Mapping) or not cls.get(
-                            "naics"
-                        ):
-                            ls_na = (
-                                (last_saved.get("classification") or {}).get("naics")
-                                or last_saved.get("naics")
-                                or {}
-                            )
-                            if isinstance(ls_na, Mapping) and ls_na:
-                                cls["naics"] = ls_na
-                        fp["classification"] = cls
-                        if not isinstance(fp.get("naics"), Mapping) or not fp.get(
-                            "naics"
-                        ):
-                            if isinstance(cls.get("naics"), Mapping) and cls.get(
-                                "naics"
-                            ):
-                                fp["naics"] = cls["naics"]
-                        # business function / role
-                        if not str(fp.get("business_function") or "").strip():
-                            bf = last_saved.get("business_function")
-                            if bf:
-                                fp["business_function"] = bf
-                        role_cur = (
-                            fp.get("role")
-                            if isinstance(fp.get("role"), Mapping)
-                            else {}
-                        )
-                        if not role_cur:
-                            ls_role = (
-                                last_saved.get("role")
-                                if isinstance(last_saved.get("role"), Mapping)
-                                else {}
-                            )
-                            if ls_role:
-                                fp["role"] = ls_role
-                        else:
-                            ls_role = (
-                                last_saved.get("role")
-                                if isinstance(last_saved.get("role"), Mapping)
-                                else {}
-                            )
-                            for k in ("code", "title", "seniority", "function"):
-                                if (
-                                    not str(role_cur.get(k) or "").strip()
-                                    and str((ls_role or {}).get(k) or "").strip()
-                                ):
-                                    role_cur[k] = ls_role[k]
-                            fp["role"] = role_cur
-                        form_profile = fp
-                except Exception:
-                    pass
                 try:
                     with self.profile_path.open("w", encoding="utf-8") as handle:
                         json.dump(form_profile, handle, indent=2)
