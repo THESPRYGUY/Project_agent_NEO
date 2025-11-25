@@ -11,6 +11,47 @@
     input.dispatchEvent(new Event("input", { bubbles: true }));
   }
 
+  function renderContractsView(container, view) {
+    if (!container || !view) return;
+    const box = document.createElement("div");
+    box.className = "contract-summary";
+
+    const outputs = Array.isArray(view.output_contracts) ? view.output_contracts : [];
+    if (outputs.length) {
+      const outDiv = document.createElement("div");
+      outDiv.innerHTML = "<h4>Output Contracts</h4>";
+      const ul = document.createElement("ul");
+      outputs.forEach((entry) => {
+        const li = document.createElement("li");
+        const name = entry.name || entry.id || entry.contract || "";
+        const fields = Array.isArray(entry.fields_min) ? entry.fields_min.join(", ") : "";
+        const sections = Array.isArray(entry.sections) ? entry.sections.join(", ") : "";
+        li.textContent = [name, fields || sections].filter(Boolean).join(" – ");
+        ul.appendChild(li);
+      });
+      outDiv.appendChild(ul);
+      box.appendChild(outDiv);
+    }
+
+    const scopes = Array.isArray(view.memory_scopes) ? view.memory_scopes : [];
+    if (scopes.length) {
+      const scopeDiv = document.createElement("div");
+      scopeDiv.innerHTML = "<h4>Memory Scopes</h4>";
+      const ul = document.createElement("ul");
+      scopes.forEach((scope) => {
+        const li = document.createElement("li");
+        li.textContent = scope;
+        ul.appendChild(li);
+      });
+      scopeDiv.appendChild(ul);
+      box.appendChild(scopeDiv);
+    }
+
+    if (box.childElementCount) {
+      container.prepend(box);
+    }
+  }
+
   function serialiseRoles(state) {
     return (state.rbac?.roles || []).join(", ");
   }
@@ -210,7 +251,11 @@
       .then((schema) => {
         const defaults = schema.defaults || {};
         const sample = schema.sample || {};
+        const view = schema.contracts_view || {};
         state.memory = sample.memory || {};
+        if (Array.isArray(view.memory_scopes) && view.memory_scopes.length) {
+          state.memory.scopes = view.memory_scopes.slice();
+        }
         state.connectors = (defaults.connectors || []).map((conn) =>
           ns.clone ? ns.clone(conn) : JSON.parse(JSON.stringify(conn))
         );
@@ -281,6 +326,7 @@
           });
         }
 
+        renderContractsView(resultsContainer || panel, view);
         syncHidden(buildPayload(sample), sample);
         attachActions(schema);
         setStatus("Schema loaded. Configure fields and run the mapper.", "success");

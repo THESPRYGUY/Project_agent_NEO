@@ -519,17 +519,18 @@ $build_panel_styles
               <div class="health-chip" data-health-chip>
                 <span>Schema</span>
                 <strong class="mono" data-intake-schema>v3.0</strong>
-                <span>â€¢ App</span>
+                <span>/ App</span>
                 <strong class="mono" data-app-version>0.0.0</strong>
               </div>
               <div style="margin-top: 0.5rem; font-size: 0.85rem;">
                 <div>pid: <span class="mono" data-pid>?</span></div>
-                <div>output: <span class="mono" data-repo-output-dir>â€¦</span></div>
+                <div>output: <span class="mono" data-repo-output-dir></span></div>
               </div>
             </div>
             <div class="card" id="parity-card">
               <h3>Parity</h3>
-              <div>02 â†” 14: <strong data-parity-02-14 title="02_Global-Instructions vs 14_KPI targets parity">â€“</strong></div>
+              <div>02 -> 14: <strong data-parity-02-14 title="02_Global-Instructions vs 14_KPI targets parity">-</strong></div>
+              <div>11 -> 02: <strong data-parity-11-02 title="11_Workflow gates vs 02 targets parity">-</strong></div>
               <div>11 â†” 02: <strong data-parity-11-02 title="11_Workflow gates vs 02 targets parity">â€“</strong></div>
             </div>
             <div class="card" id="integrity-card">
@@ -616,7 +617,7 @@ INTERNAL_KEYS = {"validation_errors", "errors"}
 
 
 def _safe_summary_profile(
-    profile: Mapping[str, Any] | None
+    profile: Mapping[str, Any] | None,
 ) -> Mapping[str, Any] | None:
     if not isinstance(profile, Mapping) or not profile:
         return None
@@ -1081,11 +1082,30 @@ class IntakeApplication:
             parity_map = (
                 (report or {}).get("parity", {}) if isinstance(report, Mapping) else {}
             )
+            parity_deltas = (
+                (report or {}).get("parity_deltas", {})
+                if isinstance(report, Mapping)
+                else {}
+            )
+            missing_sections = (
+                (report or {}).get("missing_sections", {})
+                if isinstance(report, Mapping)
+                else {}
+            )
+            warnings = []
+            try:
+                for pack, vals in (missing_sections or {}).items():
+                    if isinstance(vals, list):
+                        for key in vals:
+                            warnings.append(f"{pack}:{key}")
+            except Exception:
+                warnings = []
             integrity_errors = list((report or {}).get("errors", []) or [])
             return 200, {
                 "agent_id": agent_id,
                 "outdir": str(final_dir),
                 "files": int(files),
+                "file_count": int(files),
                 "ts": ts,
                 "parity": {
                     "02_vs_14": bool(parity_map.get("02_vs_14", True)),
@@ -1093,7 +1113,10 @@ class IntakeApplication:
                     "03_vs_02": bool(parity_map.get("03_vs_02", True)),
                     "17_vs_02": bool(parity_map.get("17_vs_02", True)),
                 },
+                "parity_deltas": parity_deltas,
+                "packs_complete": bool((report or {}).get("packs_complete", False)),
                 "integrity_errors": integrity_errors,
+                "warnings": warnings,
             }
         except Exception as exc:
             # Cleanup temp dir
@@ -1249,6 +1272,12 @@ class IntakeApplication:
         pack08 = self._load_pack_json("08_Memory-Schema_v2.json") or {}
         registry = load_tool_registry(getattr(self, "_default_build_root", None))
         pack03 = self._load_pack_json("03_Operating-Rules_v2.json") or {}
+        pack10 = self._load_pack_json("10_Prompt-Pack_v2.json") or {}
+        profile_data = (
+            self._safe_read_json(self.profile_path, {})
+            if self.profile_path.exists()
+            else {}
+        )
         memory_defaults = {
             "scopes": list(pack08.get("memory_scopes") or []),
             "retention": pack08.get("retention") or {},
@@ -1331,6 +1360,11 @@ class IntakeApplication:
             "contract": contract,
             "defaults": defaults,
             "sample": sample_copy or {},
+            "contracts_view": {
+                "output_contracts": list(pack10.get("output_contracts") or []),
+                "memory_scopes": list(memory_defaults.get("scopes") or []),
+                "profile": profile_data if isinstance(profile_data, Mapping) else {},
+            },
         }
 
     def _extract_mapper_errors(self, exc: IntakeValidationError) -> list[str]:
@@ -2976,7 +3010,46 @@ window.addEventListener('DOMContentLoaded', function () {
                 start_response("204 No Content", _std_headers("application/json", 0))
                 return [b""]
             try:
-                raw = last_path.read_bytes()
+                raw_obj = json.loads(last_path.read_text(encoding="utf-8"))
+                summary = dict(raw_obj) if isinstance(raw_obj, Mapping) else {}
+                outdir = (
+                    Path(str(summary.get("outdir") or ""))
+                    if summary.get("outdir")
+                    else None
+                )
+                integrity = {}
+                if outdir and outdir.exists():
+                    try:
+                        integrity = json.loads(
+                            (outdir / "INTEGRITY_REPORT.json").read_text(
+                                encoding="utf-8"
+                            )
+                        )
+                    except Exception:
+                        integrity = {}
+                    try:
+                        summary["file_count"] = summary.get("files") or len(
+                            list(outdir.glob("*.json"))
+                        ) + len(list(outdir.glob("*.md")))
+                    except Exception:
+                        summary["file_count"] = summary.get("files", 0)
+                    if integrity:
+                        summary["parity"] = integrity.get("parity", {})
+                        summary["parity_deltas"] = integrity.get("parity_deltas", {})
+                        summary["packs_complete"] = integrity.get(
+                            "packs_complete", False
+                        )
+                        summary["integrity_errors"] = list(
+                            integrity.get("errors", []) or []
+                        )
+                        missing_sections = integrity.get("missing_sections", {}) or {}
+                        warnings = []
+                        for pack, vals in missing_sections.items():
+                            if isinstance(vals, list):
+                                for key in vals:
+                                    warnings.append(f"{pack}:{key}")
+                        summary["warnings"] = warnings
+                raw = json.dumps(summary).encode("utf-8")
                 if emit_event:
                     try:
                         emit_event("last_build_read", {"path": str(last_path)})
@@ -3403,6 +3476,16 @@ window.addEventListener('DOMContentLoaded', function () {
                 ("Content-Type", "application/json"),
                 ("X-NEO-Intake-Version", INTAKE_BUILD_TAG),
                 ("Cache-Control", "no-store, must-revalidate"),
+                ("Content-Length", str(len(payload))),
+            ]
+            start_response("200 OK", headers)
+            return [payload]
+
+        if path == "/api/naics/all" and method == "GET":
+            items = [e for e in self._ensure_naics_loaded()]
+            payload = json.dumps({"status": "ok", "items": items}).encode("utf-8")
+            headers = [
+                ("Content-Type", "application/json"),
                 ("Content-Length", str(len(payload))),
             ]
             start_response("200 OK", headers)
@@ -4004,7 +4087,7 @@ window.addEventListener('DOMContentLoaded', function () {
                             return ""
 
                     def _overlay_items_from_summary(
-                        s: Mapping[str, Any] | None
+                        s: Mapping[str, Any] | None,
                     ) -> list[dict]:
                         items: list[dict] = []
                         try:

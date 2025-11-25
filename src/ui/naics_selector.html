@@ -149,21 +149,45 @@
 
       let timer = null;
       let lastResults = [];
+      let naicsIndex = [];
+
+      async function loadAllNaics() {
+        if (naicsIndex && naicsIndex.length) return naicsIndex;
+        const res = await api('/api/naics/all');
+        if (res && Array.isArray(res.items)) {
+          naicsIndex = res.items;
+        }
+        return naicsIndex;
+      }
+
       async function handleSearchInput() {
         if (timer) { clearTimeout(timer); }
         timer = setTimeout(async () => {
           clearResults();
           const qNow = String(searchBox.value || '').trim();
           if (!qNow || qNow.length < 1) { lastResults = []; return; }
-          const res = await api(`/api/naics/search?q=${encodeURIComponent(qNow)}`);
-          const items = (res && Array.isArray(res.items)) ? res.items : [];
-          // Defensive client-side filter to guard against any stale server data or routing mishaps
           const ql = qNow.toLowerCase();
-          const filtered = items.filter(it => {
-            const c = String((it && it.code) || '').toLowerCase();
-            const t = String((it && it.title) || '').toLowerCase();
-            return c.startsWith(ql) || t.includes(ql);
-          });
+          let filtered = [];
+          try {
+            const index = await loadAllNaics();
+            filtered = (index || []).filter(it => {
+              const c = String((it && it.code) || '').toLowerCase();
+              const t = String((it && it.title) || '').toLowerCase();
+              return c.startsWith(ql) || t.includes(ql);
+            });
+          } catch (e) { filtered = []; }
+
+          // Fallback to server search if local index is empty or errored
+          if (!filtered.length) {
+            const res = await api(`/api/naics/search?q=${encodeURIComponent(qNow)}`);
+            const items = (res && Array.isArray(res.items)) ? res.items : [];
+            filtered = items.filter(it => {
+              const c = String((it && it.code) || '').toLowerCase();
+              const t = String((it && it.title) || '').toLowerCase();
+              return c.startsWith(ql) || t.includes(ql);
+            });
+          }
+
           lastResults = filtered;
           if (lastResults.length) { renderResults(lastResults); }
         }, 200);

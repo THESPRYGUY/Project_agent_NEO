@@ -53,7 +53,7 @@ function setText(sel, value) {
 
 function setBoolBadge(el, ok) {
   if (!el) return;
-  el.textContent = ok ? '✅' : '❌';
+  el.textContent = ok ? "OK" : "X";
   if (el.classList && typeof el.classList.remove === 'function') {
     el.classList.remove('status-ok','status-bad');
     el.classList.add(ok ? 'status-ok' : 'status-bad');
@@ -84,18 +84,18 @@ export function applyBuildToDom(data) {
   const p1102 = document.querySelector('[data-parity-11-02]');
   const p0302 = document.querySelector('[data-parity-03-02]');
   const p1702 = document.querySelector('[data-parity-17-02]');
-  // Ensure new parity badges exist in DOM for 03↔02 and 17↔02
+  // Ensure new parity badges exist in DOM for 03->02 and 17->02
   try {
     const card = document.getElementById('parity-card');
     if (card) {
       if (!p0302) {
         const d = document.createElement('div');
-        d.innerHTML = '03 ↔ 02: <strong data-parity-03-02 title="03 activation vs 02 targets">-</strong>';
+        d.innerHTML = "03 -> 02: <strong data-parity-03-02 title="03 activation vs 02 targets">-</strong>";
         card.appendChild(d);
       }
       if (!p1702) {
         const d2 = document.createElement('div');
-        d2.innerHTML = '17 ↔ 02: <strong data-parity-17-02 title="17 activation vs 02 targets">-</strong>';
+        d2.innerHTML = "17 -> 02: <strong data-parity-17-02 title="17 activation vs 02 targets">-</strong>";
         card.appendChild(d2);
       }
     }
@@ -105,7 +105,8 @@ export function applyBuildToDom(data) {
     zipBtn.href = data?.outdir ? ('/build/zip?outdir=' + encodeURIComponent(data.outdir)) : '#';
     zipBtn.hidden = !Boolean(data?.outdir);
   }
-  setText('[data-file-count]', data?.file_count || 0);
+  const fileCount = (data && (data.file_count || data.files)) ? (data.file_count || data.files) : 0;
+  setText('[data-file-count]', fileCount);
   setBoolBadge(p0214, Boolean(data?.parity?.['02_vs_14']));
   setBoolBadge(p1102, Boolean(data?.parity?.['11_vs_02']));
   setBoolBadge(p0302, Boolean(data?.parity?.['03_vs_02']));
@@ -186,7 +187,7 @@ function renderParityTooltips(data) {
     const tipId = 'parity-tip-' + pack;
     try { tooltip.setAttribute('id', tipId); } catch {}
     try { tooltip.setAttribute('data-parity-tooltip', pack + '-02'); } catch {}
-    tooltip.innerHTML = relevant.map(d => `${pack} ${d.key} — ${Number(d.got).toFixed(3)} → ${Number(d.expected).toFixed(3)}`).join('<br>');
+    tooltip.innerHTML = relevant.map(d => `${pack} ${d.key}: ${Number(d.got).toFixed(3)} -> ${Number(d.expected).toFixed(3)}`).join('<br>');
     try { info.setAttribute('aria-controls', tipId); } catch {}
     function setOpen(open) {
       tooltip.hidden = !open;
@@ -236,7 +237,7 @@ function bindPanel() {
   if (buildBtn) {
     buildBtn.addEventListener('click', async () => {
       buildBtn.setAttribute('disabled','');
-      buildBtn.textContent = 'Building…';
+      buildBtn.textContent = 'Building...';
       try {
         const { data } = await buildRepo();
         applyBuildToDom(data);
@@ -273,7 +274,8 @@ async function init() {
       ensureZipButton();
       const zipBtn = document.querySelector('[data-download-zip]');
       if (zipBtn) { zipBtn.href = last?.outdir ? ('/build/zip?outdir=' + encodeURIComponent(last.outdir)) : '#'; zipBtn.hidden = !Boolean(last?.outdir); }
-      setText('[data-file-count]', last.file_count || 0);
+      const lastFileCount = last.file_count || last.files || 0;
+      setText('[data-file-count]', lastFileCount);
       setBoolBadge(p0214, Boolean(last?.parity?.['02_vs_14']));
       setBoolBadge(p1102, Boolean(last?.parity?.['11_vs_02']));
       setBoolBadge(p0302, Boolean(last?.parity?.['03_vs_02']));
