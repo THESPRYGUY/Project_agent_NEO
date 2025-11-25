@@ -60,3 +60,6 @@ before_after_diff.zip
 rebase_safety.diff
 agent_profile.json
 artifacts/ci/
+
+# Local build pointer
+_last_build.json

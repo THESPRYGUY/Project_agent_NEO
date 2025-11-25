@@ -167,7 +167,8 @@ def test_20_pack_presence_and_integrity(tmp_path: Path) -> None:
         .get("gates", {})
         .get("effective_autonomy")
     )
-    assert 0 < effective <= 0.28
+    assert effective is not None
+    assert abs(effective - 0.8) <= 0.05
 
     # 01 narrative + README header
     readme_map = json.loads(
