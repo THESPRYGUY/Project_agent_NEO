@@ -54,6 +54,7 @@ reports/*
 telemetry*.jsonl
 before_after_diff.zip
 *.zip
+!generated_repos/agent-build-007-2-1-1.zip
 # previews & local scratch
 **/spec_preview/
 *.bak
@@ -61,5 +62,5 @@ rebase_safety.diff
 agent_profile.json
 artifacts/ci/
 
-# Local build pointer
-_last_build.json
+# Local build pointers (do not track per-repo outputs)
+generated_repos/*/_last_build.json

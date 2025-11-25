@@ -1,0 +1,11 @@
+{
+  "schema_version": "2.1.1",
+  "agent_id": "AGT-112330-TURKEY-RND-0001",
+  "outdir": "C:\\Users\\spryg\\OneDrive\\Documents\\GitHub\\Project_agent_NEO\\generated_repos\\agent-build-007-2-1-1",
+  "files": 27,
+  "ts": "20251125T210456Z",
+  "zip_hash": "56923923e6f5b06bf8600478cf3ed084d01afa9e95a21da94d0031e17da0d2f1",
+  "status": "complete",
+  "timestamp": "2025-11-25T21:04:56.425520+00:00",
+  "build_id": "agent-build-007-2-1-1"
+}
