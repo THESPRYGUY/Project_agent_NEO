@@ -1,4 +1,4 @@
-﻿(function(){
+(function(){
   const btn = document.querySelector('[data-generate-agent]');
   if (!btn) { return; }
   const hidden = (name) => document.querySelector('[name="' + name + '"]');
@@ -27,216 +27,48 @@
   const form = document.querySelector('form');
   if (!btn || !form) { return; }
 
-  function get(name){ const el = form.querySelector(`[name="${name}"]`); return el ? (el.value || '').trim() : ''; }
-  function getAll(name){ return Array.from(form.querySelectorAll(`input[name="${name}"]:checked`)).map(i=>i.value); }
-  function parseJsonSafe(text){ try { return text ? JSON.parse(text) : null; } catch { return null; } }
+  function buildFormBody(){
+    const fd = new FormData(form);
+    return new URLSearchParams(fd).toString();
+  }
 
-  function buildProfile(){
-    const profile = {
-      agent: {
-        name: get('agent_name') || 'Custom Project NEO Agent',
-        version: get('agent_version') || '1.0.0',
-        persona: get('agent_persona') || '',
-        domain: get('domain') || '',
-        role: get('role') || ''
-      },
-      toolsets: {
-        selected: getAll('toolsets'),
-        custom: (get('custom_toolsets')||'').split(',').map(s=>s.trim()).filter(Boolean)
-      },
-      attributes: {
-        selected: getAll('attributes'),
-        custom: (get('custom_attributes')||'').split(',').map(s=>s.trim()).filter(Boolean)
-      },
-      preferences: {
-        sliders: {
-          autonomy: Number(get('autonomy')||'50')||50,
-          confidence: Number(get('confidence')||'50')||50,
-          collaboration: Number(get('collaboration')||'50')||50,
-        },
-        communication_style: get('communication_style') || '',
-        collaboration_mode: get('collaboration_mode') || ''
-      },
-      notes: get('notes') || ''
-    };
-
-    // domain selector
-    const domainSel = parseJsonSafe(get('domain_selector'));
-    if (domainSel && typeof domainSel === 'object') {
-      profile.agent.domain_selector = domainSel;
-      profile.domain_selector = domainSel;
-    }
-
-    // NAICS
-    const naicsCode = get('naics_code');
-    if (naicsCode) {
-      const lineage = parseJsonSafe(get('naics_lineage_json')) || [];
-      const levelRaw = get('naics_level');
-      const level = levelRaw ? Number(levelRaw) : null;
-      const naicsPayload = { code: naicsCode, title: get('naics_title'), level, lineage };
-      profile.naics = naicsPayload;
-      profile.classification = profile.classification || {};
-      profile.classification.naics = naicsPayload;
-    }
-
-    // business function + role
-    const fn = get('business_function') || (document.querySelector('[data-function-select]')?.value || '');
-    if (fn) { profile.business_function = fn; profile.agent.business_function = fn; }
-    const roleCode = get('role_code') || (document.querySelector('[data-role-select]')?.value || '');
-    const roleTitle = get('role_title') || (document.querySelector('[data-role-select]')?.selectedOptions?.[0]?.text || '');
-    const roleSenior = get('role_seniority');
-    if (roleCode || roleTitle || roleSenior) {
-      profile.role = { code: roleCode, title: roleTitle || roleCode, seniority: roleSenior, function: fn || profile.agent.role };
-    }
-
-    const routingJson = parseJsonSafe(get('routing_defaults_json'));
-    if (routingJson && typeof routingJson === 'object') {
-      profile.routing_defaults = routingJson;
-    }
-
-    const functionCategory = get('function_category');
-    if (functionCategory) { profile.function_category = functionCategory; profile.agent.function_category = functionCategory; }
-    const specialties = parseJsonSafe(get('function_specialties_json'));
-    if (Array.isArray(specialties)) { profile.function_specialties = specialties.map(String); }
-
-    // LinkedIn
-    const linkedinUrl = get('linkedin_url');
-    if (linkedinUrl) { profile.linkedin = { url: linkedinUrl }; }
-
-    // v1.2 additions
-    profile.identity = {
-      agent_id: get('identity.agent_id'),
-      display_name: get('identity.display_name'),
-      owners: (get('identity.owners')||'').split(',').map(s=>s.trim()).filter(Boolean),
-      no_impersonation: !!(form.querySelector('[name="identity.no_impersonation"]')?.checked),
-      agent_version: get('agent_version') || '1.0.0'
-    };
-    profile.role_profile = {
-      archetype: get('role_profile.archetype'),
-      role_title: get('role_profile.role_title'),
-      role_recipe_ref: get('role_profile.role_recipe_ref'),
-      objectives: (get('role_profile.objectives')||'').split(',').map(s=>s.trim()).filter(Boolean)
-    };
-    profile.sector_profile = {
-      sector: get('sector_profile.sector'),
-      industry: get('sector_profile.industry'),
-      region: (get('sector_profile.region')||'').split(',').map(s=>s.trim()).filter(Boolean),
-      languages: (get('sector_profile.languages')||'').split(',').map(s=>s.trim()).filter(Boolean),
-      domain_tags: (get('sector_profile.domain_tags')||'').split(',').map(s=>s.trim()).filter(Boolean),
-      risk_tier: get('sector_profile.risk_tier'),
-      regulatory: (get('sector_profile.regulatory')||'').split(',').map(s=>s.trim()).filter(Boolean)
-    };
-    const connectorsRaw = parseJsonSafe(get('capabilities_tools.tool_connectors_json'));
-    const humanGateActions = (get('capabilities_tools.human_gate.actions')||'').split(',').map(s=>s.trim()).filter(Boolean);
-    let connectors = Array.isArray(connectorsRaw) ? connectorsRaw : [];
-    const retentionJson = parseJsonSafe(get('memory.retention_json'));
-    const permissionsJson = parseJsonSafe(get('memory.permissions_json'));
-    const writebackRulesJson = parseJsonSafe(get('memory.writeback_rules_json'));
-    const dataSourcesRaw = (get('memory.data_sources')||'').split(',').map(s=>s.trim()).filter(Boolean);
-    profile.capabilities_tools = {
-      tool_connectors: connectors,
-      human_gate: { actions: humanGateActions }
-    };
-    profile.memory = {
-      memory_scopes: (get('memory.memory_scopes')||'').split(',').map(s=>s.trim()).filter(Boolean),
-      initial_memory_packs: (get('memory.initial_memory_packs')||'').split(',').map(s=>s.trim()).filter(Boolean),
-      optional_packs: (get('memory.optional_packs')||'').split(',').map(s=>s.trim()).filter(Boolean),
-      data_sources: dataSourcesRaw,
-    };
-    if (retentionJson && typeof retentionJson === 'object') {
-      profile.memory.retention = retentionJson;
-    }
-    if (permissionsJson && typeof permissionsJson === 'object') {
-      profile.memory.permissions = permissionsJson;
-    }
-    if (Array.isArray(writebackRulesJson)) {
-      profile.memory.writeback_rules = writebackRulesJson;
-    }
-    profile.governance_eval = {
-      risk_register_tags: (get('governance_eval.risk_register_tags')||'').split(',').map(s=>s.trim()).filter(Boolean),
-      pii_flags: (get('governance_eval.pii_flags')||'').split(',').map(s=>s.trim()).filter(Boolean),
-      classification_default: get('governance_eval.classification_default') || 'confidential',
-    };
-    // v3 governance / rbac
-    profile.governance = {
-      rbac: { roles: (get('governance.rbac.roles')||'').split(',').map(s=>s.trim()).filter(Boolean) },
-      policy: {
-        no_impersonation: !!(form.querySelector('[name="identity.no_impersonation"]')?.checked),
-        classification_default: get('governance_eval.classification_default') || 'confidential',
-      }
-    };
-    const intakeContractPayload = parseJsonSafe(get('intake.contract_payload'));
-    if (intakeContractPayload && typeof intakeContractPayload === 'object') {
-      profile.intake_contract = intakeContractPayload;
-    }
-    // v3 persona extras
-    profile.persona = Object.assign({}, profile.persona || {}, {
-      tone: get('persona.tone') || 'crisp, analytical, executive',
-      collaboration_mode: get('persona.collaboration_mode') || 'Solo'
-    });
-    // Lifecycle & telemetry (v3)
-    profile.lifecycle = { stage: get('lifecycle.stage') || 'dev' };
-    const rate = parseFloat(get('telemetry.sampling.rate')||'1.0');
-    profile.telemetry = {
-      sampling: { rate: isNaN(rate) ? 1.0 : rate },
-      sinks: (get('telemetry.sinks')||'').split(',').map(s=>s.trim()).filter(Boolean),
-      pii_redaction: { strategy: get('telemetry.pii_redaction.strategy') || 'mask' }
-    };
-    const adv = parseJsonSafe(get('advanced_overrides'));
-    if (adv && typeof adv === 'object') {
-      profile.advanced_overrides = adv;
-      // Shallow merge for now (server will deep-merge defensively)
-      for (const [k, v] of Object.entries(adv)) {
-        if (profile[k] === undefined) profile[k] = v;
-      }
-    } else {
-      profile.advanced_overrides = {};
-    }
-
-    return profile;
+  function fallbackSubmit(){
+    const formEl = document.querySelector('form');
+    if (!formEl) { return; }
+    const marker = document.createElement('input');
+    marker.type = 'hidden';
+    marker.name = '__auto_repo';
+    marker.value = '1';
+    formEl.appendChild(marker);
+    formEl.submit();
   }
 
   async function submitProfile(){
-    const profile = buildProfile();
+    const body = buildFormBody();
     btn.setAttribute('disabled','');
-    btn.textContent = 'Generating…';
+    btn.textContent = 'Generating.';
     try {
-      const res = await fetch('/api/agent/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ profile }) });
+      const res = await fetch('/api/agent/generate', { method: 'POST', headers: { 'Content-Type': 'application/x-www-form-urlencoded' }, body });
       const text = await res.text();
       const json = (()=>{ try { return JSON.parse(text) } catch { return null } })();
       if (res.ok && json && json.status === 'ok') {
         alert('Agent repo generated successfully. Check the generated_repos folder.');
-      } else {
-        if (res.status === 404) {
-          // Fallback: submit the form to '/' to trigger server-side build on POST
-          console.log('API endpoint not found, falling back to form submit');
-          const formEl = document.querySelector('form');
-          if (formEl) {
-            const marker = document.createElement('input');
-            marker.type = 'hidden';
-            marker.name = '__auto_repo';
-            marker.value = '1';
-            formEl.appendChild(marker);
-            formEl.submit();
-            return;
-          }
-        }
-        alert('Generation failed: ' + (json && json.issues ? json.issues.join('; ') : res.status + ' ' + text));
-      }
-    } catch (err) {
-      // If fetch fails completely, try the fallback path
-      console.error('API call failed, attempting form submit fallback:', err);
-      const formEl = document.querySelector('form');
-      if (formEl) {
-        const marker = document.createElement('input');
-        marker.type = 'hidden';
-        marker.name = '__auto_repo';
-        marker.value = '1';
-        formEl.appendChild(marker);
-        formEl.submit();
         return;
       }
-      alert('Generation error: ' + err);
+      if (res.status === 400 && json && json.errors) {
+        const errors = Object.values(json.errors).map(String).filter(Boolean).join('; ');
+        alert('Generation failed: ' + (errors || 'Validation error'));
+        return;
+      }
+      if (res.status === 404) {
+        console.log('API endpoint not found, falling back to form submit');
+        fallbackSubmit();
+        return;
+      }
+      alert('Generation failed: ' + (json && json.issues ? json.issues.join('; ') : res.status + ' ' + text));
+    } catch (err) {
+      console.error('API call failed, attempting form submit fallback:', err);
+      fallbackSubmit();
     } finally {
       btn.textContent = 'Generate Agent Repo';
       // keep disabled state logic to gating script
