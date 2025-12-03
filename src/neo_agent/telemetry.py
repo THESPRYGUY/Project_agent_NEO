@@ -71,5 +71,12 @@ def emit_repo_generated_event(result: Mapping[str, Any] | None = None) -> None:
     if not isinstance(result, Mapping):
         emit_event("repo:generated", {})
         return
-    payload = {k: str(v) for k, v in result.items() if isinstance(k, str)}
+    payload: Dict[str, Any] = {}
+    for k, v in result.items():
+        if not isinstance(k, str):
+            continue
+        if isinstance(v, (str, int, float, bool)):
+            payload[k] = v
+        else:
+            payload[k] = str(v)
     emit_event("repo:generated", payload)

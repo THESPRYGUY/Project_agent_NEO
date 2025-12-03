@@ -23,7 +23,11 @@ from .middleware import ObservabilityMiddleware
 from .logging import get_logger
 from .repo_generator import AgentRepoGenerationError, generate_agent_repo
 from neo_build.writers import write_repo_files
-from neo_build.validators import integrity_report
+from neo_build.validators import (
+    attach_integrity_to_reporting_pack,
+    integrity_report,
+    objectives_from_profile,
+)
 from neo_build.utils import FileLock
 from neo_build.contracts import CANONICAL_PACK_FILENAMES
 from .adapters.normalize_v3 import normalize_context_role
@@ -348,6 +352,10 @@ $build_panel_styles
                 <input type="hidden" name="function_specialties_json" value="$function_specialties">
                 $function_select_html
                 $function_role_html
+                <label>Objectives (bullets)
+                    <textarea name="objectives_raw" rows="4" placeholder="One objective per line" aria-describedby="objectives-help">$objectives_value</textarea>
+                    <small id="objectives-help">3-7 bullet-style objectives. One per line, imperative (e.g., "Prioritize safety-first workflows", "Summarize complex policies for executives").</small>
+                </label>
                 <div class="generate-agent">
                     <button type="button" data-generate-agent disabled>Generate Agent Repo</button>
                 </div>
@@ -514,6 +522,20 @@ $build_panel_styles
             </div>
           </div>
           <div class="build-grid">
+            <div class="card" id="profile-card">
+              <h3>Profile</h3>
+              <div><strong>Mission</strong><div data-mission-preview>$mission_preview</div></div>
+              <div><strong>Function</strong> <span data-function-preview>$business_function_display</span></div>
+              <div><strong>Role</strong> <span data-role-preview-title>$role_title_display</span></div>
+              <div>
+                <div style="display:flex; align-items:center; justify-content:space-between; gap:0.5rem;">
+                  <strong>Role Objectives</strong>
+                  <span class="health-chip" data-objectives-status>$objectives_status_label</span>
+                </div>
+                <ul>$objectives_preview_list</ul>
+                $objectives_hint
+              </div>
+            </div>
             <div class="card" id="health-card">
               <h3>Health</h3>
               <div class="health-chip" data-health-chip>
@@ -651,6 +673,236 @@ def _summary_block(
         f"<h2>Generated Agent Profile</h2><p>Profile saved to <code>{profile_path}</code></p>"
         f"<p>Specs generated in <code>{spec_path}</code></p><pre>{encoded}</pre></div>"
     )
+
+
+def _clean_objectives(values: Any) -> list[str]:
+    """Normalize objectives input into a clean list of strings."""
+
+    raw_items: list[Any] = []
+    if isinstance(values, str):
+        raw_items = values.splitlines()
+    elif isinstance(values, Iterable) and not isinstance(
+        values, (bytes, bytearray, Mapping)
+    ):
+        for entry in values:
+            if isinstance(entry, str):
+                raw_items.extend(entry.splitlines())
+            else:
+                raw_items.append(entry)
+    cleaned: list[str] = []
+    for entry in raw_items:
+        try:
+            text = " ".join(str(entry).replace("\r", " ").split()).strip("•-– ")
+        except Exception:
+            text = ""
+        if text:
+            cleaned.append(text)
+    return cleaned
+
+
+def _parse_engagement_notes(profile: Mapping[str, Any]) -> Mapping[str, Any]:
+    """Extract engagement notes from dedicated key or JSON string."""
+
+    notes = profile.get("engagement_notes")
+    if isinstance(notes, Mapping):
+        return dict(notes)
+    raw = profile.get("notes")
+    if isinstance(raw, str):
+        try:
+            parsed = json.loads(raw)
+        except Exception:
+            return {}
+        if isinstance(parsed, Mapping):
+            eng = parsed.get("engagement_notes")
+            if isinstance(eng, Mapping):
+                return dict(eng)
+            return dict(parsed)
+    return {}
+
+
+def _extract_mission_and_use_cases(profile: Mapping[str, Any]) -> tuple[str, list[str]]:
+    """Return (mission, core_use_cases) from profile or engagement notes."""
+
+    mission: str = ""
+    use_cases: list[str] = []
+
+    def _clean(text: Any) -> str:
+        try:
+            return " ".join(str(text).split()).strip("•-– ")
+        except Exception:
+            return ""
+
+    engagement = _parse_engagement_notes(profile)
+    mission_block = engagement.get("mission")
+    if isinstance(mission_block, Mapping):
+        mission = _clean(
+            mission_block.get("primary")
+            or mission_block.get("goal")
+            or mission_block.get("summary")
+            or ""
+        )
+        for field in ("secondary", "core_use_cases", "use_cases"):
+            vals = mission_block.get(field)
+            if isinstance(vals, list):
+                use_cases.extend(_clean(v) for v in vals if _clean(v))
+    elif isinstance(mission_block, str):
+        mission = _clean(mission_block)
+
+    if not mission:
+        mission = _clean(profile.get("mission") or "")
+    if not use_cases:
+        raw_use_cases = profile.get("core_use_cases")
+        if isinstance(raw_use_cases, list):
+            use_cases.extend(_clean(v) for v in raw_use_cases if _clean(v))
+
+    # Fallbacks from agent/role context to keep derivation contextual
+    agent_section = profile.get("agent") if isinstance(profile, Mapping) else {}
+    role_section = profile.get("role") if isinstance(profile, Mapping) else {}
+    role_profile = profile.get("role_profile") if isinstance(profile, Mapping) else {}
+    business_function = ""
+    if isinstance(role_section, Mapping):
+        business_function = _clean(
+            role_section.get("function") or role_section.get("function_code") or ""
+        )
+    if not business_function and isinstance(profile, Mapping):
+        business_function = _clean(profile.get("business_function") or "")
+    role_title = ""
+    if isinstance(role_profile, Mapping):
+        role_title = _clean(role_profile.get("role_title") or "")
+    if not role_title and isinstance(role_section, Mapping):
+        role_title = _clean(role_section.get("title") or role_section.get("role_title"))
+    if not mission:
+        mission = _clean(
+            " ".join(
+                part
+                for part in (
+                    "Deliver outcomes as",
+                    role_title or "an agent",
+                    f"within {business_function}" if business_function else "",
+                )
+                if part
+            )
+        )
+    if not use_cases:
+        use_cases = [
+            f"Support {business_function or 'core operations'} workflows",
+            f"Guide stakeholders as {role_title or 'the assigned role'}",
+        ]
+    return mission, use_cases
+
+
+def _format_objective_line(text: str, idx: int) -> str:
+    """Coerce text into an imperative-style objective with a stable prefix."""
+
+    cleaned = " ".join(text.split()).strip("•-– ")
+    if not cleaned:
+        return ""
+    prefixes = ("Deliver", "Ensure", "Support", "Advance", "Coordinate")
+    first_word = cleaned.split()[0].lower()
+    if first_word in {p.lower() for p in prefixes}:
+        return cleaned[0].upper() + cleaned[1:]
+    prefix = prefixes[idx % len(prefixes)]
+    return f"{prefix} {cleaned}"
+
+
+def _derive_objectives(mission: str, core_use_cases: list[str]) -> list[str]:
+    """Generate 3–5 deterministic objectives from mission + use cases."""
+
+    mission_text = " ".join(str(mission or "").split()).strip("•-– ")
+    use_cases = [uc for uc in (_clean_objectives(core_use_cases)) if uc]
+
+    fragments: list[str] = []
+    if mission_text:
+        fragments = [
+            frag
+            for frag in (
+                part.strip(" .;")
+                for part in re.split(r"[.;\n]", mission_text)
+                if part.strip()
+            )
+            if frag
+        ]
+        if not fragments:
+            fragments = [mission_text]
+
+    objectives: list[str] = []
+    for idx, frag in enumerate(fragments[:2]):
+        line = _format_objective_line(frag, idx)
+        if line:
+            objectives.append(line)
+
+    start_idx = len(objectives)
+    for offset, uc in enumerate(use_cases[:3]):
+        line = _format_objective_line(uc, start_idx + offset)
+        if line:
+            objectives.append(line)
+
+    fillers = [
+        "Protect safety, privacy, and compliance guardrails",
+        "Surface risks, unknowns, and next steps clearly",
+        "Deliver structured outputs the team can execute",
+    ]
+    while len(objectives) < 3 and fillers:
+        fallback = fillers.pop(0)
+        line = _format_objective_line(fallback, len(objectives))
+        if line:
+            objectives.append(line)
+
+    if len(objectives) > 5:
+        objectives = objectives[:5]
+    return objectives
+
+
+def _ensure_objectives(
+    profile: Mapping[str, Any], *, provided: list[str] | None = None
+) -> Mapping[str, Any]:
+    """Attach objectives + status to profile and role blocks."""
+
+    profile_dict = dict(profile) if isinstance(profile, Mapping) else {}
+    role_profile = (
+        dict(profile_dict.get("role_profile") or {})
+        if isinstance(profile_dict.get("role_profile"), Mapping)
+        else {}
+    )
+    role_block = (
+        dict(profile_dict.get("role") or {})
+        if isinstance(profile_dict.get("role"), Mapping)
+        else {}
+    )
+
+    explicit = _clean_objectives(provided or [])
+    role_profile_objectives = _clean_objectives(role_profile.get("objectives"))
+    role_block_objectives = _clean_objectives(role_block.get("objectives"))
+    top_level_objectives = _clean_objectives(profile_dict.get("objectives"))
+
+    objectives = (
+        explicit
+        or role_profile_objectives
+        or role_block_objectives
+        or top_level_objectives
+    )
+    status = (
+        str(role_profile.get("objectives_status"))
+        if role_profile.get("objectives_status")
+        else ""
+    )
+    if explicit:
+        status = "explicit"
+    if not objectives:
+        mission, core_use_cases = _extract_mission_and_use_cases(profile_dict)
+        objectives = _derive_objectives(mission, core_use_cases)
+        status = "derived"
+    if not status:
+        status = "explicit" if objectives else "derived"
+
+    role_profile["objectives"] = objectives
+    role_profile["objectives_status"] = status
+    if role_block or objectives:
+        role_block["objectives"] = objectives
+        profile_dict["role"] = role_block
+    profile_dict["role_profile"] = role_profile
+    profile_dict["objectives"] = objectives
+    return profile_dict
 
 
 class IntakeApplication:
@@ -965,6 +1217,17 @@ class IntakeApplication:
                 # Fallback simple suffix when util unavailable
                 agent_id = f"agent-{int(time.time())}"
         req_id = str(environ.get("neo.req_id") or "")
+        objectives_list, objectives_status = objectives_from_profile(profile)
+        objectives_status = objectives_status or (
+            "explicit" if objectives_list else "missing"
+        )
+        objectives_count = len(objectives_list)
+
+        def _with_objectives(meta: Mapping[str, Any] | None) -> dict[str, Any]:
+            base: dict[str, Any] = dict(meta) if isinstance(meta, Mapping) else {}
+            base["objectives_status"] = objectives_status or "missing"
+            base["objectives_count"] = int(objectives_count)
+            return base
 
         # Acquire per-agent build lock before tmp creation
         from uuid import uuid4
@@ -980,7 +1243,8 @@ class IntakeApplication:
             try:
                 if emit_event:
                     emit_event(
-                        "build.locked.count", {"agent_id": agent_id, "req_id": req_id}
+                        "build.locked.count",
+                        _with_objectives({"agent_id": agent_id, "req_id": req_id}),
                     )
             except Exception:
                 pass
@@ -994,7 +1258,9 @@ class IntakeApplication:
             try:
                 emit_event(
                     "build:start",
-                    {"agent_id": agent_id, "tmp": str(tmp_dir), "req_id": req_id},
+                    _with_objectives(
+                        {"agent_id": agent_id, "tmp": str(tmp_dir), "req_id": req_id}
+                    ),
                 )
             except Exception:
                 pass
@@ -1007,6 +1273,14 @@ class IntakeApplication:
             (tmp_dir / "INTEGRITY_REPORT.json").write_text(
                 json.dumps(report, indent=2), encoding="utf-8"
             )
+            try:
+                updated_reporting = attach_integrity_to_reporting_pack(report, packs)
+                if isinstance(updated_reporting, Mapping):
+                    (tmp_dir / "18_Reporting-Pack_v2.json").write_text(
+                        json.dumps(updated_reporting, indent=2), encoding="utf-8"
+                    )
+            except Exception:
+                pass
 
             ts = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
             final_dir = out_root / agent_id / ts
@@ -1040,6 +1314,8 @@ class IntakeApplication:
                 "files": int(files),
                 "ts": ts,
                 "zip_hash": zip_hash,
+                "objectives_status": objectives_status or "missing",
+                "objectives_count": int(objectives_count),
             }
             try:
                 self._atomic_write_json(out_root / "_last_build.json", last)
@@ -1058,23 +1334,28 @@ class IntakeApplication:
                 try:
                     emit_event(
                         "build:success",
-                        {
-                            "agent_id": agent_id,
-                            "outdir": str(final_dir),
-                            "files_count": int(files),
-                            "zip_bytes": int(zip_bytes),
-                            "duration_ms": dur_ms,
-                            "outcome": "success",
-                            "req_id": req_id,
-                        },
+                        _with_objectives(
+                            {
+                                "agent_id": agent_id,
+                                "outdir": str(final_dir),
+                                "files_count": int(files),
+                                "zip_bytes": int(zip_bytes),
+                                "duration_ms": dur_ms,
+                                "outcome": "success",
+                                "req_id": req_id,
+                            }
+                        ),
                     )
                     # Explicit counter-style events for dashboards
                     emit_event(
-                        "build.success.time_ms", {"value": dur_ms, "agent_id": agent_id}
+                        "build.success.time_ms",
+                        _with_objectives({"value": dur_ms, "agent_id": agent_id}),
                     )
                     emit_event(
                         "build.zip_bytes",
-                        {"value": int(zip_bytes), "agent_id": agent_id},
+                        _with_objectives(
+                            {"value": int(zip_bytes), "agent_id": agent_id}
+                        ),
                     )
                 except Exception:
                     pass
@@ -1092,14 +1373,21 @@ class IntakeApplication:
                 if isinstance(report, Mapping)
                 else {}
             )
-            warnings = []
+            warnings = list((report or {}).get("warnings", []) or [])
             try:
                 for pack, vals in (missing_sections or {}).items():
                     if isinstance(vals, list):
                         for key in vals:
                             warnings.append(f"{pack}:{key}")
             except Exception:
-                warnings = []
+                pass
+            try:
+                seen_warn: set[str] = set()
+                warnings = [
+                    w for w in warnings if not (w in seen_warn or seen_warn.add(w))
+                ]
+            except Exception:
+                warnings = list(warnings or [])
             integrity_errors = list((report or {}).get("errors", []) or [])
             return 200, {
                 "agent_id": agent_id,
@@ -1117,6 +1405,8 @@ class IntakeApplication:
                 "packs_complete": bool((report or {}).get("packs_complete", False)),
                 "integrity_errors": integrity_errors,
                 "warnings": warnings,
+                "objectives_status": objectives_status or "missing",
+                "objectives_count": int(objectives_count),
             }
         except Exception as exc:
             # Cleanup temp dir
@@ -1135,12 +1425,14 @@ class IntakeApplication:
                 try:
                     emit_event(
                         "build:error",
-                        {
-                            "agent_id": agent_id,
-                            "code": err_code,
-                            "trace_id": req_id,
-                            "req_id": req_id,
-                        },
+                        _with_objectives(
+                            {
+                                "agent_id": agent_id,
+                                "code": err_code,
+                                "trace_id": req_id,
+                                "req_id": req_id,
+                            }
+                        ),
                     )
                 except Exception:
                     pass
@@ -1788,6 +2080,8 @@ window.addEventListener('DOMContentLoaded', function () {
         if not isinstance(profile, Mapping):
             profile = {}
 
+        profile = _ensure_objectives(profile)
+
         slider_section = (
             sliders_candidate if isinstance(sliders_candidate, Mapping) else {}
         )
@@ -2108,6 +2402,62 @@ window.addEventListener('DOMContentLoaded', function () {
             ),
             spaces=4,
         )
+        mission_preview, _mission_use_cases = _extract_mission_and_use_cases(profile)
+        role_profile_section = (
+            profile.get("role_profile") if isinstance(profile, Mapping) else {}
+        )
+        if not isinstance(role_profile_section, Mapping):
+            role_profile_section = {}
+        objectives_for_form = _clean_objectives(
+            role_profile_section.get("objectives") or profile.get("objectives")
+        )
+        objectives_value = "\n".join(objectives_for_form)
+        objectives_status = str(
+            role_profile_section.get("objectives_status") or ""
+        ).strip()
+        if not objectives_status and objectives_for_form:
+            objectives_status = "explicit"
+        status_lower = objectives_status.lower()
+        objectives_hint = ""
+        if status_lower == "derived":
+            objectives_status_label = "Auto-generated"
+            objectives_hint = (
+                '<div class="objectives-note" data-objectives-note>'
+                "Objectives auto-generated from mission/use-cases; edit in intake to override."
+                "</div>"
+            )
+        elif status_lower == "explicit":
+            objectives_status_label = "User-defined"
+            objectives_hint = (
+                '<div class="objectives-note objectives-note--explicit" data-objectives-note>'
+                "User-defined objectives."
+                "</div>"
+            )
+        else:
+            objectives_status_label = objectives_status or "Missing"
+            objectives_hint = (
+                '<div class="objectives-note" data-objectives-note>'
+                "Objectives will be derived from mission/use-cases; edit to specify your own."
+                "</div>"
+            )
+        objectives_preview_list = (
+            "\n".join(
+                f"<li>{html.escape(item)}</li>"
+                for item in (objectives_for_form or [])
+                if item
+            )
+            if objectives_for_form
+            else "<li>Will auto-generate from mission and core use cases.</li>"
+        )
+        mission_preview_display = html.escape(
+            mission_preview or "Will auto-generate from mission and core use cases."
+        )
+        business_function_display = html.escape(business_function)
+        role_title_display = html.escape(
+            _str(role_payload.get("title", ""))
+            or _str(role_profile_section.get("role_title", ""))
+            or _str(role_payload.get("code", ""))
+        )
         # Finalise options and HTML substitution for the intake form
         agent_name = _str(agent_section.get("name", ""))
         agent_version = _str(agent_section.get("version", "1.0.0")) or "1.0.0"
@@ -2274,6 +2624,13 @@ window.addEventListener('DOMContentLoaded', function () {
             custom_toolsets=html.escape(custom_toolsets_value, quote=True),
             custom_attributes=html.escape(custom_attributes_value, quote=True),
             linkedin_url=html.escape(linkedin_url, quote=True),
+            objectives_value=html.escape(objectives_value or "", quote=True),
+            mission_preview=mission_preview_display,
+            objectives_preview_list=objectives_preview_list,
+            objectives_status_label=html.escape(objectives_status_label, quote=True),
+            objectives_hint=objectives_hint,
+            business_function_display=business_function_display,
+            role_title_display=role_title_display,
             naics_selector_html=naics_selector_html,
             naics_code=safe_code,
             naics_title=safe_title,
@@ -2609,6 +2966,10 @@ window.addEventListener('DOMContentLoaded', function () {
                 return [str(x) for x in v if x]
             return [str(v)] if isinstance(v, str) and v else []
 
+        objectives_input = _clean_objectives(
+            params.get("objectives") or params.get("objectives_raw")
+        )
+
         persona_state = persona_state or self._load_persona_state()
         persona_block = {
             "operator": persona_state.get("operator"),
@@ -2708,6 +3069,11 @@ window.addEventListener('DOMContentLoaded', function () {
                 "domain": domain_value,
                 "domain_source": domain_source_value or None,
             },
+            "role_profile": {
+                "archetype": role_code_value or role_value,
+                "role_title": role_title_value or role_value,
+                "objectives": objectives_input,
+            },
             # Persist NAICS
             "naics": {
                 "code": naics_code,
@@ -2793,7 +3159,10 @@ window.addEventListener('DOMContentLoaded', function () {
         return profile, errors
 
     def _normalize_profile_from_params(
-        self, profile: Mapping[str, Any], params: Mapping[str, list[str] | str]
+        self,
+        profile: Mapping[str, Any],
+        params: Mapping[str, list[str] | str],
+        objectives: list[str] | None = None,
     ) -> Mapping[str, Any]:
         """Apply context/role normalization to align with builder expectations."""
         try:
@@ -2843,13 +3212,30 @@ window.addEventListener('DOMContentLoaded', function () {
                     "function_code": _p("business_function"),
                     "role_code": _p("role_code") or _p("role_profile.archetype"),
                     "role_title": _p("role_title") or _p("role_profile.role_title"),
-                    "objectives": [],
+                    "objectives": objectives
+                    or _clean_objectives(
+                        params.get("objectives") or params.get("objectives_raw")
+                    ),
                 },
             }
 
             normalized = normalize_context_role(v3_payload)
             fp = dict(profile)
             fp.update(normalized)
+            # Preserve any explicit objectives supplied earlier
+            role_profile_in = (
+                profile.get("role_profile") if isinstance(profile, Mapping) else {}
+            )
+            role_profile_clean = (
+                role_profile_in if isinstance(role_profile_in, Mapping) else {}
+            )
+            rp = dict(fp.get("role_profile") or {})
+            explicit_obj = objectives or _clean_objectives(
+                role_profile_clean.get("objectives")
+            )
+            if explicit_obj:
+                rp["objectives"] = explicit_obj
+            fp["role_profile"] = rp
             classification = dict(fp.get("classification") or {})
             classification["naics"] = v3_payload["context"]["naics"]
             fp["classification"] = classification
@@ -2912,6 +3298,28 @@ window.addEventListener('DOMContentLoaded', function () {
                     ):
                         role_cur[k] = ls_role[k]
                 fp["role"] = role_cur
+            rp_cur = (
+                fp.get("role_profile")
+                if isinstance(fp.get("role_profile"), Mapping)
+                else {}
+            )
+            rp_ls = (
+                last_saved.get("role_profile")
+                if isinstance(last_saved.get("role_profile"), Mapping)
+                else {}
+            )
+            if isinstance(rp_ls, Mapping):
+                merged_rp = dict(rp_cur) if isinstance(rp_cur, Mapping) else {}
+                if not _clean_objectives(
+                    merged_rp.get("objectives")
+                ) and _clean_objectives(rp_ls.get("objectives")):
+                    merged_rp["objectives"] = _clean_objectives(rp_ls.get("objectives"))
+                if not merged_rp.get("objectives_status") and rp_ls.get(
+                    "objectives_status"
+                ):
+                    merged_rp["objectives_status"] = rp_ls.get("objectives_status")
+                if merged_rp:
+                    fp["role_profile"] = merged_rp
             return fp
         except Exception:
             return profile
@@ -2936,8 +3344,13 @@ window.addEventListener('DOMContentLoaded', function () {
         if errors:
             return profile, errors, raw_advanced_overrides
 
-        profile = self._normalize_profile_from_params(profile, params)
+        objectives_input = _clean_objectives(
+            params.get("objectives") or params.get("objectives_raw")
+        )
+
+        profile = self._normalize_profile_from_params(profile, params, objectives_input)
         profile = self._merge_with_last_saved_profile(profile)
+        profile = _ensure_objectives(profile, provided=objectives_input)
         return profile, errors, raw_advanced_overrides
 
     def _canonical_profile_from_json_profile(
@@ -2956,12 +3369,17 @@ window.addEventListener('DOMContentLoaded', function () {
                 )
         if errors:
             return profile_dict, errors
+        objectives_input = _clean_objectives(
+            profile_dict.get("objectives")
+            or (profile_dict.get("role_profile") or {}).get("objectives")
+        )
         try:
             normalized = normalize_context_role(profile_dict)
             profile_dict.update(normalized)
         except Exception:
             pass
         profile_dict = self._merge_with_last_saved_profile(profile_dict)
+        profile_dict = _ensure_objectives(profile_dict, provided=objectives_input)
         return profile_dict, errors
 
     # ------------------------------- WSGI layer -------------------------------
@@ -3783,6 +4201,13 @@ window.addEventListener('DOMContentLoaded', function () {
                 profile.update(normalized)
             except Exception:
                 pass
+            profile = _ensure_objectives(profile)
+            try:
+                self.profile_path.write_text(
+                    json.dumps(profile, indent=2), encoding="utf-8"
+                )
+            except Exception:
+                pass
             status_code, resp = self._transactional_build(profile, environ)
             # Ensure spec previews are generated under SoT path
             try:
@@ -3888,6 +4313,13 @@ window.addEventListener('DOMContentLoaded', function () {
                 profile.update(normalized)
             except Exception as exc:
                 warnings.append(f"normalize_failed: {exc}")
+            profile = _ensure_objectives(profile)
+            try:
+                self.profile_path.write_text(
+                    json.dumps(profile, indent=2), encoding="utf-8"
+                )
+            except Exception:
+                pass
 
             # Choose outdir: respect NEO_REPO_OUTDIR, ensure not OneDrive
             out_root_env = os.environ.get("NEO_REPO_OUTDIR") or str(
@@ -3908,13 +4340,26 @@ window.addEventListener('DOMContentLoaded', function () {
             agent_id = str(ident.get("agent_id") or generate_agent_id()).strip()
             ts = time.strftime("%Y%m%dT%H%M%SZ", time.gmtime())
             out_dir = out_root / agent_id / ts
+            objectives_list, objectives_status = objectives_from_profile(profile)
+            objectives_status = objectives_status or (
+                "explicit" if objectives_list else "missing"
+            )
+            objectives_count = len(objectives_list)
+
+            def _with_objectives(meta: Mapping[str, Any] | None) -> dict[str, Any]:
+                base: dict[str, Any] = dict(meta) if isinstance(meta, Mapping) else {}
+                base["objectives_status"] = objectives_status or "missing"
+                base["objectives_count"] = int(objectives_count)
+                return base
 
             # Build files
             try:
                 if emit_event:
                     emit_event(
                         "build:requested",
-                        {"agent_id": agent_id, "out_root": str(out_root)},
+                        _with_objectives(
+                            {"agent_id": agent_id, "out_root": str(out_root)}
+                        ),
                     )
                 packs = write_repo_files(profile, out_dir)
                 # integrity report
@@ -3922,6 +4367,17 @@ window.addEventListener('DOMContentLoaded', function () {
                 (out_dir / "INTEGRITY_REPORT.json").write_text(
                     json.dumps(report, indent=2), encoding="utf-8"
                 )
+                warnings.extend(list((report or {}).get("warnings", []) or []))
+                try:
+                    updated_reporting = attach_integrity_to_reporting_pack(
+                        report, packs
+                    )
+                    if isinstance(updated_reporting, Mapping):
+                        (out_dir / "18_Reporting-Pack_v2.json").write_text(
+                            json.dumps(updated_reporting, indent=2), encoding="utf-8"
+                        )
+                except Exception:
+                    pass
 
                 # Gate parity summary
                 kpi_02 = (
@@ -3968,6 +4424,13 @@ window.addEventListener('DOMContentLoaded', function () {
                     if isinstance(report, Mapping)
                     else {}
                 )
+                try:
+                    seen_warn: set[str] = set()
+                    warnings = [
+                        w for w in warnings if not (w in seen_warn or seen_warn.add(w))
+                    ]
+                except Exception:
+                    warnings = list(warnings or [])
                 resp = {
                     "outdir": str(out_dir),
                     "file_count": len(list(out_dir.glob("*.json")))
@@ -3983,6 +4446,8 @@ window.addEventListener('DOMContentLoaded', function () {
                         report.get("errors", []) if isinstance(report, Mapping) else []
                     ),
                     "warnings": warnings,
+                    "objectives_status": objectives_status or "missing",
+                    "objectives_count": int(objectives_count),
                 }
                 # Optional overlay auto-apply (Sprint-6)
                 try:
@@ -4009,6 +4474,18 @@ window.addEventListener('DOMContentLoaded', function () {
                         (out_dir / "INTEGRITY_REPORT.json").write_text(
                             json.dumps(report2, indent=2), encoding="utf-8"
                         )
+                        try:
+                            updated_reporting2 = attach_integrity_to_reporting_pack(
+                                report2, updated
+                            )
+                            if isinstance(updated_reporting2, Mapping):
+                                (out_dir / "18_Reporting-Pack_v2.json").write_text(
+                                    json.dumps(updated_reporting2, indent=2),
+                                    encoding="utf-8",
+                                )
+                        except Exception:
+                            pass
+                        warnings.extend(list((report2 or {}).get("warnings", []) or []))
                         # Overwrite parity and integrity in response with post-overlay values
                         p2 = (
                             (report2 or {}).get("parity", {})
@@ -4031,6 +4508,27 @@ window.addEventListener('DOMContentLoaded', function () {
                             if isinstance(report2, Mapping)
                             else []
                         )
+                        obj2 = (
+                            (report2 or {}).get("objectives")
+                            if isinstance(report2, Mapping)
+                            else {}
+                        )
+                        try:
+                            resp["objectives_status"] = str(
+                                (obj2 or {}).get("status")
+                                or resp.get("objectives_status")
+                                or "missing"
+                            )
+                        except Exception:
+                            resp["objectives_status"] = resp.get("objectives_status")
+                        try:
+                            resp["objectives_count"] = int(
+                                (obj2 or {}).get("count")
+                                or resp.get("objectives_count")
+                                or 0
+                            )
+                        except Exception:
+                            resp["objectives_count"] = resp.get("objectives_count")
                         resp["overlays_applied"] = not bool(summary.get("rolled_back"))
                         if summary.get("rolled_back"):
                             resp["rolled_back"] = True
@@ -4041,6 +4539,16 @@ window.addEventListener('DOMContentLoaded', function () {
                         resp["overlays_applied"] = False
                 except Exception as overlay_exc:
                     warnings.append(f"overlays_apply_failed: {overlay_exc}")
+                try:
+                    seen_warn2: set[str] = set()
+                    warnings = [
+                        w
+                        for w in warnings
+                        if not (w in seen_warn2 or seen_warn2.add(w))
+                    ]
+                except Exception:
+                    warnings = list(warnings or [])
+                resp["warnings"] = warnings
                 # Persist last-build summary at out_root for quick UI retrieval
                 try:
                     out_root_last = out_root / "_last_build.json"
@@ -4153,6 +4661,10 @@ window.addEventListener('DOMContentLoaded', function () {
                             if isinstance(resp, Mapping)
                             else {}
                         ),
+                        "objectives_status": str(
+                            resp.get("objectives_status") or "missing"
+                        ),
+                        "objectives_count": int(resp.get("objectives_count") or 0),
                     }
                     out_root_last.write_text(
                         json.dumps(last_payload, indent=2), encoding="utf-8"
@@ -4165,26 +4677,37 @@ window.addEventListener('DOMContentLoaded', function () {
                         vals = list(resp["parity"].values())
                         emit_event(
                             "gate_parity_checked",
-                            {
-                                "true_count": int(sum(1 for v in vals if v)),
-                                "false_count": int(sum(1 for v in vals if not v)),
-                                "deviated": [
-                                    k for k, ok in resp["parity"].items() if not ok
-                                ],
-                            },
+                            _with_objectives(
+                                {
+                                    "true_count": int(sum(1 for v in vals if v)),
+                                    "false_count": int(sum(1 for v in vals if not v)),
+                                    "deviated": [
+                                        k for k, ok in resp["parity"].items() if not ok
+                                    ],
+                                }
+                            ),
                         )
                     except Exception:
                         pass
                 if emit_event:
                     emit_event(
                         "build:completed",
-                        {
-                            "agent_id": agent_id,
-                            "outdir": resp["outdir"],
-                            "parity": resp["parity"],
-                        },
+                        _with_objectives(
+                            {
+                                "agent_id": agent_id,
+                                "outdir": resp["outdir"],
+                                "parity": resp["parity"],
+                            }
+                        ),
                     )
-                    emit_repo_generated_event({"outdir": resp["outdir"]})
+                    emit_repo_generated_event(
+                        {
+                            "outdir": resp["outdir"],
+                            "objectives_status": resp.get("objectives_status")
+                            or "missing",
+                            "objectives_count": int(resp.get("objectives_count") or 0),
+                        }
+                    )
                 payload = json.dumps(resp).encode("utf-8")
                 start_response("200 OK", _std_headers("application/json", len(payload)))
                 return [payload]

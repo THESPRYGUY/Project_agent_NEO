@@ -29,6 +29,13 @@
 
   function buildFormBody(){
     const fd = new FormData(form);
+    const objectivesInput = form.querySelector('[name="objectives_raw"]');
+    if (objectivesInput) {
+      const raw = objectivesInput.value || '';
+      const lines = raw.split(/\r?\n/).map((line) => line.trim()).filter(Boolean);
+      fd.delete('objectives');
+      lines.forEach((line) => fd.append('objectives', line));
+    }
     return new URLSearchParams(fd).toString();
   }
 

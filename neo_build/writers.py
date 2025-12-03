@@ -633,6 +633,8 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
         governance_eval,
         preferences,
     ) = _profile_sections(profile)
+    role_objectives = list(_get(role_profile, "objectives", []) or [])
+    objectives_status = str(_get(role_profile, "objectives_status", "") or "")
     agent = _get(profile, "agent", {}) or {}
     agent_id = str(_get(identity, "agent_id", ""))
     naics = _naics_summary(profile)
@@ -825,7 +827,7 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
         _pack_template("06_Role-Recipes_Index_v2.json"), agent_id
     )
     p06["role_recipe_ref"] = str(_get(role_profile, "role_recipe_ref", ""))
-    p06["objectives"] = list(_get(role_profile, "objectives", []) or [])
+    p06["objectives"] = list(role_objectives)
     p06["role_title"] = str(_get(role_profile, "role_title", ""))
     p06["archetype"] = str(_get(role_profile, "archetype", ""))
     mapping = p06.setdefault("mapping", {})
@@ -837,7 +839,7 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
             "title": str(
                 _dget(profile, "role.title", _get(role_profile, "role_title", ""))
             ),
-            "objectives": list(_get(role_profile, "objectives", []) or []),
+            "objectives": list(role_objectives),
         }
     ]
     persist("06_Role-Recipes_Index_v2.json", p06)
@@ -947,6 +949,7 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
     agent_entry["owners"] = owners
     agent_entry["agent_id"] = agent_id
     agent_entry["role_title"] = selected_role_title
+    agent_entry["objectives"] = list(role_objectives)
     selected_toolsets = toolsets.get("selected") if isinstance(toolsets, Mapping) else None
     if isinstance(selected_toolsets, list) and selected_toolsets:
         caps = list(agent_entry.get("capabilities", []) or [])
@@ -1010,6 +1013,14 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
         card["risk_tier"] = (
             defaults.get("risk_tier") or card.get("risk_tier") or "medium"
         )
+        existing_obj = card.get("objectives")
+        existing_clean = (
+            [str(obj).strip() for obj in existing_obj] if isinstance(existing_obj, list) else []
+        )
+        if not any(existing_clean):
+            card["objectives"] = list(role_objectives)
+        if objectives_status and not card.get("objectives_status"):
+            card["objectives_status"] = objectives_status
     persist("09_Agent-Manifests_Catalog_v2.json", p09)
 
     # 10 Prompt Pack
@@ -1086,6 +1097,13 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
             "target_length_words": site_summary_cfg.get("target_length_words"),
         }
         _upsert_output_contract("Site_Summary_v1", contract)
+    if role_objectives or objectives_status:
+        role_ctx = p10.get("role_profile")
+        role_ctx = dict(role_ctx) if isinstance(role_ctx, Mapping) else {}
+        role_ctx["objectives"] = list(role_objectives)
+        if objectives_status:
+            role_ctx["objectives_status"] = objectives_status
+        p10["role_profile"] = role_ctx
     persist("10_Prompt-Pack_v2.json", p10)
 
     # 11 Workflow Pack
@@ -1117,6 +1135,13 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
             flow_hints["confidence_hint"] = round(confidence_ratio, 3)
     if isinstance(output_defaults, Mapping) and output_defaults:
         p11.setdefault("task_templates", {})["output_defaults"] = output_defaults
+    if role_objectives or objectives_status:
+        role_ctx = p11.get("role_profile")
+        role_ctx = dict(role_ctx) if isinstance(role_ctx, Mapping) else {}
+        role_ctx["objectives"] = list(role_objectives)
+        if objectives_status:
+            role_ctx["objectives_status"] = objectives_status
+        p11["role_profile"] = role_ctx
     persist("11_Workflow-Pack_v2.json", p11)
 
     # 12 Tool + Data Registry
@@ -1384,6 +1409,18 @@ def write_all_packs(profile: Mapping[str, Any], out_dir: Path) -> Dict[str, Any]
                     updated = True
                 if card.get("risk_tier") != risk_value:
                     card["risk_tier"] = risk_value
+                    updated = True
+                existing_obj = card.get("objectives")
+                existing_clean = (
+                    [str(obj).strip() for obj in existing_obj]
+                    if isinstance(existing_obj, list)
+                    else []
+                )
+                if not any(existing_clean) and role_objectives is not None:
+                    card["objectives"] = list(role_objectives)
+                    updated = True
+                if objectives_status and not card.get("objectives_status"):
+                    card["objectives_status"] = objectives_status
                     updated = True
         if target_entry is not None:
             if isinstance(selected_toolsets, list) and selected_toolsets:

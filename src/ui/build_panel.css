@@ -1,5 +1,8 @@
 /* Placeholder for additional build panel styling (optional). */
 
+.objectives-note { margin-top: 0.35rem; font-size: 0.9rem; color: #42526e; }
+.objectives-note--explicit { color: #1b5e20; font-weight: 600; }
+
 .last-build-banner {
   margin: 0.5rem 0 0.75rem 0;
   padding: 0.5rem 0.75rem;
