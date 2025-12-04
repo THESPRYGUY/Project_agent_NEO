@@ -59,6 +59,13 @@ Use --root generated_repos to scan every generated repo, and add --fail-fast to 
 - Updating the pack snapshot is enough to refresh the UI and mapper defaults.
 - Registry alignment checks run in under a second and fail fast on unknown or missing IDs.
 
+## Role Objectives (v1)
+
+- Intake includes an **Objectives (bullets)** textarea; recommend 3-7 imperative bullets (e.g., "Reduce incident MTTR", "Surface regulatory risks proactively").
+- If left blank, objectives auto-derive from mission and core use cases and persist with `role_profile.objectives_status = "derived"`.
+- Legacy agents without objectives receive derived objectives on rebuild so the 20-pack stays aligned.
+- Integrity + telemetry emit only objectives status/count metadata (explicit vs derived vs missing); objective text never leaves the UI artifacts.
+
 ## 3) Dev Setup (10 minutes)
 
 - Python 3.11 and Node 20.x

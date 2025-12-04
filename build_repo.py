@@ -15,7 +15,7 @@ from typing import Any, Dict, Mapping
 from neo_build.contracts import CANONICAL_PACK_FILENAMES, KPI_TARGETS
 from neo_build.utils import FileLock, json_write, slugify
 from neo_build.writers import write_repo_files
-from neo_build.validators import integrity_report
+from neo_build.validators import attach_integrity_to_reporting_pack, integrity_report
 
 
 def _load_json(path: Path, *, force_utf8: bool) -> Mapping[str, Any]:
@@ -70,6 +70,13 @@ def build_repo(intake_path: Path, out_dir: Path, *, extend: bool, strict: bool, 
             json_write(target / "Agent_Manifest.json", manifest)
             report = integrity_report(profile, packs)
             json_write(target / "INTEGRITY_REPORT.json", report)
+            try:
+                attach_integrity_to_reporting_pack(report, packs)
+                updated_reporting = packs.get("18_Reporting-Pack_v2.json")
+                if isinstance(updated_reporting, Mapping):
+                    json_write(target / "18_Reporting-Pack_v2.json", updated_reporting)
+            except Exception:
+                pass
 
         # Build log
         lines = ["Build OK", f"Slug: {slug}"]
@@ -97,4 +104,3 @@ def main(argv: list[str] | None = None) -> int:
 
 if __name__ == "__main__":  # pragma: no cover - exercised via CI wrapper
     raise SystemExit(main())
-

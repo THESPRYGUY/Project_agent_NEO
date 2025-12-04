@@ -48,28 +48,32 @@
       "strategy_latency_p95"
     ]
   },
-  "decision_event_field_types": {
-    "band_used": "string",
-    "confidence": "number",
-    "cost_elapsed": "number",
-    "escalation_flag": "boolean",
-    "escalation_reason": "string",
-    "persistence_level": "string",
-    "risk": "number",
-    "step_id": "string",
-    "time_elapsed": "number"
-  },
-  "decision_event_fields": [
-    "band_used",
-    "confidence",
-    "cost_elapsed",
-    "escalation_flag",
-    "escalation_reason",
-    "persistence_level",
-    "risk",
-    "step_id",
-    "time_elapsed"
-  ],
+    "decision_event_field_types": {
+        "band_used": "string",
+        "confidence": "number",
+        "cost_elapsed": "number",
+        "escalation_flag": "boolean",
+        "escalation_reason": "string",
+        "objectives_status": "string",
+        "objectives_count": "number",
+        "persistence_level": "string",
+        "risk": "number",
+        "step_id": "string",
+        "time_elapsed": "number"
+    },
+    "decision_event_fields": [
+        "band_used",
+        "confidence",
+        "cost_elapsed",
+        "escalation_flag",
+        "escalation_reason",
+        "objectives_status",
+        "objectives_count",
+        "persistence_level",
+        "risk",
+        "step_id",
+        "time_elapsed"
+    ],
   "definition_of_done": [],
   "events": [
     "gate_evaluation",

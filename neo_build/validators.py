@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from typing import Any, Dict, Mapping, List, Set
+from typing import Any, Dict, Mapping, List, Set, Tuple
 import os
 
 from .gates import parse_activation_strings
@@ -10,6 +10,76 @@ from .schemas import required_keys_map
 
 from .contracts import KPI_TARGETS, REQUIRED_ALERTS, REQUIRED_EVENTS, REQUIRED_HUMAN_GATE_ACTIONS, PACK_ID_TO_FILENAME
 from .schemas import required_keys_map
+
+
+_GENERIC_OBJECTIVES: Set[str] = {
+    "help user",
+    "help users",
+    "answer questions",
+    "assist with tasks",
+    "assist users",
+    "provide information",
+    "provide info",
+}
+
+
+def _clean_objective_text(value: Any) -> str:
+    try:
+        text = " ".join(str(value).replace("\r", " ").split()).strip(" -\t")
+    except Exception:
+        text = ""
+    return text
+
+
+def objectives_from_profile(profile: Mapping[str, Any] | None) -> Tuple[list[str], str]:
+    """Return (objectives, status) from a profile without leaking text elsewhere."""
+
+    objectives: list[str] = []
+    status = "missing"
+    if isinstance(profile, Mapping):
+        role_profile = profile.get("role_profile") if isinstance(profile.get("role_profile"), Mapping) else {}
+        raw_objectives = role_profile.get("objectives") if isinstance(role_profile, Mapping) else None
+        if raw_objectives is None and isinstance(profile.get("role"), Mapping):
+            raw_objectives = profile.get("role", {}).get("objectives")
+        if raw_objectives is None:
+            raw_objectives = profile.get("objectives")
+        if isinstance(raw_objectives, list):
+            for entry in raw_objectives:
+                cleaned = _clean_objective_text(entry)
+                if cleaned:
+                    objectives.append(cleaned)
+        if isinstance(role_profile, Mapping):
+            status = str(role_profile.get("objectives_status") or "").strip() or status
+        status = str(profile.get("objectives_status") or status or "").strip() or status
+    if not status:
+        status = "explicit" if objectives else "missing"
+    if status == "missing" and objectives:
+        status = "explicit"
+    return objectives, status
+
+
+def is_generic_objectives(objectives: List[str]) -> bool:
+    """Return True if all objectives look generic/helpdesk-like (case-insensitive)."""
+
+    if not objectives:
+        return False
+    normalized: list[str] = []
+    for obj in objectives:
+        cleaned = _clean_objective_text(obj).lower().strip(".;")
+        if not cleaned:
+            continue
+        normalized.append(cleaned)
+    if not normalized:
+        return False
+    for entry in normalized:
+        simple = entry.rstrip(".;")
+        singular = simple[:-1] if simple.endswith("s") else simple
+        if simple in _GENERIC_OBJECTIVES or singular in _GENERIC_OBJECTIVES:
+            continue
+        if len(simple.split()) <= 4 and any(simple.startswith(gen) or simple.endswith(gen) for gen in _GENERIC_OBJECTIVES):
+            continue
+        return False
+    return True
 
 
 def compute_effective_autonomy(preferences: Mapping[str, Any] | None, routing_defaults: Mapping[str, Any] | None) -> float:
@@ -121,12 +191,33 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
 
     out: Dict[str, Any] = {"status": "ok", "checks": {}}
     errors = out.setdefault("errors", [])
+    warnings: list[str] = out.setdefault("warnings", [])
     adv_overrides = {}
     if isinstance(profile, Mapping):
         adv_raw = profile.get("advanced_overrides") or {}
         if isinstance(adv_raw, Mapping):
             adv_overrides = adv_raw.get("overrides") or adv_raw
     adv_kpi = adv_overrides.get("kpi") if isinstance(adv_overrides, Mapping) else None
+
+    # Objectives integrity (non-PII)
+    objectives, raw_status = objectives_from_profile(profile)
+    obj_status = raw_status or ("explicit" if objectives else "missing")
+    has_objectives = len(objectives) > 0
+    has_generic = is_generic_objectives(objectives) if has_objectives else False
+    obj_warnings: list[str] = []
+    if not has_objectives:
+        obj_status = "missing"
+        obj_warnings.append("No objectives set; agent may be underspecified.")
+    if has_objectives and has_generic:
+        obj_warnings.append("Objectives are generic; consider editing for more specificity.")
+    out["objectives"] = {
+        "status": obj_status,
+        "count": len(objectives),
+        "has_generic": has_generic,
+        "warnings": obj_warnings,
+    }
+    if obj_warnings:
+        warnings.extend(obj_warnings)
 
     # Check KPI sync
     desired = kpi_targets_sync(overrides=adv_kpi, profile=profile)
@@ -576,6 +667,10 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
 
     out["missing_sections"] = missing_sections
     out["packs_complete"] = (len(missing_sections) == 0)
+    for pack, vals in missing_sections.items():
+        if isinstance(vals, list):
+            for sec in vals:
+                warnings.append(f"{pack}:{sec}")
 
     # Secrets guard: names-only — fail if any non-empty secret values present
     if p12.get("secrets"):
@@ -610,7 +705,52 @@ def integrity_report(profile: Mapping[str, Any], packs: Mapping[str, Any]) -> Di
     except Exception:
         pass
 
+    if warnings:
+        deduped: list[str] = []
+        seen: set[str] = set()
+        for w in warnings:
+            if w in seen:
+                continue
+            seen.add(w)
+            deduped.append(w)
+        out["warnings"] = deduped
+
     if errors:
         out["status"] = "error"
 
     return out
+
+
+def attach_integrity_to_reporting_pack(
+    report: Mapping[str, Any] | None, packs: Mapping[str, Any]
+) -> Dict[str, Any] | None:
+    """Return updated Reporting Pack payload with integrity snapshot embedded."""
+
+    if not isinstance(packs, dict):
+        return None
+    payload = packs.get("18_Reporting-Pack_v2.json")
+    if not isinstance(payload, Mapping):
+        return None
+    updated: Dict[str, Any] = dict(payload)
+    exec_brief = updated.get("exec_brief") if isinstance(updated.get("exec_brief"), Mapping) else {}
+    exec_brief = dict(exec_brief or {})
+    objectives_block = {}
+    if isinstance(report, Mapping):
+        obj = report.get("objectives") if isinstance(report.get("objectives"), Mapping) else {}
+        objectives_block = {
+            "status": (obj or {}).get("status") or "missing",
+            "count": int((obj or {}).get("count") or 0),
+            "has_generic": bool((obj or {}).get("has_generic")),
+            "warnings": list((obj or {}).get("warnings") or []),
+        }
+    exec_brief["integrity_snapshot"] = {
+        "status": (report or {}).get("status", "ok") if isinstance(report, Mapping) else "ok",
+        "packs_complete": bool((report or {}).get("packs_complete")) if isinstance(report, Mapping) else False,
+        "errors": list((report or {}).get("errors") or []) if isinstance(report, Mapping) else [],
+        "warnings": list((report or {}).get("warnings") or []) if isinstance(report, Mapping) else [],
+        "parity": (report or {}).get("parity") if isinstance(report, Mapping) else {},
+        "objectives": objectives_block or {"status": "missing", "count": 0, "has_generic": False, "warnings": []},
+    }
+    updated["exec_brief"] = exec_brief
+    packs["18_Reporting-Pack_v2.json"] = updated
+    return updated

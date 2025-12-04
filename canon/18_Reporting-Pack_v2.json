@@ -42,6 +42,29 @@
       ],
       "max_tokens": 600
     },
+    "integrity_inputs": {
+      "fields": [
+        "integrity_snapshot.status",
+        "integrity_snapshot.packs_complete",
+        "integrity_snapshot.objectives.status",
+        "integrity_snapshot.objectives.count",
+        "integrity_snapshot.objectives.has_generic",
+        "integrity_snapshot.objectives.warnings"
+      ],
+      "notes": "Integrity snapshot should include only status/count metadata; omit raw objectives text from telemetry sinks."
+    },
+    "integrity_snapshot": {
+      "status": "ok",
+      "packs_complete": true,
+      "errors": [],
+      "warnings": [],
+      "objectives": {
+        "status": "derived",
+        "count": 0,
+        "has_generic": false,
+        "warnings": []
+      }
+    },
     "kpi_rollup": [
       "ADR",
       "PRI",
