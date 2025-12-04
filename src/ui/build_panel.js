@@ -90,12 +90,12 @@ export function applyBuildToDom(data) {
     if (card) {
       if (!p0302) {
         const d = document.createElement('div');
-        d.innerHTML = "03 -> 02: <strong data-parity-03-02 title="03 activation vs 02 targets">-</strong>";
+        d.innerHTML = '03 -> 02: <strong data-parity-03-02 title="03 activation vs 02 targets">-</strong>';
         card.appendChild(d);
       }
       if (!p1702) {
         const d2 = document.createElement('div');
-        d2.innerHTML = "17 -> 02: <strong data-parity-17-02 title="17 activation vs 02 targets">-</strong>";
+        d2.innerHTML = '17 -> 02: <strong data-parity-17-02 title="17 activation vs 02 targets">-</strong>';
         card.appendChild(d2);
       }
     }
